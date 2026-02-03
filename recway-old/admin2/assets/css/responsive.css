@@ -1,0 +1,110 @@
+@media only screen and (min-width: 1700px) {
+  .container {
+    max-width: 95%;
+  }
+}
+
+@media only screen and (max-width: 1200px) {
+    .sidebar-section{
+        position: fixed;
+        top: 0;
+        left: -280px;
+        z-index: 100;
+        overflow-y: auto;
+        
+    }
+
+
+  .main-section {
+    width: 100%;
+    z-index: 10;
+  }
+  .menu-btn{
+    display: block;
+}
+.menu-lg{
+  display: none;
+}
+}
+
+@media only screen and (max-width: 767px) {
+  .desktop-menu{
+    width: 100%;
+  }
+  .main-content {
+    background-color: #f5f6ff;
+    padding: 25px 5px;
+    margin-top: -80px;
+  }
+  .header {
+    padding: 15px 15px;
+    padding-bottom: 120px;
+    border-radius: 0px 0px 20px 20px;
+  }
+  .tab-card {
+    font-size: 16px;
+  }
+  .btn-primary {
+    width: 100%;
+  }
+  /* .btns-row {
+      flex-direction: column;
+      } */
+  .btns-row span {
+    width: 48%;
+    text-align: center;
+  }
+  .btns-row span a {
+    justify-content: space-between;
+  }
+  .search-section{
+    width: 100%;
+    margin-top: 30px;
+  }
+  .search-section input{
+    width: 100%;
+  }
+  /* Style the buttons inside the tab */
+/* .tab2 button,
+.tab button {
+width: 100%;
+
+} */
+.tab,
+.tab2{
+  white-space: nowrap;
+  display: flex;
+  overflow-y: hidden !important;
+  overflow-x: scroll !important;
+}
+.tab2 button.active,
+.tab button.active {
+  border-bottom: 2px solid transparent;
+  color: var(--primary);
+}
+.tabcontent,
+.tabcontent2{
+  padding: 10px 0px !important;
+}
+}
+
+@media only screen and (max-width: 500px) {
+  .btns-row span {
+    width: 100%;
+    text-align: center;
+  }
+  .btn-primary {
+    width: 100%;
+    font-size: 13px;
+  }
+  .btn-number {
+    font-size: 12px;
+    height: 18px;
+    width: 18px;
+    line-height: 10px;
+  }
+  .modal-dialog-lg{
+    max-width: 100% !important;
+  }
+
+}

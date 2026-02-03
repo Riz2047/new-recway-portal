@@ -11,7 +11,7 @@
 
 **⚡ Recway** CMS By Laravel (7.x - 12.x) - Manages Users, Roles, Permissions, Modules, Settings, Translations, Contents(Post, Page, Category, Tags), System logs, Monitoring, Rest API's and every actions of your Laravel application. A complete CMS solution for Laravel application with Tailwind CSS integrated with all starting features including modules, dark/lite mode, charts, tables, forms, lots of components and many more. By our preimium modules, you can get more features like CRM, HRM, Course Management and so on.
 
-**Demo:** https://laradashboard.com/try-demo/
+**Demo:** https://recway.com/try-demo/
 
 ```
 Email - superadmin@example.com
@@ -139,61 +139,14 @@ password - 12345678
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## 🔄 Versions:
-
-Latest version `v2.0` - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v2.0
-
-<details>
-<summary>View Old versions</summary>
-
--   Laravel `7.x` & PHP -`7.x`
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/Laravel7.x
-    -   Branch - https://github.com/ManiruzzamanAkash/laravel-role/tree/Laravel7.x
-
--   Laravel `9.7` & PHP - `8.x`
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/Laravel9.x
-
--   Laravel `11.x`
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v11.x-main
-
--   Laravel `12.x` & PHP >= `8.3`
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/Laravel12.x
-
--   Laravel `12.x` & Tail Admin Template Integration
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/Laravel12.x-tailadmin
-
--   Laravel `12.x` & Module & Action Log integration
-
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/Laravel12.x-module-logs
-
--   v1.0.0 - Settings, Forget password and lots of refactorring
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.0.0
--   v1.2.0 - Translation Management, Dashboard Redesign, Role/User List improvements
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.2.0
--   v1.3.0 - Admin Menu architecture, Permission List and detail page
-    -   Tag - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.3.0
--   v1.5.0 - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.5.0
--   v1.6.0 - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.6.0
--   v1.7.0 - https://github.com/ManiruzzamanAkash/laravel-role/releases/tag/v1.7.0
-
-More release tags - https://github.com/laradashboard/laradashboard/releases
-
-</details>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 🚀 Project Setup
 
 **Clone and Go Project**
 
 ```console
-git clone git@github.com:laradashboard/laradashboard.git
-cd laradashboard
+git clone git@github.com:recway/recway.git
+cd recway
 ```
 
 **Install Composer & Node Dependencies**
@@ -205,7 +158,7 @@ npm install
 
 **Database & env creation**
 
--   Create database called - `laradashboard`
+-   Create database called - `recway`
 -   Create `.env` file by copying `.env.example` file
 
 ```bash
@@ -237,10 +190,10 @@ So, You've got the project of Recway on your local machine - http://localhost:80
 
 ## 🔄 Previously From laravel-role
 
-We were previously at https://github.com/ManiruzzamanAkash/laravel-role, so you need to change the URL if you moved from there
+We were previously at https://github.com/rizwan/laravel-role, so you need to change the URL if you moved from there
 
 ```console
-git remote set-url origin git@github.com:laradashboard/laradashboard.git
+git remote set-url origin git@github.com:recway/recway.git
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -294,7 +247,7 @@ Browse Emails - http://localhost:8025
 
 ## 📚 Documentation
 
-https://laradashboard.com/docs/
+https://recway.com/docs/
 
 ## 🔗 Rest API Documentation
 
@@ -626,20 +579,20 @@ Visit the [Laravel Boost documentation](https://github.com/laravel/boost).
 
 ## 🔗 Live Demo
 
-https://laradashboard.com/try-demo/
+https://recway.com/try-demo/
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## ✨ Premium Features
 
-Please visit at Recway to get more premium moduels - https://laradashboard.com. Premium modules included CRM, HRM, Course Managements and so on.
+Please visit at Recway to get more premium moduels - https://recway.com. Premium modules included CRM, HRM, Course Managements and so on.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 🧩 Core modules
 
--   **Task Manager** - https://github.com/laradashboard/TaskManager - Basic Task Manager module for Recway | Standard Starter Module for Recway.
--   **User Avatar** - https://github.com/laradashboard/UserAvatar - A very simple module create an avatar for a user. Handle migration, entries/updates in user forms and so on.
+-   **Task Manager** - https://github.com/recway/TaskManager - Basic Task Manager module for Recway | Standard Starter Module for Recway.
+-   **User Avatar** - https://github.com/recway/UserAvatar - A very simple module create an avatar for a user. Handle migration, entries/updates in user forms and so on.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -660,13 +613,13 @@ Please be sure to read our [Contribution Guide](CONTRIBUTING.md) before submitti
 
 ### 🌟 Top contributors:
 
-<a href="https://github.com/laradashboard/laradashboard/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=laradashboard/laradashboard" alt="contrib.rocks image" />
+<a href="https://github.com/recway/recway/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=recway/recway" alt="contrib.rocks image" />
 </a>
 
 ### ✩ Growth Story
 
-[![Star History Chart](https://api.star-history.com/svg?repos=laradashboard/laradashboard&type=Date)](https://www.star-history.com/#laradashboard/laradashboard&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=recway/recway&type=Date)](https://www.star-history.com/#recway/recway&Date)
 
 ## 💖 Support
 
@@ -680,27 +633,27 @@ If you like my work you may consider buying me a ☕ / 🍕
 
 ## 📞 Connect
 
--   Join Facebook Community (For any questions, latest updates) - https://www.facebook.com/groups/laradashboard
+-   Join Facebook Community (For any questions, latest updates) - https://www.facebook.com/groups/recway
 -   Linkedin Community - https://www.linkedin.com/groups/14690156
--   Youtube channel (For tutorials) - https://www.youtube.com/@laradashboard
--   Maniruzzaman Akash - [@LinkedIn](https://www.linkedin.com/in/maniruzzamanakash) | manirujjamanakash@gmail.com
+-   Youtube channel (For tutorials) - https://www.youtube.com/@recway
+-   Maniruzzaman Akash - [@LinkedIn](https://www.linkedin.com/in/rizwan) | manirujjamanakash@gmail.com
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/laradashboard/laradashboard.svg?style=for-the-badge
-[contributors-url]: https://github.com/laradashboard/laradashboard/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/laradashboard/laradashboard.svg?style=for-the-badge
-[forks-url]: https://github.com/laradashboard/laradashboard/network/members
-[stars-shield]: https://img.shields.io/github/stars/laradashboard/laradashboard.svg?style=for-the-badge
-[stars-url]: https://github.com/laradashboard/laradashboard/stargazers
-[issues-shield]: https://img.shields.io/github/issues/laradashboard/laradashboard.svg?style=for-the-badge
-[issues-url]: https://github.com/laradashboard/laradashboard/issues
-[license-shield]: https://img.shields.io/github/license/laradashboard/laradashboard.svg?style=for-the-badge
-[license-url]: https://github.com/laradashboard/laradashboard/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/recway/recway.svg?style=for-the-badge
+[contributors-url]: https://github.com/recway/recway/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/recway/recway.svg?style=for-the-badge
+[forks-url]: https://github.com/recway/recway/network/members
+[stars-shield]: https://img.shields.io/github/stars/recway/recway.svg?style=for-the-badge
+[stars-url]: https://github.com/recway/recway/stargazers
+[issues-shield]: https://img.shields.io/github/issues/recway/recway.svg?style=for-the-badge
+[issues-url]: https://github.com/recway/recway/issues
+[license-shield]: https://img.shields.io/github/license/recway/recway.svg?style=for-the-badge
+[license-url]: https://github.com/recway/recway/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/maniruzzamanakash
+[linkedin-url]: https://linkedin.com/in/rizwan
 [product-screenshot]: images/screenshot.png
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/

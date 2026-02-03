@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+
+    <link rel='stylesheet' href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css'>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.3.0/dropzone.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <title>Recway - Portal</title>
+</head>
+
+<body>
+    <div class="p-0 m-0 w-100">
+        <div class="sidebar-section">
+            <div class="sidebar">
+                <div class="logo-section">
+                    <img src="assets/images/logo.png" alt="" class="img-fluid">
+                </div>
+
+                <ul class="nav-links">
+                    <li>
+                        <a href="index.html">
+                            <i class='bx bx-grid-alt'></i>
+                            <span class="link_name">Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="form.html">
+                            <i class="bi bi-person"></i>
+                            <span class="link_name">Admin</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="profile.html">
+                            <i class="bi bi-people"></i>
+                            <span class="link_name">Staff</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bx bx-user"></i>
+                            <span class="link_name">Customers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bx bx-collection"></i>
+                            <span class="link_name">Candidates</span>
+                        </a>
+                    </li>
+                    <li class="dropdown-li">
+                        <div class="iocn-link">
+                            <a href="#">
+                                <i class="bi bi-clipboard-data"></i>
+                                <span class="link_name">Statuses</span>
+                            </a>
+                            <i class='bx bxs-chevron-down arrow'></i>
+                        </div>
+                        <ul class="sub-menu">
+                            <li class="mt-3"><a href="#">Interviews</a></li>
+                            <li><a href="#">Backhround Check</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-card-checklist"></i>
+                            <span class="link_name">Services</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span class="link_name">Statistics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-clock-history"></i>
+                            <span class="link_name">History</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-list-check"></i>
+                            <span class="link_name">Logs</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-geo-alt"></i>
+                            <span class="link_name">Places</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-chat-dots"></i>
+                            <span class="link_name">Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-person-gear"></i>
+                            <span class="link_name">Account Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="bi bi-chat-dots"></i>
+                            <span class="link_name">Site Settings</span>
+                        </a>
+                    </li>
+
+
+                </ul>
+            </div>
+        </div>
+        <div class="main-section ms-auto">
+            <header class="header">
+                <div class="d-flex justify-content-between flex-wrap">
+                    <div class="menu-btn order-1">
+                        <i class="bi bi-list"></i>
+                    </div>
+                    <div class="search-section order-md-2 order-3">
+                        <i class="bi bi-search search-input"></i>
+                        <input type="search" placeholder="Search here...">
+                    </div>
+                    <div class="d-flex justify-content-end order-md-3 order-2">
+                        <div class="languages">
+                            <img src="assets/images/Flag_of_Sweden.svg.png" alt="" class="img-fluid non-active">
+                            <img src="assets/images/US.webp" alt="" class="img-fluid active">
+                        </div>
+
+                        <div class="profile-img">
+                            <img src="assets/images/219983.png" alt="">
+
+                            <div class="tool-pit">
+                                <div class="tool-pit-content">
+                                    <div class="d-flex justify-content-end">
+                                        <div class="arrow-up me-3"></div>
+                                    </div>
+                                    <div class="tool-pit-content--header">
+                                        <p class="title mb-0 pb-0">Admin</p>
+                                        <h1 class="name mt-2 mb-0 pb-0">Muhammad Awais</h1>
+                                    </div>
+
+                                    <ul class=" menus">
+                                        <li><a href="">Account Settings</a></li>
+                                        <li><a href="">Logout</a></li>
+
+                                        <hr>
+
+                                        <li><a href=""> <i class="bx bx-user me-3"></i>Add New Admin</a></li>
+                                    </ul>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div class="mx-lg-4 main-content">
+                <div class="container">
+                    <div class="row justify-content-center h-100">
+                        <!-- <div class="col-lg-3 mb-3">
+                            <div class="white-box ">
+                                <div class="candidate-profile mx-auto">
+                                    <h1 class="f-26 w-700 text-white m-0 p-0 font-secondary">KR</h1>
+                                </div>
+                                <div class="candidate-info ">
+                                    <h1 class="f-16 w-700 text-black m-0 p-0 mt-2 text-center">Kewin Roe</h1>
+                                    <p class=" f-14 text-grey w-500 mb-0 text-center">Order# 3265</p>
+                                    <div class="status-active px-3 py-1 f-18 my-2 mx-auto">Active</div>
+                                    <div class="mt-3">
+                                        <p class="f-12 w-600 text-grey mb-0 pb-0 ">Security Number</p>
+                                        <p class="f-14 w-700 text-black text-lg-start text-center">20220823789</p>
+            
+                                        <p class="f-12 w-600 text-grey mb-0 pb-0 text-lg-start text-center">VASC ID</p>
+                                        <p class="f-14 w-700 text-black text-lg-start text-center">1234</p>
+            
+                                        <p class="f-12 w-600 text-grey mb-0 pb-0 text-lg-start text-center">Email</p>
+                                        <p class="f-14 w-700 text-black text-lg-start text-center">kewinroe@gmail.com</p>
+            
+                                        <div class="d-flex justify-content-center">
+                                            <button class="blank-btn "><i class="bi bi-cloud-download-fill me-2"></i> Download PDF</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> -->
+                        <div class="col-lg-12 mb-3 d-flex justify-content-between">
+                            <div style="font-size: 14px">
+                                <a class="w-700 me-2 no-decoration text-dark" href=""><i
+                                        class="bi bi-arrow-left-short"></i> Previous</a> <a
+                                    class="w-700 no-decoration text-dark" href="">Next <i
+                                        class="bi bi-arrow-right-short"></i></a>
+                            </div>
+                            <div class="profile-img">
+                                <button class="f-16 w-600 text-dark mb-0 pb-0 btn-primary-sm">Action</button>
+    
+                                <div class="tool-pit">
+                                    <div class="tool-pit-content">
+                                        <div class="d-flex justify-content-end">
+                                            <div class="arrow-up me-3"></div>
+                                        </div>
+                                        <div class="tool-pit-content--header">
+                                            <!-- <a href="" class="no-decoration text-white">Change Status</a> -->
+                                        </div>
+    
+                                        <ul class=" menus">
+                                            <li><a href="">Generate Report</a></li>
+                                            <li><a href="">Delete Report</a></li>
+    
+                                            <hr>
+    
+                                            <li><a href=""> <i class="bx bx-user me-3"></i>Change Status</a></li>
+                                        </ul>
+    
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8 px-lg-0 mb-lg-0 mb-3 ">
+                            <div class="white-box-p-0 h-100">
+                                <div class="tab">
+                                    <button class="tablinks f-14 w-700 " id="defaultOpen"
+                                        onclick="openCity(event, 'profile')">Profile</button>
+                                    <button class="tablinks f-14 w-700 " onclick="openCity(event, 'billing')">Billing
+                                        Details</button>
+                                    <button class="tablinks f-14 w-700 " onclick="openCity(event, 'notes')">Additional
+                                        Notes</button>
+                                    <button class="tablinks f-14 w-700 "
+                                        onclick="openCity(event, 'comments')">Comments</button>
+
+                                </div>
+
+                                <div id="profile" class="tabcontent ">
+                                    <div class="container">
+                                        <div class="row">
+
+                                            <div class="col-lg-6 order-lg-1 order-2">
+                                                <div class="mt-3 ">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0 ">
+                                                        Security Number</p>
+                                                    <p class="f-14 w-700 text-black ">
+                                                        20220823789</p>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0 ">
+                                                        VASC ID</p>
+                                                    <p class="f-14 w-700 text-black ">1234</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Service Type</p>
+                                                    <p class="f-14 w-700 text-black">Background check - Level 1 </p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Interview Date</p>
+                                                    <p class="f-14 w-700 text-black">Null</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Full Name</p>
+                                                    <p class="f-14 w-700 text-black">Kewin Roe</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">VASC ID</p>
+                                                    <p class="f-14 w-700 text-black">ABC</p>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Social Security Number
+                                                    </p>
+                                                    <p class="f-14 w-700 text-black">20220823789</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Email</p>
+                                                    <p class="f-14 w-700 text-black">hyipsgroup2025@gmail.com</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Phone Number</p>
+                                                    <p class="f-14 w-700 text-black">03064027086</p>
+                                                </div>
+
+                                            </div>
+                                            <div class="col-lg-6 order-lg-2 order-1">
+                                                <div class="candidate-profile mx-auto">
+                                                    <h1 class="f-26 w-700 text-white m-0 p-0 font-secondary">KR</h1>
+                                                </div>
+                                                <div class="candidate-info ">
+                                                    <h1 class="f-16 w-700 text-black m-0 p-0 mt-2 text-center">Kewin Roe
+                                                    </h1>
+                                                    <p class=" f-14 text-grey w-500 mb-0 text-center">Order# 3265</p>
+                                                    <div class="status-active px-3 py-1 f-18 my-2 mx-auto">Active</div>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <div class="d-flex justify-content-center">
+                                                        <button class="btn-primary-sm bg-primary"><i
+                                                                class="bi bi-cloud-download-fill me-2"></i> Download
+                                                            PDF</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="billing" class="tabcontent ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="col-lg-12">
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Invoice Recipient</p>
+                                                    <p class="f-14 w-700 text-black">Kewin Roe</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Invoice Reference</p>
+                                                    <p class="f-14 w-700 text-black">Null</p>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-600 text-grey mb-0 pb-0">Invoice Comment</p>
+                                                    <p class="f-14 w-700 text-black">Kewin Roe</p>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="notes" class="tabcontent ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="col-lg-12 ">
+                                                <div class="mt-3">
+                                                    <p class="f-12 w-500 text-grey mb-0 pb-0">Lorem ipsum dolor sit
+                                                        amet.</p>
+                                                    <p class="f-14 w-500 text-black">Lorem ipsum dolor sit amet
+                                                        consectetur adipisicing elit. Sapiente, animi magni provident
+                                                        possimus impedit nobis alias tenetur, minima cupiditate
+                                                        recusandae illum odio tempore suscipit aspernatur eaque optio
+                                                        repudiandae consectetur laboriosam. Lorem ipsum dolor sit amet
+                                                        consectetur adipisicing elit. Eveniet, excepturi. Quam sunt
+                                                        iusto, facilis ipsa inventore vitae similique suscipit possimus
+                                                        non voluptate culpa voluptatem placeat dolor laboriosam, sequi
+                                                        est! Voluptatem.</p>
+
+                                                    <p class="f-14 w-500 text-black">Lorem ipsum dolor sit amet
+                                                        consectetur adipisicing elit. Eveniet, excepturi. Quam sunt
+                                                        iusto, facilis ipsa inventore vitae similique suscipit possimus
+                                                        non voluptate culpa voluptatem placeat dolor laboriosam, sequi
+                                                        est! Voluptatem.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="comments" class="tabcontent ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="col-lg-12">
+                                                <div class="mt-2 bg-light p-2">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <small class="p-0 m-0 w-16 w-700">~M Awais</small>
+                                                        <p class="m-0 p-0">
+                                                            <a href=""><i class="bi bi-pen"></i></a>
+                                                            <a href=""><i class="bi bi-trash ms-1"></i></a>
+                                                        </p>
+                                                    </div>
+                                                    <p class="p-0 m-0 f-14 w-500 mt-3">Lorem Ipsum is simply dummy text
+                                                        of the printing and typesetting industry. Lorem Ipsum has been
+                                                        the industry's standard dummy text ever since the 1500s</p>
+                                                    <p class="m-0 p-0 w-700 f-12 mt-4"
+                                                        style="text-align: right; font-size: 12px">Jun 23, 2023 08:26 AM
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+
+                        </div>
+                        <div class="col-lg-4 ">
+                            <div class="white-box ">
+                                <div class="container px-0">
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="wrapper">
+                                                <h1 class="f-16 w-700 text-black mb-3 pb-0 ">Order History</h1>
+                                                <ul class="sessions mt-2">
+                                                    <li>
+                                                        <div class="time">09:00 AM</div>
+                                                        <p class="f-14 w-500">How is it already 9:00? Just how??? 🤯🤯
+                                                        </p>
+                                                    </li>
+                                                    <li>
+                                                        <div class="time">09:05 AM</div>
+                                                        <p class="f-14 w-500">Few more minutes of sleep won't do anyone
+                                                            any harm 🤷..</p>
+                                                    </li>
+                                                    <li>
+                                                        <div class="time">09:30 AM</div>
+                                                        <p class="f-14 w-500">Get up 🙄</p>
+                                                    </li>
+                                                    <li>
+                                                        <div class="time">1:00 PM</div>
+                                                        <p class="f-14 w-500">How can I feel sleepy again?😵</p>
+                                                    </li>
+                                                    <li>
+                                                        <div class="time">01:30 PM</div>
+                                                        <p class="f-14 w-500">Lunch time after which sleep just doesn't
+                                                            want to let go of me. 🤝</p>
+                                                    </li>
+                                                    <li>
+                                                        <div class="time">3:30 PM</div>
+                                                        <p class="f-14 w-500">Drink the magical chai, it will ward off
+                                                            sleep they said. 🤷‍</p>
+                                                    </li>
+
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row justify-content-center h-100 mt-4">
+                        <div class="col-lg-12 px-lg-0 mb-lg-0 mb-3 ">
+                            <div class="white-box">
+                                <div class="tab2">
+                                    <button class="tablinks2 f-14 w-700 " id="defaultOpen2"
+                                        onclick="editCity(event, 'staff')">Assign Staff</button>
+                                    <button class="tablinks2 f-14 w-700 "
+                                        onclick="editCity(event, 'comments2')">Comments</button>
+                                    <button class="tablinks2 f-14 w-700 "
+                                        onclick="editCity(event, 'email')">Email</button>
+                                    <button class="tablinks2 f-14 w-700 "
+                                        onclick="editCity(event, 'edit-candidate')">Edit Candidate</button>
+                                </div>
+
+                                <div id="staff" class="tabcontent2 ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <form action="" class="col-lg-12 update-form">
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="inputState">Service Type</label>
+                                                    <select id="inputState" class="form-control">
+                                                        <option selected="">Choose...</option>
+                                                        <option>A</option>
+                                                        <option>B</option>
+                                                        <option>C</option>
+                                                        <option>D</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Comment
+                                                    </label>
+                                                    <br>
+                                                    <textarea name="" id="" style="width: 100%;" rows="6"></textarea>
+                                                </div>
+                                                <div class="d-flex justify-content-end">
+                                                    <button type="submit" class="btn-primary bg-primary">Assign</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="comments2" class="tabcontent2 ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <form class="col-lg-12 p-0 update-form">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Comment
+                                                    </label>
+                                                    <br>
+                                                    <textarea name="" id="" style="width: 100%;" rows="6"></textarea>
+                                                </div>
+                                                <div class="d-flex justify-content-end">
+                                                    <button type="submit" class="btn-primary bg-primary">Add</button>
+                                                </div>
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="email" class="tabcontent2 ">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="col-lg-12 p-0">
+                                                <div class="table-section w-100 p-0">
+                                                    <div class="table-div w-100">
+
+                                                        <table class="display Table w-100">
+                                                            <thead>
+                                                                <tr>
+
+                                                                    <th class="table-head">Order ID</th>
+                                                                    <th class="table-head">Email Type</th>
+                                                                    <th class="table-head">Email</th>
+                                                                    <th class="table-head">Date</th>
+                                                                    <th class="table-head">Text</th>
+                                                                    <th class="table-head">Action</th>
+
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+
+                                                                <tr>
+                                                                    <td class="f-14">#087</td>
+                                                                    <td class="f-14">Candidate Message</td>
+                                                                    <td class="f-14">Amanda@jemtprojekt.se</td>
+                                                                    <td class="f-14"> 2023-06-20 11:46:58</td>
+                                                                    <td>
+                                                                        <textarea name="text[]" class="sign-textarea"
+                                                                            rows="3">&lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;&lt;strong&gt;Hej , Amanda Signer Landstedt&lt;/strong&gt;&lt;/p&gt;
+                                                                            &lt;p&gt;Vi har fått in en beställning från &lt;strong&gt;Arbitrium AB&lt;/strong&gt; gällande bakgrundskontroll där &lt;strong&gt;Torbjörn Christiernsson&lt;/strong&gt; gjort beställningen.&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;För att starta processen och ge ditt samtycke, ber vi dig vänligen att använda följande länk: &lt;a href="https://scrive.com/t/9222115557492473221/38f2f62e3ab8e71b" target="_blank"&gt;Klicka här - Scrive&lt;/a&gt;. Genom att klicka på länken kommer du att tas till en plattform där du kan ge ditt samtycke och slutföra den nödvändiga dokumentationen.&lt;/p&gt;
+                                                                            &lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;&lt;br /&gt;Vid frågor kring beställningen kontakta gärna &lt;strong&gt;Torbjörn Christiernsson&lt;/strong&gt; på &lt;strong&gt;Arbitrium AB.&nbsp;&lt;/strong&gt;&lt;/p&gt;
+                                                                            &lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;Med vänliga hälsningar&lt;br /&gt;Recway – Vägen till en säkrare rekrytering&lt;/p&gt;
+                                                                            &lt;p&gt;&lt;a href="https://www.recway.se"&gt;https://www.recway.se&lt;/a&gt;&lt;/p&gt;
+                                                                            &lt;p&gt;&nbsp;&lt;/p&gt;
+                                                                            &lt;p&gt;&lt;br /&gt;&lt;em&gt;This e-mail is confidential and may contain legally privileged information. If you have received this email in error, please immediately notify us and delete the message from your system. As a recipient of this mail, you are responsible for deleting both mail and attachments as soon as the purpose of access to this information expires, but no longer than six months.&lt;/em&gt;&lt;/p&gt;</textarea>
+
+                                                                    </td>
+                                                                    <td class="f-14">
+                                                                        <div class="d-flex justify-content-end">
+                                                                            <button type="submit"
+                                                                                class="btn-primary-sm bg-primary">Resend</button>
+                                                                        </div>
+
+                                                                    </td>
+                                                                </tr>
+
+
+
+
+
+
+
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="edit-candidate" class="tabcontent2 ">
+                                    <div class="container">
+                                        <form class="update-form">
+                                            <div class="row mb-3">
+                                                <div class="col-lg-6 mb-3">
+                                                    <label class="form-label" for="inputAddress">Name</label>
+                                                    <input type="text" class="form-control" id="inputAddress">
+                                                </div>
+                                                <div class="col-lg-6 mb-3">
+                                                    <label class="form-label" for="inputAddress2">Sur Name</label>
+                                                    <input type="text" class="form-control" id="inputAddress2">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="inputEmail4">Email</label>
+                                                    <input type="email" class="form-control" id="inputEmail4">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="inputEmail4">Phone</label>
+                                                    <input type="text" class="form-control" id="inputEmail4">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="inputEmail4">Social Security
+                                                        Number</label>
+                                                    <input type="text" class="form-control" id="inputEmail4">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="inputEmail4">VASC ID</label>
+                                                    <input type="text" class="form-control" id="inputEmail4">
+                                                </div>
+                                                <div class="col-md-12 mb-3">
+                                                    <label class="form-label" for="inputState">Service Type</label>
+                                                    <select id="inputState" class="form-control">
+                                                        <option selected="">Choose...</option>
+                                                        <option>A</option>
+                                                        <option>B</option>
+                                                        <option>C</option>
+                                                        <option>D</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-12 mb-3">
+                                                    <label class="form-label">Additional Note
+                                                    </label>
+                                                    <br>
+                                                    <textarea name="" id="" style="width: 100%;" rows="6"
+                                                        placeholder="Here you can create a note about the order that is visible to both you and us. Please note that this note will not be visible to the individual."></textarea>
+                                                </div>
+                                                <div class="col-md-12 mb-3">
+                                                    <label for="" class="border-0">Documents<sapn
+                                                            class="star text-danger">*</span></label>
+                                                    <div class="drop-zone">
+                                                        <span class="drop-zone__prompt">
+                                                            <div
+                                                                class="d-flex flex-column justify-content-center align-items-center">
+                                                                <i class="bi bi-cloud-arrow-up-fill"></i>
+                                                                Here you can upload several documents (Interview
+                                                                Templates, Documents or CV)
+                                                            </div>
+                                                        </span>
+                                                        <input type="file" name="myFile" class="drop-zone__input">
+                                                    </div>
+
+                                                </div>
+                                                <div class="col-md-12 mb-3">
+                                                    <div class="mb-3">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="gridCheck">
+                                                            <label class="form-label form-check-label" for="gridCheck">
+                                                                Check me out
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="gridCheck">
+                                                            <label class="form-label form-check-label" for="gridCheck">
+                                                                Check me out
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-12 mb-3">
+                                                    <label class="form-label form-check-label" for="gridCheck">
+                                                        Select Your Choice
+                                                    </label>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio"
+                                                            name="flexRadioDefault" id="flexRadioDefault1">
+                                                        <label class="form-check-label" for="flexRadioDefault1">
+                                                            Default radio
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio"
+                                                            name="flexRadioDefault" id="flexRadioDefault2" checked>
+                                                        <label class="form-check-label" for="flexRadioDefault2">
+                                                            Default checked radio
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+
+                                            </div>
+
+                                            <div class="d-flex justify-content-end">
+                                                <button type="submit" class="btn-primary bg-primary">Update</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="backdrop"></div>
+
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"
+        integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.13.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.3.0/dropzone.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script>
+        function openCity(evt, cityName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(cityName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        document.getElementById("defaultOpen").click();
+    </script>
+    <script>
+        function editCity(evt, cityName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent2");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks2");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(cityName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        document.getElementById("defaultOpen2").click();
+    </script>
+</body>
+
+</html>
