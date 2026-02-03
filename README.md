@@ -636,7 +636,7 @@ If you like my work you may consider buying me a ☕ / 🍕
 -   Join Facebook Community (For any questions, latest updates) - https://www.facebook.com/groups/recway
 -   Linkedin Community - https://www.linkedin.com/groups/14690156
 -   Youtube channel (For tutorials) - https://www.youtube.com/@recway
--   Maniruzzaman Akash - [@LinkedIn](https://www.linkedin.com/in/rizwan) | manirujjamanakash@gmail.com
+-   Rizwan - [@LinkedIn](https://www.linkedin.com/in/muhammad-rizwan-ramzan-40b2b6208/) | rizwanramzan648@gmail.com
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
