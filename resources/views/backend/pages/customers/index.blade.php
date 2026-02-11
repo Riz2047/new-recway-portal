@@ -1,5 +1,5 @@
 <x-layouts.backend-layout :breadcrumbs="$breadcrumbs">
-    <div class="mb-6">
+    {{-- <div class="mb-6">
         <!-- Blue gradient header bar -->
         <div x-data="{ dropdownOpen: false }" class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg px-6 py-4 flex items-center justify-between mb-4 relative">
             <h2 class="text-xl font-semibold text-white">
@@ -13,11 +13,18 @@
                 @endcan
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <x-card>
         <x-slot name="header">
             {{ __('All Customers') }}
+            <div class="flex items-center gap-2">
+                @can('create', App\Models\Customer::class)
+                    <a href="{{ route('admin.customers.create') }}" class="bg-white text-blue-600 hover:bg-gray-100 rounded-md p-2 flex items-center justify-center transition-colors" title="{{ __('New Customer') }}">
+                        <iconify-icon icon="lucide:user-plus" class="w-5 h-5"></iconify-icon>
+                    </a>
+                @endcan
+            </div>
         </x-slot>
 
         <div class="overflow-x-auto">
@@ -51,10 +58,10 @@
                     @forelse($customers ?? [] as $customer)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                {{ $customer->name }}
+                                {{ $customer->user_name }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ $customer->email }}
+                                {{ $customer->user_email }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                 {{ $customer->phone ?? '-' }}
@@ -66,7 +73,7 @@
                                 {{ $customer->org_no ?? '-' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ $customer->parent->name ?? '-' }}
+                                {{ $customer->parent->user->name ?? '-' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center gap-2">

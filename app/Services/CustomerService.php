@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -17,18 +19,32 @@ class CustomerService
     public function createCustomer(array $data): Customer
     {
         return DB::transaction(function () use ($data) {
+            // 1. Create User record
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'username' => $data['name'], // Use name as username as requested
+            ]);
+
+            // Assign Customer role (if Spatie roles are used)
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('Customer');
+            }
+
             // Determine registration email template
             $regEmail = $this->determineRegistrationEmail($data);
             
-            // Prepare customer data
+            // Prepare customer data (excluding user fields)
             $customerData = $this->prepareCustomerData($data, $regEmail);
+            $customerData['user_id'] = $user->id;
             
             // Create customer
             $customer = Customer::create($customerData);
             
             // Handle parent customer copying
             if (!empty($data['parent_id'])) {
-                $this->copyFromParentCustomer($customer, $data['parent_id']);
+                $this->copyFromParentCustomer($customer, (int) $data['parent_id']);
             } else {
                 // Create default messages for selected services
                 $this->createDefaultMessages($customer->id, $data['services'] ?? []);
@@ -70,7 +86,19 @@ class CustomerService
     public function updateCustomer(Customer $customer, array $data): Customer
     {
         return DB::transaction(function () use ($customer, $data) {
-            // Prepare customer data
+            // 1. Update User record
+            $userData = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ];
+            
+            if (isset($data['password']) && !empty($data['password'])) {
+                $userData['password'] = Hash::make($data['password']);
+            }
+            
+            $customer->user->update($userData);
+
+            // 2. Prepare customer data
             $customerData = $this->prepareCustomerData($data, null, false);
             
             // Update customer
@@ -79,7 +107,7 @@ class CustomerService
             // Handle parent customer copying if changed
             if (isset($data['parent_id']) && $data['parent_id'] != $customer->parent_id) {
                 if (!empty($data['parent_id'])) {
-                    $this->copyFromParentCustomer($customer, $data['parent_id']);
+                    $this->copyFromParentCustomer($customer, (int) $data['parent_id']);
                 }
             }
             
@@ -137,8 +165,6 @@ class CustomerService
     private function prepareCustomerData(array $data, ?string $regEmail = null, bool $isCreate = true): array
     {
         $customerData = [
-            'name' => $data['name'],
-            'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'company' => $data['company'] ?? null,
             'org_no' => $data['org_no'] ?? null,
@@ -162,13 +188,9 @@ class CustomerService
         ];
         
         if ($isCreate) {
-            $customerData['password'] = $data['password'];
             $customerData['reg_email'] = $regEmail;
             $customerData['statuses'] = $this->prepareStatusesString($data['statuses'] ?? []);
         } else {
-            if (isset($data['password']) && !empty($data['password'])) {
-                $customerData['password'] = $data['password'];
-            }
             if (isset($data['statuses'])) {
                 $customerData['statuses'] = $this->prepareStatusesString($data['statuses']);
             }
@@ -252,10 +274,8 @@ class CustomerService
         
         // Copy order forms
         $this->copyOrderForms($customer->id, $parentId);
-        
         // Copy messages
         $this->copyMessages($customer->id, $parentId);
-        
         // Copy customer reports
         $this->copyCustomerReports($customer->id, $parentId);
     }
@@ -495,10 +515,10 @@ class CustomerService
         // Replace placeholders
         $body = $this->replaceEmailPlaceholders(
             $emailTemplate,
-            $customer->name,
+            $customer->user->name,
             $customer->company,
-            $customer->email,
-            $customer->password ?? ''
+            $customer->user->email,
+            $customer->user->password ?? '' // Note: password placeholder might need raw password if available
         );
         
         $subject = "Registration";
@@ -512,18 +532,18 @@ class CustomerService
         // Save email
         $this->saveEmail(
             "Customer",
-            $customer->name,
+            $customer->user->name,
             "N/A",
             'Customer Registration Message',
             $body,
-            $customer->email,
+            $customer->user->email,
             $subject,
             $isWorkingHours ? null : '1' // Delay if outside working hours
         );
         
         // Send immediately if within working hours
         if ($isWorkingHours) {
-            $this->sendMail($body, $customer->email, $customer->name, $subject);
+            $this->sendMail($body, $customer->user->email, $customer->user->name, $subject);
         }
     }
     

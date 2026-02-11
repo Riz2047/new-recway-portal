@@ -19,7 +19,7 @@
 
         <x-card>
             <x-slot name="header">
-                {{ __('Edit Customer') }} - {{ $customer->name }}
+                {{ __('Edit Customer') }} - {{ $customer->user->name }}
             </x-slot>
 
             <div x-show="['edit','billing','status_manager','departments','department_users','orders','emails','messages','invoiced','background_questions','form_builder','reports','additional_customers','reminder_emails','service_cost'].includes(activeTab)" x-cloak class="space-y-6">
@@ -39,7 +39,7 @@
                                 name="name" 
                                 id="name" 
                                 required 
-                                value="{{ old('name', $customer->name) }}"
+                                value="{{ old('name', $customer->user->name) }}"
                                 class="form-control"
                             >
                             @error('name')
@@ -56,10 +56,10 @@
                                 name="email" 
                                 id="email" 
                                 required 
-                                value="{{ old('email', $customer->email) }}"
+                                value="{{ old('email', $customer->user->email) }}"
                                 class="form-control"
                             >
-                            <input type="hidden" name="old_email" value="{{ $customer->email }}">
+                            <input type="hidden" name="old_email" value="{{ $customer->user->email }}">
                             @error('email')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
@@ -169,7 +169,7 @@
                                 <option value="">{{ __('Select Customer') }}</option>
                                 @foreach($parentCustomers as $parent)
                                     <option value="{{ $parent->id }}" {{ old('parent_id', $customer->parent_id) == $parent->id ? 'selected' : '' }}>
-                                        {{ $parent->name }}
+                                        {{ $parent->user->name }}
                                     </option>
                                 @endforeach
                             </select>

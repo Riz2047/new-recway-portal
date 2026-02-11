@@ -128,6 +128,7 @@ class PermissionService
 					'order.create',   // Create-order
 					'order.view',     // View-order
 					'order.update',   // Update-order
+                    'order.delete',   // Delete-order (if applicable)
 				],
 			],
 			[
@@ -141,18 +142,25 @@ class PermissionService
 				'group_name' => 'interviews',
 				'permissions' => [
 					'interviews.view', // View-interviews
+					'interviews.create', // Create-interviews
+					'interviews.update', // Update-interviews
+					'interviews.delete', // Delete-interviews
 				],
 			],
 			[
 				'group_name' => 'emails',
 				'permissions' => [
 					'emails.view', // View-emails
+                    'emails.create', // Create-emails
+                    'emails.update', // Update-emails
+                    'emails.delete', // Delete-emails
 				],
 			],
 			[
 				'group_name' => 'history',
 				'permissions' => [
 					'history.view', // View-history
+                    'history.delete', // Delete-history (if applicable)
 				],
 			],
 			[
@@ -161,9 +169,7 @@ class PermissionService
 					'department.view',   // View-department
 					'department.create', // Create-department
 					'department.update', // Update-department
-					'department_user.view',   // View-department-user
-					'department_user.create', // Create-department-user
-					'department_user.update', // Update-department-user
+                    'department.delete', // Delete-department (if applicable)
 				],
 			],
 			[
@@ -178,6 +184,7 @@ class PermissionService
 					'customer.view',   // view_customer
 					'customer.create', // create_customer
 					'customer.update', // update_customer
+                    'customer.delete', // delete_customer
 				],
 			],
 			[
@@ -187,6 +194,7 @@ class PermissionService
 					'candidate.view_own', // view_own_candidate
 					'candidate.create',   // create_candidate
 					'candidate.update',   // update_candidate
+                    'candidate.delete',   // delete_candidate (if applicable)
 				],
 			],
 			[
@@ -196,6 +204,7 @@ class PermissionService
 					'status.view',   // view_status
 					'status.create', // create_status
 					'status.update', // update_status
+                    'status.delete', // delete_status (if applicable)
 				],
 			],
 			[
@@ -204,6 +213,11 @@ class PermissionService
 					'service.view',
 					'service.create',
 					'service.update',
+                    'service.delete', // delete_service (if applicable)
+                    'service-category.view',
+                    'service-category.create',
+                    'service-category.update',
+                    'service-category.delete', // delete_service-category (if applicable)
 				],
 			],
 			[
@@ -212,6 +226,7 @@ class PermissionService
 					'place.view',
 					'place.create',
 					'place.update',
+                    'place.delete', // delete_place (if applicable)
 				],
 			],
 			[
@@ -219,6 +234,8 @@ class PermissionService
 				'permissions' => [
 					'message.view',
 					'message.update',
+                    'message.delete', // delete_message (if applicable)
+                    'message.create', // create_message (if applicable)
 				],
 			],
 			[
@@ -226,6 +243,8 @@ class PermissionService
 				'permissions' => [
 					'documentation.view',
 					'documentation.update',
+                    'documentation.delete', // delete_documentation (if applicable)
+                    'documentation.create', // create_documentation (if applicable)
 				],
 			],
 			[
@@ -239,13 +258,19 @@ class PermissionService
 			[
 				'group_name' => 'staff',
 				'permissions' => [
-					'staff.change',  // change_staff
+					'staff.view',
+					'staff.create',
+					'staff.update',
+					'staff.delete',
 				],
 			],
 			[
 				'group_name' => 'statistics',
 				'permissions' => [
 					'statistics.view', // view_statistics
+                    'statistics.export', // export_statistics (if applicable)
+                    'statistics.delete', // delete_statistics (if applicable)
+                    'statistics.create', // create_statistics (if applicable)
 				],
 			],
         ];

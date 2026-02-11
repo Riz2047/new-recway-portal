@@ -44,7 +44,7 @@ it('renders user table successfully', function () {
 
 it('searches users by name and email', function () {
     $this->actingAs($this->admin);
-    $user = User::factory()->create(['first_name' => 'John Doe', 'email' => 'john@example.com']);
+    $user = User::factory()->create(['name' => 'John Doe', 'email' => 'john@example.com']);
     Livewire::test(UserDatatable::class)
         ->set('search', 'John')
         ->assertSee('John Doe')
@@ -54,7 +54,7 @@ it('searches users by name and email', function () {
 
 it('filters users by role', function () {
     $this->actingAs($this->admin);
-    $user = User::factory()->create(['first_name' => 'RoleUser']);
+    $user = User::factory()->create(['name' => 'RoleUser']);
     $role = \Spatie\Permission\Models\Role::create(['name' => 'admin']);
     $user->assignRole('admin');
     Livewire::test(UserDatatable::class)

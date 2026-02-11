@@ -21,4 +21,12 @@ class ServiceCategory extends Model
     {
         return $this->hasMany(Status::class, 'status_type');
     }
+
+    /**
+     * Get the service types for this category
+     */
+    public function serviceTypes(): HasMany
+    {
+        return $this->hasMany(ServiceType::class);
+    }
 }

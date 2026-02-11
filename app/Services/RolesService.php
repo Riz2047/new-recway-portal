@@ -237,7 +237,6 @@ class RolesService
 			'dashboard.view',
 			'profile.view', 'profile.edit', 'profile.update',
 			'candidate.view_own',
-			'post.view', 'term.view', 'media.view',
 		];
 		$roles['user'] = $this->createRole('User', $userPermissions);
 
@@ -261,13 +260,13 @@ class RolesService
 			'reviewer.view', 'interviews.view', 'emails.view', 'history.view',
 			// Department (view and manage department-user links)
 			'department.view', 'department.create', 'department.update',
-			'department_user.view', 'department_user.create', 'department_user.update',
 			// Candidate (all scope)
 			'candidate.view_all', 'candidate.view_own', 'candidate.create', 'candidate.update',
 			// Status (full access)
 			'status.view', 'status.change', 'status.create', 'status.update',
 			// Service/Place (full access)
 			'service.view', 'service.create', 'service.update',
+            'service.delete', 'service-category.view', 'service-category.create', 'service-category.update', 'service-category.delete',
 			'place.view', 'place.create', 'place.update',
 			// Message/Documentation (view)
 			'message.view', 'documentation.view',
@@ -323,8 +322,7 @@ class RolesService
                 return [
                     'dashboard.view',
                     'profile.view', 'profile.edit', 'profile.update',
-                    'candidate.view_own',
-                    'post.view', 'term.view', 'media.view',
+                    'candidate.view_own', 'media.view',
                 ];
 
             case 'customer':
@@ -345,7 +343,8 @@ class RolesService
                     'department_user.view', 'department_user.create', 'department_user.update',
                     'candidate.view_all', 'candidate.view_own', 'candidate.create', 'candidate.update',
                     'status.view', 'status.change', 'status.create', 'status.update',
-                    'service.view', 'service.create', 'service.update',
+                    'service.view', 'service.create', 'service.update', 'service.delete',
+                    'service-category.view', 'service-category.create', 'service-category.update', 'service-category.delete',
                     'place.view', 'place.create', 'place.update',
                     'message.view', 'documentation.view',
                     'logs.view_all', 'logs.view_own',

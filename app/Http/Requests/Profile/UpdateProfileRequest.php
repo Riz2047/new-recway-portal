@@ -27,8 +27,7 @@ class UpdateProfileRequest extends FormRequest
         $userId = Auth::id();
 
         return [
-            'first_name' => 'required|string|max:50',
-            'last_name' => 'required|string|max:50',
+            'name' => 'required|string|max:50',
             'email' => 'required|email|max:100|unique:users,email,' . $userId,
             'username' => 'required|string|max:100|unique:users,username,' . $userId,
             'password' => 'nullable|min:6|confirmed',

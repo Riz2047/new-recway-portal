@@ -327,10 +327,10 @@ class StaffController extends Controller
         return User::whereHas('roles', function ($q) use ($allowedRoles) {
             $q->whereIn('name', $allowedRoles);
         })
-        ->select('id', 'first_name', 'last_name', 'email')
+        ->select('id', 'name', 'email')
         ->get()
         ->mapWithKeys(function ($user) {
-            return [$user->id => $user->full_name . ' (' . $user->email . ')'];
+            return [$user->id => $user->name . ' (' . $user->email . ')'];
         })
         ->toArray();
     }

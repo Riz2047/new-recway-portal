@@ -35,9 +35,7 @@ class AuthController extends ApiController
             'token' => $token,
             'user' => [
                 'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'full_name' => $user->full_name,
+                'name' => $user->name,
                 'email' => $user->email,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
@@ -56,9 +54,7 @@ class AuthController extends ApiController
         $user = $request->user();
         return response()->json([
             'id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'full_name' => $user->full_name,
+            'name' => $user->name,
             'email' => $user->email,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,

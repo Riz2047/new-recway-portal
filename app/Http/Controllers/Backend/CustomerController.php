@@ -32,8 +32,10 @@ class CustomerController extends Controller
 
         $this->setBreadcrumbTitle(__('Customers'));
 
-        $customers = Customer::with('parent')
-            ->orderBy('name')
+        $customers = Customer::with(['user', 'parent.user'])
+            ->join('users', 'customers.user_id', '=', 'users.id')
+            ->select('customers.*', 'users.name as user_name', 'users.email as user_email')
+            ->orderBy('users.name')
             ->paginate(50);
 
         return $this->renderViewWithBreadcrumbs('backend.pages.customers.index', [
@@ -74,10 +76,10 @@ class CustomerController extends Controller
             ->get();
 
         // Get parent customers
-        $parentCustomers = Customer::whereNull('parent_id')
-            ->orderBy('name')
-            ->get();
-
+        $parentCustomers = Customer::with('user')
+            // ->whereNull('parent_id')
+            ->get()
+            ->sortBy(fn($c) => $c->user->name);
         // Get permissions (user_permissions table)
         $permissions = collect([]);
         if (Schema::hasTable('user_permissions')) {
@@ -123,7 +125,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:customers,email',
+            'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:7',
             'phone' => 'nullable|string|max:255',
             'company' => 'required|string|max:255',
@@ -202,10 +204,11 @@ class CustomerController extends Controller
             ->get();
 
         // Get parent customers (exclude current customer)
-        $parentCustomers = Customer::whereNull('parent_id')
+        $parentCustomers = Customer::with('user')
+            ->whereNull('parent_id')
             ->where('id', '!=', $customer->id)
-            ->orderBy('name')
-            ->get();
+            ->get()
+            ->sortBy(fn($c) => $c->user->name);
 
         // Get permissions
         $permissions = collect([]);
@@ -285,7 +288,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:customers,email,' . $customer->id,
+            'email' => 'required|email|max:255|unique:users,email,' . $customer->user_id,
             'password' => 'nullable|string|min:7',
             'phone' => 'nullable|string|max:255',
             'company' => 'required|string|max:255',
@@ -318,7 +321,7 @@ class CustomerController extends Controller
         ]);
 
         // Add old email for email update tracking
-        $validated['old_email'] = $customer->email;
+        $validated['old_email'] = $customer->user->email;
 
         try {
             $customer = $this->customerService->updateCustomer($customer, $validated);

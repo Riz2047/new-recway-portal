@@ -12,9 +12,7 @@ class Customer extends Model
     protected $table = 'customers';
     
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'user_id',
         'phone',
         'company',
         'org_no',
@@ -44,10 +42,6 @@ class Customer extends Model
         'send_email_question',
     ];
 
-    protected $hidden = [
-        'password',
-    ];
-
     protected $casts = [
         'interview_template' => 'boolean',
         'send_security_report' => 'boolean',
@@ -62,11 +56,11 @@ class Customer extends Model
     ];
 
     /**
-     * Set password attribute with hashing
+     * Get the user associated with the customer
      */
-    public function setPasswordAttribute($value)
+    public function user(): BelongsTo
     {
-        $this->attributes['password'] = Hash::make($value);
+        return $this->belongsTo(User::class);
     }
 
     /**

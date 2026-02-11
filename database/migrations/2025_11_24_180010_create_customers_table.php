@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
             $table->string('org_no')->nullable();
@@ -47,7 +45,6 @@ return new class extends Migration
             $table->timestamps();
             
             // Indexes
-            $table->index('email');
             $table->index('parent_id');
             $table->index('dep_id');
         });

@@ -14,8 +14,7 @@ pest()->use(RefreshDatabase::class);
 it('has fillable attributes', function () {
     $user = new User();
     expect($user->getFillable())->toEqual([
-        'first_name',
-        'last_name',
+        'name',
         'email',
         'password',
         'username',

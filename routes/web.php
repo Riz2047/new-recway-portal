@@ -15,6 +15,7 @@ use App\Http\Controllers\Backend\RoleController;
 use App\Http\Controllers\Backend\SettingController;
 use App\Http\Controllers\Backend\StaffController;
 use App\Http\Controllers\Backend\ServiceCategoryController;
+use App\Http\Controllers\Backend\ServiceTypeController;
 use App\Http\Controllers\Backend\StaffCategoryController;
 use App\Http\Controllers\Backend\StatusController;
 use App\Http\Controllers\Backend\PlaceController;
@@ -97,6 +98,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
         Route::get('/{status}/edit', [StatusController::class, 'edit'])->name('edit');
         Route::put('/{status}', [StatusController::class, 'update'])->name('update');
         Route::delete('/{status}', [StatusController::class, 'destroy'])->name('destroy');
+    });
+
+    // Service Type Routes
+    Route::prefix('service-types')->name('service-types.')->group(function () {
+        Route::get('/category/{categoryId}', [ServiceTypeController::class, 'index'])->name('index');
+        Route::post('/', [ServiceTypeController::class, 'store'])->name('store');
+        Route::get('/customers', [ServiceTypeController::class, 'getCustomers'])->name('customers');
+        Route::put('/{id}', [ServiceTypeController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ServiceTypeController::class, 'destroy'])->name('destroy');
     });
 
     // Place Routes.

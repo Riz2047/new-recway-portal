@@ -16,8 +16,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'first_name' => 'Super',
-            'last_name' => 'Admin',
+            'name' => 'Super Admin',
             'email' => 'superadmin@example.com',
             'username' => 'superadmin',
             'password' => Hash::make('12345678'),
@@ -25,8 +24,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'first_name' => 'Admin',
-            'last_name' => '',
+            'name' => 'Admin User',
             'email' => 'admin@example.com',
             'username' => 'admin',
             'password' => Hash::make('password'),
@@ -34,8 +32,7 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'first_name' => 'Sub',
-            'last_name' => 'Scriber',
+            'name' => 'Subscriber User',
             'email' => 'subscriber@example.com',
             'username' => 'subscriber',
             'password' => Hash::make('password'),
@@ -43,7 +40,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Run factory to create additional users with unique details.
-        User::factory()->count(5)->create();
-        $this->command->info('Users table seeded with 502 users!');
+        User::factory()->count(1)->create();
+        $this->command->info('Users table seeded!');
     }
 }

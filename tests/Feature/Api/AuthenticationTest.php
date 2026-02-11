@@ -144,8 +144,7 @@ test('authenticated user can get user profile', function () {
     $response->assertStatus(200)
         ->assertJson([
             'id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
+            'name' => $user->name,
             'email' => $user->email,
         ])
         ->assertJsonStructure([

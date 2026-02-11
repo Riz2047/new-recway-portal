@@ -1,7 +1,7 @@
 <x-layouts.backend-layout :breadcrumbs="$breadcrumbs">
-    <div class="mb-6 hidden">
+    <div class="mb-6">
         <!-- Blue gradient header bar -->
-        <div x-data="{ dropdownOpen: false }" class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg px-6 py-4 flex items-center justify-between mb-4 relative">
+        <div x-data="{ dropdownOpen: false }" class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg px-6 py-2 flex items-center justify-between mb-4 relative">
             <h2 class="text-xl font-semibold text-white">
                 {{ __('Statuses') }} - {{ $serviceCategory->name }}
             </h2>

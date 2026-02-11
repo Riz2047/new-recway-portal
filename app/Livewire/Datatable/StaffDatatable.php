@@ -95,7 +95,7 @@ class StaffDatatable extends Datatable
                 'title' => __('Name'),
                 'width' => null,
                 'sortable' => true,
-                'sortBy' => 'first_name',
+                'sortBy' => 'name',
             ],
         ];
 
@@ -165,8 +165,7 @@ class StaffDatatable extends Datatable
             })
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('first_name', 'like', "%{$this->search}%")
-                        ->orWhere('last_name', 'like', "%{$this->search}%")
+                    $q->where('name', 'like', "%{$this->search}%")
                         ->orWhere('email', 'like', "%{$this->search}%");
                 });
             });
@@ -222,7 +221,7 @@ class StaffDatatable extends Datatable
             ->whereHas('roles', function ($q) use ($allowedRoles) {
                 $q->whereIn('name', $allowedRoles);
             })
-            ->select('id', 'first_name', 'last_name', 'email')
+            ->select('id', 'name', 'email')
             ->get();
 
         if ($assignedStaff->isEmpty()) {

@@ -164,7 +164,7 @@
                                 <option value="">{{ __('Select Customer') }}</option>
                                 @foreach($parentCustomers as $parent)
                                     <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>
-                                        {{ $parent->name }}
+                                        {{ $parent->user->name }}
                                     </option>
                                 @endforeach
                             </select>

@@ -125,21 +125,21 @@ class AdminMenuService
             'id' => 'staff-submenu',
             'active' => Route::is('admin.staff.*') || Route::is('admin.staff-category.*'),
             'priority' => 3,
-            'permissions' => ['user.view', 'role.view'],
+            'permissions' => ['staff.view', 'staff.create', 'staff.edit', 'staff.delete'],
             'children' => [
                 [
                     'label' => __('All Staff'),
                     'route' => route('admin.staff.index'),
                     'active' => Route::is('admin.staff.*'),
                     'priority' => 10,
-                    'permissions' => 'user.view',
+                    'permissions' => ['staff.view', 'staff.create', 'staff.edit', 'staff.delete'],
                 ],
                 [
                     'label' => __('Staff Category'),
                     'route' => route('admin.staff-category.index'),
                     'active' => Route::is('admin.staff-category.*'),
                     'priority' => 20,
-                    'permissions' => 'role.view',
+                    'permissions' => ['staff-category.view', 'staff-category.create', 'staff-category.edit', 'staff-category.delete'],
                 ],
             ],
         ]);
@@ -151,7 +151,7 @@ class AdminMenuService
             'active' => Route::is('admin.service-category.*'),
             'id' => 'services',
             'priority' => 4,
-            'permissions' => 'service-category.view',
+              'permissions' => ['service.view', 'service-category.create', 'service-category.edit', 'service-category.delete'],
         ]);
 
         // Statuses dropdown menu with service categories
@@ -164,7 +164,7 @@ class AdminMenuService
                 'route' => route('admin.status.index', $serviceCategory->id),
                 'active' => Route::is('admin.status.*') && (int) request()->route('serviceCategory') === $serviceCategory->id,
                 'priority' => ($index + 1) * 10,
-                'permissions' => 'status.view',
+                'permissions' => ['status.view', 'status.create', 'status.edit', 'status.delete'],
             ];
         }
 
@@ -187,7 +187,7 @@ class AdminMenuService
             'active' => Route::is('admin.place.*'),
             'id' => 'places',
             'priority' => 6,
-            'permissions' => 'place.view',
+            'permissions' => ['place.view', 'place.create', 'place.edit', 'place.delete'],
         ]);
 
         $this->addMenuItem([
@@ -197,7 +197,7 @@ class AdminMenuService
             'active' => Route::is('admin.customers.*'),
             'id' => 'customers',
             'priority' => 7,
-            'permissions' => [], // Allow all authenticated users to see the menu - adjust permissions in the controller
+              'permissions' => 'customer.view',
         ]);
 
         // $this->registerPostTypesInMenu(null);
@@ -209,7 +209,7 @@ class AdminMenuService
             'active' => Route::is('admin.media.*'),
             'id' => 'media',
             'priority' => 35,
-            'permissions' => 'media.view',
+            'permissions' => ['media.view', 'media.create', 'media.edit', 'media.delete'],
         ]);
         // $this->addMenuItem([
         //     'label' => __('Modules'),
@@ -242,7 +242,7 @@ class AdminMenuService
                     'active' => false,
                     'target' => '_blank',
                     'priority' => 20,
-                    'permissions' => 'pulse.view',
+                    'permissions' => ['pulse.view'],
                 ],
             ],
         ], __('More'));
