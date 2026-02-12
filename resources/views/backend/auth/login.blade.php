@@ -15,7 +15,7 @@
       </p>
     </div>
     <div>
-      <form action="{{ route('admin.login.submit') }}" method="POST" x-data="{ loading: false }" @submit="loading = true">
+      <form action="{{ route(request()->segment(1).'.login.submit') }}" method="POST" x-data="{ loading: false }" @submit="loading = true">
         @csrf
         <div class="space-y-5">
           <x-messages />

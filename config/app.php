@@ -219,6 +219,7 @@ return [
         /*
          * Application Service Providers...
          */
+        
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
@@ -231,6 +232,7 @@ return [
         App\Providers\AdminRoutingServiceProvider::class,
         App\Providers\HookServiceProvider::class,
         Barryvdh\Debugbar\ServiceProvider::class,
+        App\Providers\StaffRoutingServiceProvider::class,
     ],
 
     /*

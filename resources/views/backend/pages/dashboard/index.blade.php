@@ -7,7 +7,7 @@
     @endsection
 
     {!! Hook::applyFilters(DashboardFilterHook::DASHBOARD_AFTER_BREADCRUMBS, '') !!}
-
+    
     <div class="grid grid-cols-12 gap-4 md:gap-6">
         <div class="col-span-12 space-y-6">
             <div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-4 md:gap-6">
@@ -18,7 +18,7 @@
                     'label' => __('Users'),
                     'value' => $total_users,
                     'class' => 'bg-white',
-                    'url' => route('admin.users.index'),
+                    'url' => route(panel().'.users.index'),
                     'enable_full_div_click' => true,
                 ])
                 {!! Hook::applyFilters(DashboardFilterHook::DASHBOARD_CARDS_AFTER_USERS, '') !!}
@@ -28,7 +28,7 @@
                     'label' => __('Roles'),
                     'value' => $total_roles,
                     'class' => 'bg-white',
-                    'url' => route('admin.roles.index'),
+                    'url' => route(panel().'.roles.index'),
                     'enable_full_div_click' => true,
                 ])
                 {!! Hook::applyFilters(DashboardFilterHook::DASHBOARD_CARDS_AFTER_ROLES, '') !!}
@@ -38,7 +38,7 @@
                     'label' => __('Permissions'),
                     'value' => $total_permissions,
                     'class' => 'bg-white',
-                    'url' => route('admin.permissions.index'),
+                    'url' => route(panel().'.permissions.index'),
                     'enable_full_div_click' => true,
                 ])
                 {!! Hook::applyFilters(DashboardFilterHook::DASHBOARD_CARDS_AFTER_PERMISSIONS, '') !!}
@@ -48,7 +48,7 @@
                     'label' => __('Translations'),
                     'value' => $languages['total'] . ' / ' . $languages['active'],
                     'class' => 'bg-white',
-                    'url' => route('admin.translations.index'),
+                    'url' => route(panel().'.translations.index'),
                     'enable_full_div_click' => true,
                 ])
                 {!! Hook::applyFilters(DashboardFilterHook::DASHBOARD_CARDS_AFTER_TRANSLATIONS, '') !!}

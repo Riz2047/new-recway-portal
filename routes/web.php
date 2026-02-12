@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 /**
  * Admin routes.
  */
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], function () {
+Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:Admin']], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('roles', RoleController::class);
     Route::delete('roles/delete/bulk-delete', [RoleController::class, 'bulkDelete'])->name('roles.bulk-delete');
@@ -148,6 +148,69 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth']], 
     Route::post('/editor/upload', [App\Http\Controllers\Backend\EditorController::class, 'upload'])->name('editor.upload');
 
     // AI Content Generation Routes.
+    Route::prefix('ai')->name('ai.')->group(function () {
+        Route::get('/providers', [App\Http\Controllers\Backend\AiContentController::class, 'getProviders'])->name('providers');
+        Route::post('/generate-content', [App\Http\Controllers\Backend\AiContentController::class, 'generateContent'])->name('generate-content');
+    });
+
+});
+
+/**
+ * Staff routes (share controllers/views with admin).
+ */
+Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'role:Manager,User,Moderator,Manager with statistics']], function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('roles', RoleController::class);
+    Route::delete('roles/delete/bulk-delete', [RoleController::class, 'bulkDelete'])->name('roles.bulk-delete');
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::get('/permissions/{permission}', [PermissionController::class, 'show'])->name('permissions.show');
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SettingController::class, 'store'])->name('settings.store');
+    Route::get('/translations', [TranslationController::class, 'index'])->name('translations.index');
+    Route::post('/translations', [TranslationController::class, 'update'])->name('translations.update');
+    Route::post('/translations/create', [TranslationController::class, 'create'])->name('translations.create');
+    Route::resource('users', UserController::class);
+    Route::delete('users/delete/bulk-delete', [UserController::class, 'bulkDelete'])->name('users.bulk-delete');
+    Route::get('users/{id}/login-as', [UserLoginAsController::class, 'loginAs'])->name('users.login-as');
+    Route::post('users/switch-back', [UserLoginAsController::class, 'switchBack'])->name('users.switch-back');
+    Route::resource('admins', App\Http\Controllers\Backend\AdminController::class);
+    Route::delete('admins/delete/bulk-delete', [App\Http\Controllers\Backend\AdminController::class, 'bulkDelete'])->name('admins.bulk-delete');
+    Route::resource('staff', App\Http\Controllers\Backend\StaffController::class);
+    Route::delete('staff/delete/bulk-delete', [App\Http\Controllers\Backend\StaffController::class, 'bulkDelete'])->name('staff.bulk-delete');
+    Route::resource('staff-category', App\Http\Controllers\Backend\StaffCategoryController::class);
+    Route::delete('staff-category/delete/bulk-delete', [App\Http\Controllers\Backend\StaffCategoryController::class, 'bulkDelete'])->name('staff-category.bulk-delete');
+    Route::resource('customers', App\Http\Controllers\Backend\CustomerController::class);
+    Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
+    Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
+    Route::resource('service-category', ServiceCategoryController::class);
+    Route::delete('service-category/delete/bulk-delete', [ServiceCategoryController::class, 'bulkDelete'])->name('service-category.bulk-delete');
+    Route::prefix('service-category/{serviceCategory}/status')->name('status.')->group(function () {
+        Route::get('/', [StatusController::class, 'index'])->name('index');
+        Route::get('/create', [StatusController::class, 'create'])->name('create');
+        Route::post('/', [StatusController::class, 'store'])->name('store');
+        Route::get('/{status}/edit', [StatusController::class, 'edit'])->name('edit');
+        Route::put('/{status}', [StatusController::class, 'update'])->name('update');
+        Route::delete('/{status}', [StatusController::class, 'destroy'])->name('destroy');
+    });
+    Route::prefix('service-types')->name('service-types.')->group(function () {
+        Route::get('/category/{categoryId}', [ServiceTypeController::class, 'index'])->name('index');
+        Route::post('/', [ServiceTypeController::class, 'store'])->name('store');
+        Route::get('/customers', [ServiceTypeController::class, 'getCustomers'])->name('customers');
+        Route::put('/{id}', [ServiceTypeController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ServiceTypeController::class, 'destroy'])->name('destroy');
+    });
+    Route::resource('place', PlaceController::class);
+    Route::delete('place/delete/bulk-delete', [PlaceController::class, 'bulkDelete'])->name('place.bulk-delete');
+    Route::get('/action-log', [ActionLogController::class, 'index'])->name('actionlog.index');
+    Route::prefix('media')->name('media.')->group(function () {
+        Route::get('/', [MediaController::class, 'index'])->name('index');
+        Route::get('/api', [MediaController::class, 'api'])->name('api');
+        Route::post('/', [MediaController::class, 'store'])->name('store')->middleware('check.upload.limits');
+        Route::get('/upload-limits', [MediaController::class, 'getUploadLimits'])->name('upload-limits');
+        Route::delete('/{id}', [MediaController::class, 'destroy'])->name('destroy');
+        Route::delete('/', [MediaController::class, 'bulkDelete'])->name('bulk-delete');
+    });
+    Route::post('/editor/upload', [App\Http\Controllers\Backend\EditorController::class, 'upload'])->name('editor.upload');
     Route::prefix('ai')->name('ai.')->group(function () {
         Route::get('/providers', [App\Http\Controllers\Backend\AiContentController::class, 'getProviders'])->name('providers');
         Route::post('/generate-content', [App\Http\Controllers\Backend\AiContentController::class, 'generateContent'])->name('generate-content');
