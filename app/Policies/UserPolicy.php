@@ -13,7 +13,7 @@ class UserPolicy extends BasePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->checkPermission($user, 'user.view');
+        return $this->checkPermission($user, 'user.view') || $this->checkPermission($user, 'staff.view');
     }
 
     /**
@@ -26,7 +26,7 @@ class UserPolicy extends BasePolicy
             return true;
         }
 
-        return $this->checkPermission($user, 'user.view');
+        return $this->checkPermission($user, 'user.view') || $this->checkPermission($user, 'staff.view');
     }
 
     /**
@@ -34,7 +34,7 @@ class UserPolicy extends BasePolicy
      */
     public function create(User $user): bool
     {
-        return $this->checkPermission($user, 'user.create');
+        return $this->checkPermission($user, 'user.create') || $this->checkPermission($user, 'staff.create');
     }
 
     /**
@@ -47,7 +47,7 @@ class UserPolicy extends BasePolicy
             return false;
         }
 
-        return $this->checkPermission($user, 'user.edit');
+        return $this->checkPermission($user, 'user.edit') || $this->checkPermission($user, 'staff.update');
     }
 
     /**
@@ -65,7 +65,7 @@ class UserPolicy extends BasePolicy
             return false;
         }
 
-        return $this->checkPermission($user, 'user.delete');
+        return $this->checkPermission($user, 'user.delete') || $this->checkPermission($user, 'staff.delete');
     }
 
     /**
@@ -89,7 +89,7 @@ class UserPolicy extends BasePolicy
      */
     public function bulkDelete(User $user): bool
     {
-        return $this->checkPermission($user, 'user.delete');
+        return $this->checkPermission($user, 'user.delete') || $this->checkPermission($user, 'staff.delete');
     }
 
     /**

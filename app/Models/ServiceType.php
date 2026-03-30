@@ -15,6 +15,9 @@ class ServiceType extends Model
         'name',
         'price',
         'description',
+                'place',
+                'country',
+                'delivery_days',
     ];
 
     /**
@@ -30,6 +33,6 @@ class ServiceType extends Model
      */
     public function customers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'service_type_user', 'service_type_id', 'user_id');
+        return $this->belongsToMany(Customer::class, 'service_type_user', 'service_type_id', 'cus_id')->withTimestamps();
     }
 }

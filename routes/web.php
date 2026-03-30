@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Backend\ActionLogController;
 use App\Http\Controllers\Backend\Auth\ScreenshotGeneratorLoginController;
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\EmailTemplateController;
 use App\Http\Controllers\Backend\LocaleController;
 use App\Http\Controllers\Backend\MediaController;
 use App\Http\Controllers\Backend\ModuleController;
@@ -13,10 +14,8 @@ use App\Http\Controllers\Backend\PostController;
 use App\Http\Controllers\Backend\ProfileController;
 use App\Http\Controllers\Backend\RoleController;
 use App\Http\Controllers\Backend\SettingController;
-use App\Http\Controllers\Backend\StaffController;
 use App\Http\Controllers\Backend\ServiceCategoryController;
 use App\Http\Controllers\Backend\ServiceTypeController;
-use App\Http\Controllers\Backend\StaffCategoryController;
 use App\Http\Controllers\Backend\StatusController;
 use App\Http\Controllers\Backend\PlaceController;
 use App\Http\Controllers\Backend\TermController;
@@ -74,7 +73,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::delete('admins/delete/bulk-delete', [App\Http\Controllers\Backend\AdminController::class, 'bulkDelete'])->name('admins.bulk-delete');
 
     // Staff Routes.
-    Route::resource('staff', App\Http\Controllers\Backend\StaffController::class);
+    Route::resource('staff', App\Http\Controllers\Backend\StaffController::class)->except(['show']);
     Route::delete('staff/delete/bulk-delete', [App\Http\Controllers\Backend\StaffController::class, 'bulkDelete'])->name('staff.bulk-delete');
 
     // Staff Category Routes.
@@ -85,6 +84,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::resource('customers', App\Http\Controllers\Backend\CustomerController::class);
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
+    Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');
 
     // Service Category Routes.
     Route::resource('service-category', ServiceCategoryController::class);
@@ -112,6 +112,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     // Place Routes.
     Route::resource('place', PlaceController::class);
     Route::delete('place/delete/bulk-delete', [PlaceController::class, 'bulkDelete'])->name('place.bulk-delete');
+
+    Route::resource('email-templates', EmailTemplateController::class)->except(['show']);
 
     // Action Log Routes.
     Route::get('/action-log', [ActionLogController::class, 'index'])->name('actionlog.index');
@@ -175,13 +177,14 @@ Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'r
     Route::post('users/switch-back', [UserLoginAsController::class, 'switchBack'])->name('users.switch-back');
     Route::resource('admins', App\Http\Controllers\Backend\AdminController::class);
     Route::delete('admins/delete/bulk-delete', [App\Http\Controllers\Backend\AdminController::class, 'bulkDelete'])->name('admins.bulk-delete');
-    Route::resource('staff', App\Http\Controllers\Backend\StaffController::class);
+    Route::resource('staff', App\Http\Controllers\Backend\StaffController::class)->except(['show']);
     Route::delete('staff/delete/bulk-delete', [App\Http\Controllers\Backend\StaffController::class, 'bulkDelete'])->name('staff.bulk-delete');
     Route::resource('staff-category', App\Http\Controllers\Backend\StaffCategoryController::class);
     Route::delete('staff-category/delete/bulk-delete', [App\Http\Controllers\Backend\StaffCategoryController::class, 'bulkDelete'])->name('staff-category.bulk-delete');
     Route::resource('customers', App\Http\Controllers\Backend\CustomerController::class);
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
+    Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');
     Route::resource('service-category', ServiceCategoryController::class);
     Route::delete('service-category/delete/bulk-delete', [ServiceCategoryController::class, 'bulkDelete'])->name('service-category.bulk-delete');
     Route::prefix('service-category/{serviceCategory}/status')->name('status.')->group(function () {
@@ -201,6 +204,9 @@ Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'r
     });
     Route::resource('place', PlaceController::class);
     Route::delete('place/delete/bulk-delete', [PlaceController::class, 'bulkDelete'])->name('place.bulk-delete');
+
+    Route::resource('email-templates', EmailTemplateController::class)->except(['show']);
+
     Route::get('/action-log', [ActionLogController::class, 'index'])->name('actionlog.index');
     Route::prefix('media')->name('media.')->group(function () {
         Route::get('/', [MediaController::class, 'index'])->name('index');

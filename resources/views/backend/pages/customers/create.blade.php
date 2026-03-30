@@ -322,6 +322,16 @@
                                 <span>{{ __('Timrå Interview Template') }}</span>
                             </label>
 
+														<label class="flex items-center gap-2">
+															<input 
+																type="checkbox" 
+																name="ellevio_report" 
+																value="1" 
+																id="ellevio_report"
+																{{ old('ellevio_report') ? 'checked' : '' }}
+															>
+															<span>{{ __('Ellevio Interview Template') }}</span>
+														</label>
                             <div 
                                 x-data="{ showCombine: {{ old('combine_bk_and_security') ? 'true' : 'false' }} }"
                             >
@@ -354,9 +364,9 @@
                                             style="min-height: 100px;"
                                         >
                                             @if(isset($services))
-                                                @foreach($services->where('service_cat_id', 3) as $service)
+                                                @foreach($services->where('service_category_id', 2) as $service)
                                                     <option value="{{ $service->id }}" {{ old('combine_bk_and_security') && in_array($service->id, old('combine_bk_and_security', [])) ? 'selected' : '' }}>
-                                                        {{ $service->title }}
+                                                        {{ $service->name }}
                                                     </option>
                                                 @endforeach
                                             @endif
@@ -393,9 +403,9 @@
                                         >
                                             <option value="">{{ __('Select Interview service') }}</option>
                                             @if(isset($services))
-                                                @foreach($services->where('service_cat_id', 1) as $service)
+                                                @foreach($services->where('service_category_id', 1) as $service)
                                                     <option value="{{ $service->id }}" {{ old('combine_interview_service') == $service->id ? 'selected' : '' }}>
-                                                        {{ $service->title }}
+                                                        {{ $service->name }}
                                                     </option>
                                                 @endforeach
                                             @endif
@@ -628,11 +638,11 @@
                                                         name="services[]" 
                                                         value="{{ $service->id }}"
                                                         id="service_{{ $service->id }}"
-                                                        {{ $service->service_cat_id == 1 ? 'checked' : '' }}
+                                                        {{ $service->service_category_id == 1 ? 'checked' : '' }}
                                                         {{ old('services') && in_array($service->id, old('services')) ? 'checked' : '' }}
                                                     >
                                                     <label class="form-check-label form-label" for="service_{{ $service->id }}">
-                                                        {{ $service->title }}
+                                                        {{ $service->name }}
                                                     </label>
                                                 </div>
                                             @endforeach
@@ -730,7 +740,7 @@
                     // Update services
                     if (data.services && data.services.length > 0) {
                         document.querySelectorAll('.service_checkbox').forEach(checkbox => {
-                            checkbox.checked = data.services.includes(checkbox.value);
+                            checkbox.checked = data.services.includes(parseInt(checkbox.value, 10));
                         });
                     }
 

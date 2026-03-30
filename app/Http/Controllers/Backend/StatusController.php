@@ -7,12 +7,11 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceCategory;
 use App\Models\Status;
-use App\Models\Interview;
+use App\Models\ServiceType;
 use Illuminate\Contracts\Support\Renderable;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class StatusController extends Controller
 {
@@ -22,20 +21,15 @@ class StatusController extends Controller
     public function index(int $serviceCategory): Renderable
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
-        
+
         $this->authorize('viewAny', Status::class);
-        
+
         $this->setBreadcrumbTitle(__('Statuses'))
             ->addBreadcrumbItem(__('Services'), route('admin.service-category.index'))
             ->addBreadcrumbItem($serviceCategoryModel->name, route('admin.service-category.edit', $serviceCategoryModel->id));
 
-        $statuses = Status::where('status_type', $serviceCategoryModel->id)
-            ->orderBy('status')
-            ->get();
-
         return $this->renderViewWithBreadcrumbs('backend.pages.status.index', [
             'serviceCategory' => $serviceCategoryModel,
-            'statuses' => $statuses,
         ]);
     }
 
@@ -45,28 +39,28 @@ class StatusController extends Controller
     public function create(int $serviceCategory): Renderable
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
-        
+
         $this->authorize('create', Status::class);
-        
+
         $this->setBreadcrumbTitle(__('New Status'))
             ->addBreadcrumbItem(__('Services'), route('admin.service-category.index'))
             ->addBreadcrumbItem($serviceCategoryModel->name, route('admin.service-category.edit', $serviceCategoryModel->id))
             ->addBreadcrumbItem(__('Statuses'), route('admin.status.index', $serviceCategoryModel->id));
 
-        // Get interviews/services for this service category (if table exists)
-        $interviews = collect([]);
+        // Get service types for this service category (if table exists)
+        $serviceTypesModel = collect([]);
         try {
-            if (\Schema::hasTable('interviews')) {
-                $interviews = Interview::where('service_cat_id', $serviceCategoryModel->id)->get();
+            if (Schema::hasTable('service_types')) {
+                $serviceTypes = ServiceType::where('service_category_id', $serviceCategoryModel->id)->get();
+                $serviceTypesModel = $serviceTypes;
             }
         } catch (\Exception $e) {
             // Table doesn't exist, use empty collection
-            $interviews = collect([]);
+            $serviceTypesModel = collect([]);
         }
-
         return $this->renderViewWithBreadcrumbs('backend.pages.status.create', [
             'serviceCategory' => $serviceCategoryModel,
-            'interviews' => $interviews,
+            'serviceTypes' => $serviceTypesModel,
         ]);
     }
 
@@ -76,7 +70,6 @@ class StatusController extends Controller
     public function store(Request $request, int $serviceCategory): RedirectResponse
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
-        
         $this->authorize('create', Status::class);
 
         $rules = [
@@ -90,12 +83,12 @@ class StatusController extends Controller
             'message' => 'nullable|string',
             'msg_col' => 'nullable|string|max:255',
         ];
-        
-        // Only validate services if interviews table exists
-        if (Schema::hasTable('interviews')) {
-            $rules['services.*'] = 'exists:interviews,id';
+
+        // Only validate services if service_types table exists
+        if (Schema::hasTable('service_types')) {
+            $rules['services.*'] = 'exists:service_types,id';
         }
-        
+
         $validated = $request->validate($rules);
 
         $status = Status::create([
@@ -108,18 +101,16 @@ class StatusController extends Controller
             'status_type' => $serviceCategoryModel->id,
         ]);
 
-        // Attach services/interviews if provided and table exists
-        if (!empty($validated['services']) && Schema::hasTable('interviews')) {
-            foreach ($validated['services'] as $serviceId) {
-                try {
-                    $status->services()->attach($serviceId, [
-                        'msg_col' => $validated['msg_col'] ?? null,
-                    ]);
-                } catch (\Exception $e) {
-                    // Skip if attachment fails (e.g., interview doesn't exist)
-                    continue;
-                }
-            }
+        // Sync selected service types into the status_services pivot table.
+        if (! empty($validated['services']) && Schema::hasTable('service_types') && Schema::hasTable('status_services')) {
+            $serviceTypeIds = ServiceType::query()
+                ->whereIn('id', $validated['services'])
+                ->pluck('id')
+                ->all();
+
+            $status->services()->syncWithPivotValues($serviceTypeIds, [
+                'msg_col' => $validated['msg_col'] ?? null,
+            ]);
         }
 
         session()->flash('success', __('Status has been created.'));
@@ -134,14 +125,14 @@ class StatusController extends Controller
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
         $statusModel = Status::findOrFail($status);
-        
+
         // Ensure status belongs to this service category
         if ($statusModel->status_type !== $serviceCategoryModel->id) {
             abort(404);
         }
-        
+
         $this->authorize('update', $statusModel);
-        
+
         $this->setBreadcrumbTitle(__('Edit Status'))
             ->addBreadcrumbItem(__('Services'), route('admin.service-category.index'))
             ->addBreadcrumbItem($serviceCategoryModel->name, route('admin.service-category.edit', $serviceCategoryModel->id))
@@ -160,12 +151,12 @@ class StatusController extends Controller
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
         $statusModel = Status::findOrFail($status);
-        
+
         // Ensure status belongs to this service category
         if ($statusModel->status_type !== $serviceCategoryModel->id) {
             abort(404);
         }
-        
+
         $this->authorize('update', $statusModel);
 
         $validated = $request->validate([
@@ -191,12 +182,12 @@ class StatusController extends Controller
     {
         $serviceCategoryModel = ServiceCategory::findOrFail($serviceCategory);
         $statusModel = Status::findOrFail($status);
-        
+
         // Ensure status belongs to this service category
         if ($statusModel->status_type !== $serviceCategoryModel->id) {
             abort(404);
         }
-        
+
         $this->authorize('delete', $statusModel);
 
         $statusModel->delete();

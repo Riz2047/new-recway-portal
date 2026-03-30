@@ -7,10 +7,11 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\ServiceCategory;
+use App\Models\ServiceType;
 use App\Models\Status;
-use App\Models\Interview;
 use App\Services\CustomerService;
 use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,11 +54,11 @@ class CustomerController extends Controller
         $this->setBreadcrumbTitle(__('New Customer'))
             ->addBreadcrumbItem(__('Customers'), route('admin.customers.index'));
 
-        // Get all services/interviews
+        // Get all services/service_types
         $services = collect([]);
-        if (Schema::hasTable('interviews')) {
-            $services = Interview::orderBy('title')->get();
-    }
+        if (Schema::hasTable('service_types')) {
+            $services = ServiceType::orderBy('name')->get();
+        }
 
         // Get service categories
         $serviceCategories = ServiceCategory::orderBy('name')->get();
@@ -79,7 +80,7 @@ class CustomerController extends Controller
         $parentCustomers = Customer::with('user')
             // ->whereNull('parent_id')
             ->get()
-            ->sortBy(fn($c) => $c->user->name);
+            ->sortBy(fn ($c) => $c->user->name);
         // Get permissions (user_permissions table)
         $permissions = collect([]);
         if (Schema::hasTable('user_permissions')) {
@@ -122,7 +123,6 @@ class CustomerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Customer::class);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
@@ -134,13 +134,17 @@ class CustomerController extends Controller
             'parent_id' => 'nullable|exists:customers,id',
             'cus_department' => 'nullable|integer',
             'interview_template' => 'nullable|boolean',
+                        'interview_upload_allowed' => 'nullable|boolean',
             'send_security_report' => 'nullable|boolean',
             'send_email' => 'nullable|boolean',
             'combine_bk_and_security' => 'nullable|array',
-            'combine_bk_and_security.*' => 'exists:interviews,id',
+            'combine_bk_and_security.*' => 'exists:service_types,id',
             'timra_report' => 'nullable|boolean',
+                        'ellevio_report' => 'nullable|boolean',
+                        'send_email_question' => 'nullable|boolean',
             'combine_status' => 'nullable|array',
             'combine_status.*' => 'exists:statuses,id',
+            'combine_interview_service' => 'nullable|exists:service_types,id',
             'invoice_period' => 'nullable|in:day,week,month',
             'last_invoice_sent' => 'nullable|date',
             'changed_registration_email' => 'nullable|string',
@@ -151,7 +155,7 @@ class CustomerController extends Controller
             'statuses' => 'nullable|array',
             'statuses.*' => 'exists:statuses,id',
             'services' => 'nullable|array',
-            'services.*' => 'exists:interviews,id',
+            'services.*' => 'exists:service_types,id',
             'permissions' => 'nullable|array',
             'permissions.*' => 'integer',
         ]);
@@ -183,8 +187,8 @@ class CustomerController extends Controller
 
         // Get all services/interviews
         $services = collect([]);
-        if (Schema::hasTable('interviews')) {
-            $services = Interview::orderBy('title')->get();
+        if (Schema::hasTable('service_types')) {
+            $services = ServiceType::orderBy('name')->get();
         }
 
         // Get service categories
@@ -208,7 +212,7 @@ class CustomerController extends Controller
             ->whereNull('parent_id')
             ->where('id', '!=', $customer->id)
             ->get()
-            ->sortBy(fn($c) => $c->user->name);
+            ->sortBy(fn ($c) => $c->user->name);
 
         // Get permissions
         $permissions = collect([]);
@@ -220,7 +224,7 @@ class CustomerController extends Controller
         }
 
         // Get customer's selected services
-        $customerServices = $customer->services()->pluck('service_id')->toArray();
+        $customerServices = $customer->serviceTypes()->pluck('service_types.id')->toArray();
 
         // Get customer's selected permissions
         $customerPermissions = [];
@@ -234,9 +238,9 @@ class CustomerController extends Controller
 
         // Get customer's selected statuses
         $customerStatuses = [];
-        if (!empty($customer->statuses)) {
+        if (! empty($customer->statuses)) {
             $customerStatuses = explode(',', $customer->statuses);
-    }
+        }
 
         // Get departments
         $departments = collect([]);
@@ -297,11 +301,15 @@ class CustomerController extends Controller
             'parent_id' => 'nullable|exists:customers,id',
             'cus_department' => 'nullable|integer',
             'interview_template' => 'nullable|boolean',
+                        'interview_upload_allowed' => 'nullable|boolean',
             'send_security_report' => 'nullable|boolean',
             'send_email' => 'nullable|boolean',
             'combine_bk_and_security' => 'nullable|array',
-            'combine_bk_and_security.*' => 'exists:interviews,id',
+            'combine_bk_and_security.*' => 'exists:service_types,id',
+            'combine_interview_service' => 'nullable|exists:service_types,id',
             'timra_report' => 'nullable|boolean',
+            'ellevio_report' => 'nullable|boolean',
+            'send_email_question' => 'nullable|boolean',
             'combine_status' => 'nullable|array',
             'combine_status.*' => 'exists:statuses,id',
             'invoice_period' => 'nullable|in:day,week,month',
@@ -314,7 +322,7 @@ class CustomerController extends Controller
             'statuses' => 'nullable|array',
             'statuses.*' => 'exists:statuses,id',
             'services' => 'nullable|array',
-            'services.*' => 'exists:interviews,id',
+            'services.*' => 'exists:service_types,id',
             'permissions' => 'nullable|array',
             'permissions.*' => 'integer',
             'old_email' => 'nullable|string',
@@ -347,8 +355,8 @@ class CustomerController extends Controller
 
         try {
             // Delete related records first
-            if (Schema::hasTable('customer_services')) {
-                DB::table('customer_services')->where('cus_id', $customer->id)->delete();
+            if (Schema::hasTable('service_type_user')) {
+                DB::table('service_type_user')->where('cus_id', $customer->id)->delete();
             }
             if (Schema::hasTable('user_allowed_permissions')) {
                 DB::table('user_allowed_permissions')
@@ -414,16 +422,16 @@ class CustomerController extends Controller
 
         $parent = Customer::find($parentId);
 
-        if (!$parent) {
+        if (! $parent) {
             return response()->json(['success' => false]);
         }
 
         // Get parent's services
         $parentServices = [];
-        if (Schema::hasTable('customer_services')) {
-            $parentServices = DB::table('customer_services')
-                ->where('cus_id', $parentId)
-                ->pluck('service_id')
+        if (Schema::hasTable('service_type_user')) {
+            $parentServices = DB::table('service_type_user')
+                ->where('cus_id', $parent->id)
+                ->pluck('service_type_id')
                 ->toArray();
         }
 
@@ -439,7 +447,7 @@ class CustomerController extends Controller
 
         // Get parent's statuses
         $parentStatuses = [];
-        if (!empty($parent->statuses)) {
+        if (! empty($parent->statuses)) {
             $parentStatuses = explode(',', $parent->statuses);
         }
 
@@ -459,9 +467,12 @@ class CustomerController extends Controller
                 'interview_upload_allowed' => $parent->interview_upload_allowed,
                 'statuses' => $parent->statuses,
                 'combine_bk_and_security' => $parent->combine_bk_and_security,
+                'combine_interview_service' => $parent->combine_interview_service,
                 'combine_status' => $parent->combine_status,
                 'sent_email' => $parent->sent_email,
                 'timra_report' => $parent->timra_report,
+                'ellevio_report' => $parent->ellevio_report,
+                'send_email_question' => $parent->send_email_question,
             ],
             'services' => $parentServices,
             'permissions' => $parentPermissions,
@@ -469,4 +480,82 @@ class CustomerController extends Controller
             'departments' => $departments,
         ]);
     }
+
+    // public function getTabData(Request $request, int $id): JsonResponse
+    // {
+    //     $customer = Customer::with('user')->findOrFail($id);
+    //     $this->authorize('update', $customer);
+
+    //     $tab = (string) $request->query('tab', '');
+    //     if (! in_array($tab, ['status_manager', 'billing', 'messages'], true)) {
+    //         return response()->json(['success' => false, 'message' => __('Invalid tab requested.')], 422);
+    //     }
+
+    //     if ($tab === 'billing') {
+    //         $billingDetails = null;
+    //         if (Schema::hasTable('standard_billing_details')) {
+    //             $billingDetails = DB::table('standard_billing_details')
+    //                 ->where('cus_id', $customer->id)
+    //                 ->first();
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'html' => view('backend.pages.customers.partials.billing', [
+    //                 'billingDetails' => $billingDetails,
+    //             ])->render(),
+    //         ]);
+    //     }
+
+    //     if ($tab === 'status_manager') {
+    //         $statusIds = ! empty($customer->statuses)
+    //             ? array_values(array_filter(array_map('intval', explode(',', (string) $customer->statuses))))
+    //             : [];
+
+    //         $statuses = empty($statusIds)
+    //             ? collect([])
+    //             : Status::query()
+    //                 ->whereIn('id', $statusIds)
+    //                 ->orderBy('status')
+    //                 ->get(['id', 'status', 'status_sv', 'status_type', 'variable']);
+
+    //         $allowedEmailStatusIds = $customer->allowed_email_status_ids ?? [];
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'html' => view('backend.pages.customers.partials.status-manager', [
+    //                 'statuses' => $statuses,
+    //                 'allowedEmailStatusIds' => $allowedEmailStatusIds,
+    //             ])->render(),
+    //         ]);
+    //     }
+
+    //     $messageServiceColumn = Schema::hasColumn('messages', 'servicetype_id') ? 'servicetype_id' : 'interview_id';
+    //     $messages = collect([]);
+
+    //     if (Schema::hasTable('messages')) {
+    //         $messages = DB::table('messages as m')
+    //             ->leftJoin('service_types as st', "m.{$messageServiceColumn}", '=', 'st.id')
+    //             ->where('m.cus_id', $customer->id)
+    //             ->select([
+    //                 'm.id',
+    //                 "m.{$messageServiceColumn} as service_type_id",
+    //                 'st.name as service_name',
+    //                 'm.cus_msg',
+    //                 'm.can_msg',
+    //                 'm.admin_msg',
+    //                 'm.pending_msg',
+    //             ])
+    //             ->orderBy('st.name')
+    //             ->limit(200)
+    //             ->get();
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'html' => view('backend.pages.customers.partials.messages', [
+    //             'messages' => $messages,
+    //         ])->render(),
+    //     ]);
+    // }
 }

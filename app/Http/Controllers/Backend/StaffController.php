@@ -43,8 +43,10 @@ class StaffController extends Controller
     {
         $this->authorize('create', User::class);
 
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+
         $this->setBreadcrumbTitle(__('New Staff'))
-            ->addBreadcrumbItem(__('All Staff'), route('admin.staff.index'));
+            ->addBreadcrumbItem(__('All Staff'), route($prefix . 'staff.index'));
 
         // Get only staff roles (exclude Admin and Customer)
         $staffRoles = $this->getStaffRoles();
@@ -65,7 +67,7 @@ class StaffController extends Controller
         $this->authorize('create', User::class);
 
         $validated = $request->validated();
-        
+
         // Merge metadata fields from request (these are not in validation rules)
         $validated['phone'] = $request->input('phone', '');
         $validated['parent_staff_members'] = $request->input('parent_staff_members', []);
@@ -78,14 +80,14 @@ class StaffController extends Controller
         );
 
         // Ensure user has at least one staff role
-        if (!isset($data['roles']) || empty($data['roles'])) {
+        if (! isset($data['roles']) || empty($data['roles'])) {
             session()->flash('error', __('Staff must have at least one staff role assigned.'));
             return back();
         }
 
         // Validate that only staff roles are assigned
         $staffRoleNames = $this->getStaffRoleNames();
-        $data['roles'] = array_filter($data['roles'], fn($role) => in_array($role, $staffRoleNames));
+        $data['roles'] = array_filter($data['roles'], fn ($role) => in_array($role, $staffRoleNames));
 
         if (empty($data['roles'])) {
             session()->flash('error', __('Only staff roles can be assigned to staff members.'));
@@ -102,7 +104,8 @@ class StaffController extends Controller
 
         session()->flash('success', __('Staff has been created.'));
 
-        return redirect()->route('admin.staff.index');
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+        return redirect()->route($prefix . 'staff.index');
     }
 
     public function edit(int $id): Renderable
@@ -110,15 +113,18 @@ class StaffController extends Controller
         $user = User::with('avatar')->findOrFail($id);
 
         // Ensure user is staff (not Admin or Customer)
-        if (!$this->isStaffUser($user)) {
+        if (! $this->isStaffUser($user)) {
             session()->flash('error', __('This user is not a staff member.'));
-            return redirect()->route('admin.staff.index');
+            $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+            return redirect()->route($prefix . 'staff.index');
         }
 
         $this->authorize('update', $user);
 
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+
         $this->setBreadcrumbTitle(__('Edit Staff'))
-            ->addBreadcrumbItem(__('All Staff'), route('admin.staff.index'));
+            ->addBreadcrumbItem(__('All Staff'), route($prefix . 'staff.index'));
 
         // Get only staff roles
         $staffRoles = $this->getStaffRoles();
@@ -145,7 +151,7 @@ class StaffController extends Controller
         $user = User::findOrFail($id);
 
         // Ensure user is staff
-        if (!$this->isStaffUser($user)) {
+        if (! $this->isStaffUser($user)) {
             session()->flash('error', __('This user is not a staff member.'));
             return redirect()->route('admin.staff.index');
         }
@@ -153,7 +159,7 @@ class StaffController extends Controller
         $this->authorize('update', $user);
 
         $validated = $request->validated();
-        
+
         // Merge metadata fields from request (these are not in validation rules)
         $validated['phone'] = $request->input('phone', '');
         $validated['parent_staff_members'] = $request->input('parent_staff_members', []);
@@ -168,7 +174,7 @@ class StaffController extends Controller
         // Validate that only staff roles are assigned
         if (isset($data['roles']) && is_array($data['roles'])) {
             $staffRoleNames = $this->getStaffRoleNames();
-            $data['roles'] = array_filter($data['roles'], fn($role) => in_array($role, $staffRoleNames));
+            $data['roles'] = array_filter($data['roles'], fn ($role) => in_array($role, $staffRoleNames));
 
             if (empty($data['roles'])) {
                 session()->flash('error', __('Staff must have at least one staff role assigned.'));
@@ -193,10 +199,12 @@ class StaffController extends Controller
     {
         $user = $this->userService->getUserById($id);
 
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+
         // Ensure user is staff
-        if (!$this->isStaffUser($user)) {
+        if (! $this->isStaffUser($user)) {
             session()->flash('error', __('This user is not a staff member.'));
-            return redirect()->route('admin.staff.index');
+            return redirect()->route($prefix . 'staff.index');
         }
 
         // Check if user is trying to delete themselves.
@@ -232,8 +240,10 @@ class StaffController extends Controller
 
         $ids = $request->validated('ids');
 
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+
         if (empty($ids)) {
-            return redirect()->route('admin.staff.index')
+            return redirect()->route($prefix . 'staff.index')
                 ->with('error', __('No staff selected for deletion'));
         }
 
@@ -244,7 +254,7 @@ class StaffController extends Controller
 
             // If no users left to delete after filtering out current user.
             if (empty($ids)) {
-                return redirect()->route('admin.staff.index')
+                return redirect()->route($prefix . 'staff.index')
                     ->with('error', __('No staff were deleted.'));
             }
         }
@@ -279,7 +289,7 @@ class StaffController extends Controller
             session()->flash('error', __('No staff were deleted. Selected staff may include protected accounts.'));
         }
 
-        return redirect()->route('admin.staff.index');
+        return redirect()->route($prefix . 'staff.index');
     }
 
     /**
@@ -323,7 +333,7 @@ class StaffController extends Controller
     private function getAllStaffForDropdown(): array
     {
         $allowedRoles = ['Manager', 'Manager with statistics', 'User', 'Moderator'];
-        
+
         return User::whereHas('roles', function ($q) use ($allowedRoles) {
             $q->whereIn('name', $allowedRoles);
         })
@@ -335,5 +345,3 @@ class StaffController extends Controller
         ->toArray();
     }
 }
-
-

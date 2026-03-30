@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      */
@@ -26,24 +25,24 @@ return new class extends Migration
             $table->boolean('interview_template')->default(false);
             $table->boolean('send_security_report')->default(false);
             $table->boolean('sent_email')->default(false);
-            $table->text('combine_bk_and_security')->nullable(); // Comma-separated service IDs or '0'
             $table->boolean('timra_report')->default(false);
-            $table->text('combine_status')->nullable(); // Comma-separated status IDs
+            $table->boolean('interview_upload_allowed')->default(false);
+            $table->boolean('ellevio_report')->default(false);
+            $table->text('combine_bk_and_security')->nullable(); // Comma-separated service IDs or '0'
+            $table->text('combine_status')->nullable();
+            $table->text('combine_interview_service')->nullable();
             $table->enum('invoice_period', ['day', 'week', 'month'])->default('month');
             $table->date('last_invoice_sent')->nullable();
             $table->string('client_wish')->nullable();
             $table->text('groups')->nullable(); // Comma-separated group IDs
-            $table->boolean('interview_upload_allowed')->default(false);
-            $table->boolean('interviewed')->default(false);
             $table->text('remainder_email_template')->nullable();
             $table->boolean('bk_interviewed')->default(false);
             $table->text('bk_remainder_email_template')->nullable();
             $table->integer('report_delete_duration')->nullable();
             $table->timestamp('last_login')->nullable();
-            $table->boolean('ellevio_report')->default(false);
             $table->boolean('send_email_question')->default(false);
             $table->timestamps();
-            
+
             // Indexes
             $table->index('parent_id');
             $table->index('dep_id');

@@ -7,7 +7,7 @@
 ])
 
 @once
-<link rel="stylesheet" href="{{ asset('vendor/quill/quill.min.css') }}" />
+<link rel="stylesheet" href="{{ asset('vendor/quill/quill.min.css') }}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css';" />
 <style>
     .ql-editor {
         min-height: {{ $height }};
@@ -67,11 +67,56 @@
     }
 </style>
 
-<script src="{{ asset('vendor/quill/quill.min.js') }}"></script>
+<script src="{{ asset('vendor/quill/quill.min.js') }}" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js';"></script>
 @endonce
 
+<div class="mb-2 flex items-center gap-2">
+    <button
+        type="button"
+        id="quill-toggle-source-{{ $editorId }}"
+        class="btn-default !px-3 !py-1 text-xs"
+    >
+        {{ __('Source HTML') }}
+    </button>
+    <span id="quill-mode-label-{{ $editorId }}" class="text-xs text-gray-500 dark:text-gray-400">
+        {{ __('Visual mode') }}
+    </span>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    async function ensureQuillLoaded() {
+        if (typeof window.Quill !== 'undefined') {
+            return true;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        if (typeof window.Quill !== 'undefined') {
+            return true;
+        }
+
+        await new Promise((resolve, reject) => {
+            const existingScript = Array.from(document.scripts).find((script) =>
+                script.src.includes('/vendor/quill/quill.min.js') ||
+                script.src.includes('cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js')
+            );
+
+            if (existingScript) {
+                existingScript.addEventListener('load', () => resolve(), { once: true });
+                existingScript.addEventListener('error', () => reject(new Error('Failed to load Quill script.')), { once: true });
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load Quill from CDN.'));
+            document.head.appendChild(script);
+        });
+
+        return typeof window.Quill !== 'undefined';
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
         const editorId = '{{ $editorId }}';
         const editorType = '{{ $type }}';
         const textareaElement = document.getElementById(editorId);
@@ -87,6 +132,8 @@
         quillContainer.id = `quill-${editorId}`;
         quillContainer.className = 'quill-container';
         textareaElement.insertAdjacentElement('afterend', quillContainer);
+        const toggleButton = document.getElementById(`quill-toggle-source-${editorId}`);
+        const modeLabel = document.getElementById(`quill-mode-label-${editorId}`);
 
         // Store original textarea content
         const initialContent = textareaElement.value || '';
@@ -128,8 +175,40 @@
             openMediaModal(modalId, false, 'all', `handleQuillMediaSelect_${editorId}`);
         };
 
+        try {
+            await ensureQuillLoaded();
+        } catch (error) {
+            console.error('Quill could not be loaded:', error);
+            return;
+        }
+
+        if (typeof window.Quill === 'undefined') {
+            console.error('Quill is not available on window after loading attempts.');
+            return;
+        }
+
+        const formatHtmlForSource = function(html) {
+            if (!html) {
+                return '';
+            }
+
+            return html
+                .replace(/&nbsp;/g, ' ')
+                .replace(/></g, '>\n<')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+        };
+
+        const normalizeSourceForVisual = function(html) {
+            if (!html) {
+                return '';
+            }
+
+            return html.replace(/\u00A0/g, ' ');
+        };
+
         // Initialize Quill on the container div
-        const quill = new Quill(`#quill-${editorId}`, {
+        const quill = new window.Quill(`#quill-${editorId}`, {
             theme: "snow",
             placeholder: '{{ __('Type here...') }}',
             modules: {
@@ -170,6 +249,7 @@
 
         // Hide textarea visually but keep it in the DOM for form submission
         textareaElement.style.display = 'none';
+        textareaElement.classList.remove('sr-only');
 
         // Update textarea on editor change for form submission
         quill.on('text-change', function() {
@@ -182,9 +262,58 @@
 
         // Also update on form submit to ensure the latest content is captured
         const form = textareaElement.closest('form');
+        let isSourceMode = false;
+
+        const toolbarElement = quillContainer.previousElementSibling;
+        const showVisualMode = function() {
+            if (toolbarElement) {
+                toolbarElement.style.display = '';
+            }
+            quillContainer.style.display = '';
+            textareaElement.style.display = 'none';
+            if (toggleButton) {
+                toggleButton.textContent = @json(__('Source HTML'));
+            }
+            if (modeLabel) {
+                modeLabel.textContent = @json(__('Visual mode'));
+            }
+            isSourceMode = false;
+        };
+
+        const showSourceMode = function() {
+            textareaElement.value = formatHtmlForSource(quill.root.innerHTML);
+            if (toolbarElement) {
+                toolbarElement.style.display = 'none';
+            }
+            quillContainer.style.display = 'none';
+            textareaElement.style.display = 'block';
+            textareaElement.classList.add('form-control');
+            textareaElement.style.minHeight = '{{ $height }}';
+            if (toggleButton) {
+                toggleButton.textContent = @json(__('Visual editor'));
+            }
+            if (modeLabel) {
+                modeLabel.textContent = @json(__('Source mode'));
+            }
+            isSourceMode = true;
+        };
+
+        if (toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                if (isSourceMode) {
+                    quill.clipboard.dangerouslyPasteHTML(normalizeSourceForVisual(textareaElement.value || ''));
+                    showVisualMode();
+                } else {
+                    showSourceMode();
+                }
+            });
+        }
+
         if (form) {
             form.addEventListener('submit', function() {
-                textareaElement.value = quill.root.innerHTML;
+                if (!isSourceMode) {
+                    textareaElement.value = quill.root.innerHTML;
+                }
             });
         }
 

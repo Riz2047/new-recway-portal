@@ -115,164 +115,174 @@ class PermissionService
                     'media.delete',
                 ],
             ],
-			// [
+            // [
             //     'group_name' => 'ai_content',
             //     'permissions' => [
             //         'ai_content.generate',
             //     ],
             // ],
-			// ===== Legacy system permissions mapped into groups =====
-			[
-				'group_name' => 'order',
-				'permissions' => [
-					'order.create',   // Create-order
-					'order.view',     // View-order
-					'order.update',   // Update-order
+            // ===== Legacy system permissions mapped into groups =====
+            [
+                'group_name' => 'order',
+                'permissions' => [
+                    'order.create',   // Create-order
+                    'order.view',     // View-order
+                    'order.update',   // Update-order
                     'order.delete',   // Delete-order (if applicable)
-				],
-			],
-			[
-				'group_name' => 'reviewer',
-				'permissions' => [
-					'reviewer.view',    // View-reviewer
-					'reviewer.create',  // Create-reviewer
-				],
-			],
-			[
-				'group_name' => 'interviews',
-				'permissions' => [
-					'interviews.view', // View-interviews
-					'interviews.create', // Create-interviews
-					'interviews.update', // Update-interviews
-					'interviews.delete', // Delete-interviews
-				],
-			],
-			[
-				'group_name' => 'emails',
-				'permissions' => [
-					'emails.view', // View-emails
+                ],
+            ],
+            [
+                'group_name' => 'reviewer',
+                'permissions' => [
+                    'reviewer.view',    // View-reviewer
+                    'reviewer.create',  // Create-reviewer
+                ],
+            ],
+            [
+                'group_name' => 'interviews',
+                'permissions' => [
+                    'interviews.view', // View-interviews
+                    'interviews.create', // Create-interviews
+                    'interviews.update', // Update-interviews
+                    'interviews.delete', // Delete-interviews
+                ],
+            ],
+            [
+                'group_name' => 'emails',
+                'permissions' => [
+                    'emails.view', // View-emails
                     'emails.create', // Create-emails
                     'emails.update', // Update-emails
                     'emails.delete', // Delete-emails
-				],
-			],
-			[
-				'group_name' => 'history',
-				'permissions' => [
-					'history.view', // View-history
+                ],
+            ],
+            [
+                'group_name' => 'history',
+                'permissions' => [
+                    'history.view', // View-history
                     'history.delete', // Delete-history (if applicable)
-				],
-			],
-			[
-				'group_name' => 'department',
-				'permissions' => [
-					'department.view',   // View-department
-					'department.create', // Create-department
-					'department.update', // Update-department
+                ],
+            ],
+            [
+                'group_name' => 'department',
+                'permissions' => [
+                    'department.view',   // View-department
+                    'department.create', // Create-department
+                    'department.update', // Update-department
                     'department.delete', // Delete-department (if applicable)
-				],
-			],
-			[
-				'group_name' => 'background_checks',
-				'permissions' => [
-					'background.questions.manage', // 3-Background-Check-Questions
-				],
-			],
-			[
-				'group_name' => 'customer',
-				'permissions' => [
-					'customer.view',   // view_customer
-					'customer.create', // create_customer
-					'customer.update', // update_customer
+                ],
+            ],
+            [
+                'group_name' => 'background_checks',
+                'permissions' => [
+                    'background.questions.manage', // 3-Background-Check-Questions
+                ],
+            ],
+            [
+                'group_name' => 'customer',
+                'permissions' => [
+                    'customer.view',   // view_customer
+                    'customer.create', // create_customer
+                    'customer.update', // update_customer
                     'customer.delete', // delete_customer
-				],
-			],
-			[
-				'group_name' => 'candidate',
-				'permissions' => [
-					'candidate.view_all', // view_all_candidate
-					'candidate.view_own', // view_own_candidate
-					'candidate.create',   // create_candidate
-					'candidate.update',   // update_candidate
+                ],
+            ],
+            [
+                'group_name' => 'candidate',
+                'permissions' => [
+                    'candidate.view_all', // view_all_candidate
+                    'candidate.view_own', // view_own_candidate
+                    'candidate.create',   // create_candidate
+                    'candidate.update',   // update_candidate
                     'candidate.delete',   // delete_candidate (if applicable)
-				],
-			],
-			[
-				'group_name' => 'status',
-				'permissions' => [
-					'status.change', // change_status
-					'status.view',   // view_status
-					'status.create', // create_status
-					'status.update', // update_status
+                ],
+            ],
+            [
+                'group_name' => 'status',
+                'permissions' => [
+                    'status.change', // change_status
+                    'status.view',   // view_status
+                    'status.create', // create_status
+                    'status.update', // update_status
                     'status.delete', // delete_status (if applicable)
-				],
-			],
-			[
-				'group_name' => 'service',
-				'permissions' => [
-					'service.view',
-					'service.create',
-					'service.update',
+                ],
+            ],
+            [
+                'group_name' => 'service',
+                'permissions' => [
+                    'service.view',
+                    'service.create',
+                    'service.update',
                     'service.delete', // delete_service (if applicable)
                     'service-category.view',
                     'service-category.create',
                     'service-category.update',
                     'service-category.delete', // delete_service-category (if applicable)
-				],
-			],
-			[
-				'group_name' => 'place',
-				'permissions' => [
-					'place.view',
-					'place.create',
-					'place.update',
+                ],
+            ],
+            [
+                'group_name' => 'place',
+                'permissions' => [
+                    'place.view',
+                    'place.create',
+                    'place.update',
                     'place.delete', // delete_place (if applicable)
-				],
-			],
-			[
-				'group_name' => 'message',
-				'permissions' => [
-					'message.view',
-					'message.update',
+                ],
+            ],
+            [
+                'group_name' => 'email_template',
+                'permissions' => [
+                    'email_template.view',
+                    'email_template.create',
+                    'email_template.edit',
+                    'email_template.update',
+                    'email_template.delete',
+                ],
+            ],
+            [
+                'group_name' => 'message',
+                'permissions' => [
+                    'message.view',
+                    'message.update',
                     'message.delete', // delete_message (if applicable)
                     'message.create', // create_message (if applicable)
-				],
-			],
-			[
-				'group_name' => 'documentation',
-				'permissions' => [
-					'documentation.view',
-					'documentation.update',
+                ],
+            ],
+            [
+                'group_name' => 'documentation',
+                'permissions' => [
+                    'documentation.view',
+                    'documentation.update',
                     'documentation.delete', // delete_documentation (if applicable)
                     'documentation.create', // create_documentation (if applicable)
-				],
-			],
-			[
-				'group_name' => 'logs',
-				'permissions' => [
-					'logs.view_own',
-					'logs.view_all',
-					'logs.delete',
-				],
-			],
-			[
-				'group_name' => 'staff',
-				'permissions' => [
-					'staff.view',
-					'staff.create',
-					'staff.update',
-					'staff.delete',
-				],
-			],
-			[
-				'group_name' => 'statistics',
-				'permissions' => [
-					'statistics.view', // view_statistics
+                ],
+            ],
+            [
+                'group_name' => 'logs',
+                'permissions' => [
+                    'logs.view_own',
+                    'logs.view_all',
+                    'logs.delete',
+                ],
+            ],
+            [
+                'group_name' => 'staff',
+                'permissions' => [
+                    'staff.view',
+                    'staff.create',
+                    'staff.update',
+                    'staff.delete',
+                ],
+            ],
+            [
+                'group_name' => 'statistics',
+                'permissions' => [
+                    'statistics.view', // view_statistics
                     'statistics.export', // export_statistics (if applicable)
                     'statistics.delete', // delete_statistics (if applicable)
                     'statistics.create', // create_statistics (if applicable)
-				],
-			],
+                ],
+            ],
         ];
 
         return $permissions;

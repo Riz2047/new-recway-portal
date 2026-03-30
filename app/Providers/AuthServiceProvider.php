@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\ActionLog;
 use App\Models\Customer;
+use App\Models\EmailTemplate;
 use App\Models\Media;
 use App\Models\Module;
 use App\Models\Post;
@@ -15,6 +16,7 @@ use App\Models\Term;
 use App\Models\User;
 use App\Policies\ActionLogPolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\EmailTemplatePolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\ModulePolicy;
 use App\Policies\PermissionPolicy;
@@ -51,6 +53,7 @@ class AuthServiceProvider extends ServiceProvider
         Status::class => StatusPolicy::class,
         Place::class => PlacePolicy::class,
         Customer::class => CustomerPolicy::class,
+        EmailTemplate::class => EmailTemplatePolicy::class,
     ];
 
     /**

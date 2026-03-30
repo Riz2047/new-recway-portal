@@ -67,11 +67,11 @@ class RolesService
      */
     public function createRole(string $name, array $permissions = []): Role
     {
-		/** @var Role $role */
-		$role = Role::where('name', $name)->where('guard_name', 'web')->first();
-		if (! $role) {
-			$role = Role::create(['name' => $name, 'guard_name' => 'web']);
-		}
+        /** @var Role $role */
+        $role = Role::where('name', $name)->where('guard_name', 'web')->first();
+        if (! $role) {
+            $role = Role::create(['name' => $name, 'guard_name' => 'web']);
+        }
 
         if (! empty($permissions)) {
             // Find existing permissions by name to avoid errors if permission doesn't exist
@@ -79,7 +79,7 @@ class RolesService
                 ->where('guard_name', 'web')
                 ->pluck('name')
                 ->toArray();
-            
+
             // Only sync permissions that actually exist
             if (! empty($existingPermissions)) {
                 $role->syncPermissions($existingPermissions);
@@ -219,7 +219,7 @@ class RolesService
             }
         }
 
-		// 1. Admin role - has almost all permissions except some critical ones.
+        // 1. Admin role - has almost all permissions except some critical ones.
         $adminPermissions = $allPermissionNames;
         $adminExcludedPermissions = [
             'user.delete', // Cannot delete users.
@@ -229,69 +229,70 @@ class RolesService
         $adminPermissions = array_diff($adminPermissions, $adminExcludedPermissions);
         $roles['admin'] = $this->createRole('Admin', $adminPermissions);
 
-		// ===== Legacy roles mapping =====
-		// Note: "Staff" is a user category, not a role. Staff users are assigned one of: User, Moderator, or Manager with statistics
+        // ===== Legacy roles mapping =====
+        // Note: "Staff" is a user category, not a role. Staff users are assigned one of: User, Moderator, or Manager with statistics
 
-		// User: minimal self-service (for staff category)
-		$userPermissions = [
-			'dashboard.view',
-			'profile.view', 'profile.edit', 'profile.update',
-			'candidate.view_own',
-		];
-		$roles['user'] = $this->createRole('User', $userPermissions);
+        // User: minimal self-service (for staff category)
+        $userPermissions = [
+            'dashboard.view',
+            'profile.view', 'profile.edit', 'profile.update',
+            'candidate.view_own',
+        ];
+        $roles['user'] = $this->createRole('User', $userPermissions);
 
-		// Customer: customer management + order basics
-		$customerPermissions = [
-			'dashboard.view',
-			'profile.view', 'profile.edit', 'profile.update',
-			'customer.view', 'customer.create', 'customer.update',
-			'order.view', 'order.create',
-			'message.view',
-		];
-		$roles['customer'] = $this->createRole('Customer', $customerPermissions);
+        // Customer: customer management + order basics
+        $customerPermissions = [
+            'dashboard.view',
+            'profile.view', 'profile.edit', 'profile.update',
+            'customer.view', 'customer.create', 'customer.update',
+            'order.view', 'order.create',
+            'message.view',
+        ];
+        $roles['customer'] = $this->createRole('Customer', $customerPermissions);
 
-		// Manager: broader scope, can view all candidates, manage statuses, departments, services/places
-		$managerPermissions = [
-			'dashboard.view',
-			'profile.view', 'profile.edit', 'profile.update',
-			// Orders
-			'order.view', 'order.create', 'order.update',
-			// Reviewer & Interviews & Emails & History
-			'reviewer.view', 'interviews.view', 'emails.view', 'history.view',
-			// Department (view and manage department-user links)
-			'department.view', 'department.create', 'department.update',
-			// Candidate (all scope)
-			'candidate.view_all', 'candidate.view_own', 'candidate.create', 'candidate.update',
-			// Status (full access)
-			'status.view', 'status.change', 'status.create', 'status.update',
-			// Service/Place (full access)
-			'service.view', 'service.create', 'service.update',
+        // Manager: broader scope, can view all candidates, manage statuses, departments, services/places
+        $managerPermissions = [
+            'dashboard.view',
+            'profile.view', 'profile.edit', 'profile.update',
+            // Orders
+            'order.view', 'order.create', 'order.update',
+            // Reviewer & Interviews & Emails & History
+            'reviewer.view', 'interviews.view', 'emails.view', 'history.view',
+            // Department (view and manage department-user links)
+            'department.view', 'department.create', 'department.update',
+            // Candidate (all scope)
+            'candidate.view_all', 'candidate.view_own', 'candidate.create', 'candidate.update',
+            // Status (full access)
+            'status.view', 'status.change', 'status.create', 'status.update',
+            // Service/Place (full access)
+            'service.view', 'service.create', 'service.update',
             'service.delete', 'service-category.view', 'service-category.create', 'service-category.update', 'service-category.delete',
-			'place.view', 'place.create', 'place.update',
-			// Message/Documentation (view)
-			'message.view', 'documentation.view',
-			// Logs (all)
-			'logs.view_all', 'logs.view_own',
-			// Statistics
-			'statistics.view',
-			// Media
-			'media.view',
-		];
-		$roles['manager'] = $this->createRole('Manager', $managerPermissions);
+            'place.view', 'place.create', 'place.update',
+            'email_template.view', 'email_template.create', 'email_template.edit', 'email_template.update', 'email_template.delete',
+            // Message/Documentation (view)
+            'message.view', 'documentation.view',
+            // Logs (all)
+            'logs.view_all', 'logs.view_own',
+            // Statistics
+            'statistics.view',
+            // Media
+            'media.view',
+        ];
+        $roles['manager'] = $this->createRole('Manager', $managerPermissions);
 
-		// Moderator: content moderation
-		$moderatorPermissions = [
-			'dashboard.view',
-			'profile.view',
-			'post.view', 'post.edit',
-			'term.view',
-			'media.view', 'media.edit',
-			'documentation.view',
-		];
-		$roles['moderator'] = $this->createRole('Moderator', $moderatorPermissions);
+        // Moderator: content moderation
+        $moderatorPermissions = [
+            'dashboard.view',
+            'profile.view',
+            'post.view', 'post.edit',
+            'term.view',
+            'media.view', 'media.edit',
+            'documentation.view',
+        ];
+        $roles['moderator'] = $this->createRole('Moderator', $moderatorPermissions);
 
-		// Manager with statistics: same as manager (statistics already included)
-		$roles['manager_with_statistics'] = $this->createRole('Manager with statistics', $managerPermissions);
+        // Manager with statistics: same as manager (statistics already included)
+        $roles['manager_with_statistics'] = $this->createRole('Manager with statistics', $managerPermissions);
 
         return $roles;
     }

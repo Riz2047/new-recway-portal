@@ -158,7 +158,7 @@ class AdminMenuService
         // Statuses dropdown menu with service categories
         $serviceCategories = ServiceCategory::orderBy('name')->get();
         $statusChildren = [];
-        
+
         foreach ($serviceCategories as $index => $serviceCategory) {
             $statusChildren[] = [
                 'label' => $serviceCategory->name,
@@ -169,7 +169,7 @@ class AdminMenuService
             ];
         }
 
-        if (!empty($statusChildren)) {
+        if (! empty($statusChildren)) {
             $this->addMenuItem([
                 'label' => __('Statuses'),
                 'icon' => 'lucide:list-checks',
@@ -199,6 +199,16 @@ class AdminMenuService
             'id' => 'customers',
             'priority' => 7,
               'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Email Templates'),
+            'icon' => 'lucide:mail',
+            'route' => route("$prefix.email-templates.index"),
+            'active' => Route::is("$prefix.email-templates.*"),
+            'id' => 'email-templates',
+            'priority' => 8,
+            'permissions' => ['email_template.view'],
         ]);
 
         // $this->registerPostTypesInMenu(null);
