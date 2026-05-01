@@ -24,6 +24,7 @@
     x-init="init()"
     class="transition-all duration-300 ease-in-out px-4"
 >
+
     @foreach($menuGroups as $groupName => $groupItems)
         {!! Hook::applyFilters(AdminFilterHook::SIDEBAR_MENU_GROUP_BEFORE->value . Str::slug($groupName), '') !!}
         <div>

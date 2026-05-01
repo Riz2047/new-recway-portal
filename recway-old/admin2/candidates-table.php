@@ -4,7 +4,7 @@ $stmt = $conn->prepare($query);
 $stmt->execute();
 $table = $stmt->fetchAll();
 $table_columns_data = null;
-if (!empty($table[0]->meta_data)) {
+if (! empty($table[0]->meta_data)) {
     $table_columns_data = json_decode($table[0]->meta_data, true);
 }
 $query = "SELECT * FROM customers";
@@ -132,59 +132,59 @@ $status = $stmt->fetchAll();
                         <div class="row">
                             <input type="hidden" id="table_id" value="<?= $table[0]->id ?>">
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="place" name="column[candidate][place]" data-id="place_show" value="1" <?php if (isset($table_columns_data['place']) && !empty($table_columns_data['place'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="place" name="column[candidate][place]" data-id="place_show" value="1" <?php if (isset($table_columns_data['place']) && ! empty($table_columns_data['place'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="place">Place</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="name" name="column[candidate][name]" data-id="name_show" value="1" <?php if (isset($table_columns_data['name']) && !empty($table_columns_data['name'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="name" name="column[candidate][name]" data-id="name_show" value="1" <?php if (isset($table_columns_data['name']) && ! empty($table_columns_data['name'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="name">Name</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="customer" name="column[candidate][customer]" data-id="customer_show" value="1" <?php if (isset($table_columns_data['customer']) && !empty($table_columns_data['customer'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="customer" name="column[candidate][customer]" data-id="customer_show" value="1" <?php if (isset($table_columns_data['customer']) && ! empty($table_columns_data['customer'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="customer">Customer</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[candidate][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && !empty($table_columns_data['company'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[candidate][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && ! empty($table_columns_data['company'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="company">Company</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="staff" name="column[candidate][staff]" data-id="staff_show" value="1" <?php if (isset($table_columns_data['staff']) && !empty($table_columns_data['staff'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="staff" name="column[candidate][staff]" data-id="staff_show" value="1" <?php if (isset($table_columns_data['staff']) && ! empty($table_columns_data['staff'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="staff">Staff</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="status" name="column[candidate][status]" data-id="status_show" value="1" <?php if (isset($table_columns_data['status']) && !empty($table_columns_data['status'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="status" name="column[candidate][status]" data-id="status_show" value="1" <?php if (isset($table_columns_data['status']) && ! empty($table_columns_data['status'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="status">Status</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="invoice_sent" name="column[candidate][invoice_sent]" data-id="invoice_sent_show" value="1" <?php if (isset($table_columns_data['invoice_sent']) && !empty($table_columns_data['invoice_sent'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="invoice_sent" name="column[candidate][invoice_sent]" data-id="invoice_sent_show" value="1" <?php if (isset($table_columns_data['invoice_sent']) && ! empty($table_columns_data['invoice_sent'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="invoice_sent">Invoice Sent</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="economy" name="column[candidate][economy]" data-id="economy_show" value="1" <?php if (isset($table_columns_data['economy']) && !empty($table_columns_data['economy'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="economy" name="column[candidate][economy]" data-id="economy_show" value="1" <?php if (isset($table_columns_data['economy']) && ! empty($table_columns_data['economy'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="economy">Economy</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="criminal_record" name="column[candidate][criminal_record]" data-id="criminal_record_show" value="1" <?php if (isset($table_columns_data['criminal_record']) && !empty($table_columns_data['criminal_record'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="criminal_record" name="column[candidate][criminal_record]" data-id="criminal_record_show" value="1" <?php if (isset($table_columns_data['criminal_record']) && ! empty($table_columns_data['criminal_record'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="criminal_record">Criminal Record</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="social_record" name="column[candidate][social_record]" data-id="social_record_show" value="1" <?php if (isset($table_columns_data['social_record']) && !empty($table_columns_data['social_record'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="social_record" name="column[candidate][social_record]" data-id="social_record_show" value="1" <?php if (isset($table_columns_data['social_record']) && ! empty($table_columns_data['social_record'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="social_record">Social Media</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="reported_sm" name="column[candidate][reported_sm]" data-id="reported_sm_show" value="1" <?php if (isset($table_columns_data['reported_sm']) && !empty($table_columns_data['reported_sm'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="reported_sm" name="column[candidate][reported_sm]" data-id="reported_sm_show" value="1" <?php if (isset($table_columns_data['reported_sm']) && ! empty($table_columns_data['reported_sm'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="reported_sm">Reported</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="order_created" name="column[candidate][order_created]" data-id="order_created_show" value="1" <?php if (isset($table_columns_data['order_created']) && !empty($table_columns_data['order_created'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="order_created" name="column[candidate][order_created]" data-id="order_created_show" value="1" <?php if (isset($table_columns_data['order_created']) && ! empty($table_columns_data['order_created'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="order_created">Order Created</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="interview_date" name="column[candidate][interview_date]" data-id="interview_date_show" value="1" <?php if (isset($table_columns_data['interview_date']) && !empty($table_columns_data['interview_date'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="interview_date" name="column[candidate][interview_date]" data-id="interview_date_show" value="1" <?php if (isset($table_columns_data['interview_date']) && ! empty($table_columns_data['interview_date'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="interview_date">Interview Date</label>
                             </div>
                             <div class="col-md-3">
-                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="archive_date" name="column[candidate][archive_date]" data-id="archive_date_show" value="1" <?php if (isset($table_columns_data['archive_date']) && !empty($table_columns_data['archive_date'])) { ?> checked <?php } ?>>
+                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="archive_date" name="column[candidate][archive_date]" data-id="archive_date_show" value="1" <?php if (isset($table_columns_data['archive_date']) && ! empty($table_columns_data['archive_date'])) { ?> checked <?php } ?>>
                                 <label class="form-label form-check-label" for="archive_date">Archive Time</label>
                             </div>
                         </div>
@@ -194,7 +194,7 @@ $status = $stmt->fetchAll();
                             <label>Place</label>
                             <select class="form-control filter-select" id="fil_place">
                                 <option value="">Filter by Place</option>
-                                <?php if (!empty($places)) { ?>
+                                <?php if (! empty($places)) { ?>
                                     <?php foreach ($places as $place) { ?>
                                         <option value="<?= $place->id ?>"><?= $place->name ?></option>
                                     <?php } ?>
@@ -209,9 +209,9 @@ $status = $stmt->fetchAll();
                             <label>Company Name</label>
                             <select class="form-select  w-100 filter-select" id="fil_com">
                                 <option selected value="0">All Companies</option>
-                                <?php if (!empty($customers)) : $companies = [] ?>
+                                <?php if (! empty($customers)) : $companies = [] ?>
                                     <?php foreach ($customers as $customer) : ?>
-                                        <?php if (!in_array(strtolower(trim($customer->company)), $companies)) : ?>
+                                        <?php if (! in_array(strtolower(trim($customer->company)), $companies)) : ?>
                                             <option value="<?php echo $customer->company ?>"><?php echo $customer->company ?></option>
                                         <?php array_push($companies, strtolower(trim($customer->company)));
                                         endif; ?>
@@ -223,7 +223,7 @@ $status = $stmt->fetchAll();
                             <label>Customer Name</label>
                             <select class="form-control filter-select" id="fil_cus">
                                 <option value="">Filter by Customer</option>
-                                <?php if (!empty($customers)) { ?>
+                                <?php if (! empty($customers)) { ?>
                                     <?php foreach ($customers as $customer) { ?>
                                         <option value="<?= $customer->id ?>"><?= $customer->name ?></option>
                                     <?php } ?>
@@ -233,7 +233,7 @@ $status = $stmt->fetchAll();
                         <div class="col-md-3 p-3">
                             <label>Order Created From</label>
                             <input type="date" id="order_created_from" class="form-control">
-                            <input type="hidden" id="fil_status" value="<?php if (isset($_GET['status']) && !empty($_GET['status'])) { ?><?= $_GET['status'] ?><?php } ?>">
+                            <input type="hidden" id="fil_status" value="<?php if (isset($_GET['status']) && ! empty($_GET['status'])) { ?><?= $_GET['status'] ?><?php } ?>">
                         </div>
                         <div class="col-md-3 p-3">
                             <label>Order Created To</label>
@@ -246,6 +246,14 @@ $status = $stmt->fetchAll();
                         <div class="col-md-3 p-3">
                             <label>Interview Date To</label>
                             <input type="date" id="interview_date_to" class="form-control">
+                        </div>
+                        <div class="col-md-3 p-3">
+                            <label>Delivery Date From</label>
+                            <input type="date" id="delivery_date_from" class="form-control">
+                        </div>
+                        <div class="col-md-3 p-3">
+                            <label>Delivery Date To</label>
+                            <input type="date" id="delivery_date_to" class="form-control">
                         </div>
                         <div class="col-md-12">
                             <button type="button" class="btn btn-primary btn-sm float-right" onclick="filter_data()">Apply</button>
@@ -268,30 +276,30 @@ $status = $stmt->fetchAll();
                             <th class="table-head">Action</th>
                             <th class="table-head">#</th>
                             <th class="table-head">Order ID</th>
-                            <th class="table-head  place_show <?php if (!isset($table_columns_data['place']) || empty($table_columns_data['place'])) { ?> custom_hide<?php } ?>" <?php if(isset($_GET['service']) && $_GET['service'] == 3){ ?>style="display:none"<?php } ?>>Place</th>
+                            <th class="table-head  place_show <?php if (! isset($table_columns_data['place']) || empty($table_columns_data['place'])) { ?> custom_hide<?php } ?>" <?php if (isset($_GET['service']) && $_GET['service'] == 3) { ?>style="display:none"<?php } ?>>Place</th>
                             <th class="table-head">VASC ID</th>
-                            <th class="table-head name_show <?php if (!isset($table_columns_data['name']) || empty($table_columns_data['name'])) { ?> custom_hide<?php } ?>">Name</th>
+                            <th class="table-head name_show <?php if (! isset($table_columns_data['name']) || empty($table_columns_data['name'])) { ?> custom_hide<?php } ?>">Name</th>
                             <th class="table-head">SSN</th>
-                            <th class="table-head  customer_show <?php if (!isset($table_columns_data['customer']) || empty($table_columns_data['customer'])) { ?> custom_hide<?php } ?>">Customer</th>
-                            <th class="table-head  company_show <?php if (!isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
-                            <th class="table-head  staff_show <?php if (!isset($table_columns_data['staff']) || empty($table_columns_data['staff'])) { ?> custom_hide<?php } ?>">Staff</th>
-                            <th class="table-head  reported_sm_show <?php if (!isset($table_columns_data['reported_sm']) || empty($table_columns_data['reported_sm'])) { ?> custom_hide<?php } ?>">Reported</th>
-                            <th class="table-head  status_show <?php if (!isset($table_columns_data['status']) || empty($table_columns_data['status'])) { ?> custom_hide <?php } ?>">Status</th>
-                            <th class="table-head  invoice_sent_show <?php if (!isset($table_columns_data['invoice_sent']) || empty($table_columns_data['invoice_sent'])) { ?> custom_hide<?php } ?>">Invoice Sent</th>
-                            <th class="table-head  interview_date_show <?php if (!isset($table_columns_data['interview_date']) || empty($table_columns_data['interview_date']) || (isset($_GET['service']) && $_GET['service'] == 3)) { ?> custom_hide<?php } ?>" <?php if(isset($_GET['service']) && $_GET['service'] == 3){ ?>style="display:none"<?php } ?>>Interview Date</th>
-                            <th class="table-head  economy_show <?php if (!isset($table_columns_data['economy']) || empty($table_columns_data['economy'])) { ?> custom_hide <?php } ?>">Economy</th>
-                            <th class="table-head  criminal_record_show <?php if (!isset($table_columns_data['criminal_record']) || empty($table_columns_data['criminal_record'])) { ?> custom_hide<?php } ?>">Criminal Record</th>
-                            <th class="table-head  social_record_show  <?php if (!isset($table_columns_data['social_record']) || empty($table_columns_data['social_record'])) { ?> custom_hide<?php } ?>">Social Media</th>
+                            <th class="table-head  customer_show <?php if (! isset($table_columns_data['customer']) || empty($table_columns_data['customer'])) { ?> custom_hide<?php } ?>">Customer</th>
+                            <th class="table-head  company_show <?php if (! isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
+                            <th class="table-head  staff_show <?php if (! isset($table_columns_data['staff']) || empty($table_columns_data['staff'])) { ?> custom_hide<?php } ?>">Staff</th>
+                            <th class="table-head  reported_sm_show <?php if (! isset($table_columns_data['reported_sm']) || empty($table_columns_data['reported_sm'])) { ?> custom_hide<?php } ?>">Reported</th>
+                            <th class="table-head  status_show <?php if (! isset($table_columns_data['status']) || empty($table_columns_data['status'])) { ?> custom_hide <?php } ?>">Status</th>
+                            <th class="table-head  invoice_sent_show <?php if (! isset($table_columns_data['invoice_sent']) || empty($table_columns_data['invoice_sent'])) { ?> custom_hide<?php } ?>">Invoice Sent</th>
+                            <th class="table-head  interview_date_show <?php if (! isset($table_columns_data['interview_date']) || empty($table_columns_data['interview_date']) || (isset($_GET['service']) && $_GET['service'] == 3)) { ?> custom_hide<?php } ?>" <?php if (isset($_GET['service']) && $_GET['service'] == 3) { ?>style="display:none"<?php } ?>>Interview Date</th>
+                            <th class="table-head  economy_show <?php if (! isset($table_columns_data['economy']) || empty($table_columns_data['economy'])) { ?> custom_hide <?php } ?>">Economy</th>
+                            <th class="table-head  criminal_record_show <?php if (! isset($table_columns_data['criminal_record']) || empty($table_columns_data['criminal_record'])) { ?> custom_hide<?php } ?>">Criminal Record</th>
+                            <th class="table-head  social_record_show  <?php if (! isset($table_columns_data['social_record']) || empty($table_columns_data['social_record'])) { ?> custom_hide<?php } ?>">Social Media</th>
                             <th class="table-head">Invoice Date</th>
                             <th class="table-head">Background Check Date</th>
-                            <th class="table-head  order_created_show <?php if (!isset($table_columns_data['order_created']) || empty($table_columns_data['order_created'])) { ?> custom_hide<?php } ?>">Order Created</th>
-                            <th class="table-head  archive_date_show <?php if (!isset($table_columns_data['archive_date']) || empty($table_columns_data['archive_date'])) { ?> custom_hide<?php } ?>">Archive Time</th>
-                            <!--                    --><?php //if((isset($_GET['service']) && $_GET['service'] == INTERVIEW_ID) || !isset($_GET['service'])): 
+                            <th class="table-head  order_created_show <?php if (! isset($table_columns_data['order_created']) || empty($table_columns_data['order_created'])) { ?> custom_hide<?php } ?>">Order Created</th>
+                            <th class="table-head  archive_date_show <?php if (! isset($table_columns_data['archive_date']) || empty($table_columns_data['archive_date'])) { ?> custom_hide<?php } ?>">Archive Time</th>
+                            <!--                    --><?php //if((isset($_GET['service']) && $_GET['service'] == INTERVIEW_ID) || !isset($_GET['service'])):
                                                         ?>
-                            <!--                    --><?php //endif; 
+                            <!--                    --><?php //endif;
                                                         ?>
                             <!-- <th class="table-head">Delivery Date</th> -->
-                             <th class="table-head" <?php if(isset($_GET['service']) && $_GET['service'] != 3 && $_GET['service'] != 'all' && $_GET['service'] != ''){ ?>style="display:none"<?php } ?>>Delivery Date</th>
+                             <th class="table-head" <?php if (isset($_GET['service']) && $_GET['service'] != 3 && $_GET['service'] != 'all' && $_GET['service'] != '') { ?>style="display:none"<?php } ?>>Delivery Date</th>
                             <th class="table-head">Service Type</th>
                         </tr>
                     </thead>

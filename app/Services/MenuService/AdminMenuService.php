@@ -99,11 +99,12 @@ class AdminMenuService
 
     public function getMenu()
     {
+        $prefix = request()->segment(1);
         $this->addMenuItem([
             'label' => __('Dashboard'),
             'icon' => 'lucide:layout-dashboard',
-            'route' => route('admin.dashboard'),
-            'active' => Route::is('admin.dashboard'),
+            'route' => route("$prefix.dashboard"),
+            'active' => Route::is("$prefix.dashboard"),
             'id' => 'dashboard',
             'priority' => 1,
             'permissions' => 'dashboard.view',
@@ -112,8 +113,8 @@ class AdminMenuService
         $this->addMenuItem([
             'label' => __('Admins'),
             'icon' => 'lucide:user',
-            'route' => route('admin.admins.index'),
-            'active' => Route::is('admin.admins.*'),
+            'route' => route("$prefix.admins.index"),
+            'active' => Route::is("$prefix.admins.*"),
             'id' => 'admins',
             'priority' => 2,
             'permissions' => 'user.view',
@@ -123,23 +124,23 @@ class AdminMenuService
             'label' => __('Staff'),
             'icon' => 'lucide:users',
             'id' => 'staff-submenu',
-            'active' => Route::is('admin.staff.*') || Route::is('admin.staff-category.*'),
+            'active' => Route::is("$prefix.staff.*"),
             'priority' => 3,
-            'permissions' => ['user.view', 'role.view'],
+            'permissions' => ['staff.view', 'staff.create', 'staff.edit', 'staff.delete'],
             'children' => [
                 [
                     'label' => __('All Staff'),
-                    'route' => route('admin.staff.index'),
-                    'active' => Route::is('admin.staff.*'),
+                    'route' => route("$prefix.staff.index"),
+                    'active' => Route::is("$prefix.staff.*"),
                     'priority' => 10,
-                    'permissions' => 'user.view',
+                    'permissions' => ['staff.view', 'staff.create', 'staff.edit', 'staff.delete'],
                 ],
                 [
                     'label' => __('Staff Category'),
-                    'route' => route('admin.staff-category.index'),
-                    'active' => Route::is('admin.staff-category.*'),
+                    'route' => route("$prefix.staff-category.index"),
+                    'active' => Route::is("$prefix.staff-category.*"),
                     'priority' => 20,
-                    'permissions' => 'role.view',
+                    'permissions' => ['staff-category.view', 'staff-category.create', 'staff-category.edit', 'staff-category.delete'],
                 ],
             ],
         ]);
@@ -147,33 +148,33 @@ class AdminMenuService
         $this->addMenuItem([
             'label' => __('Services'),
             'icon' => 'lucide:briefcase',
-            'route' => route('admin.service-category.index'),
-            'active' => Route::is('admin.service-category.*'),
+            'route' => route("$prefix.service-category.index"),
+            'active' => Route::is("$prefix.service-category.*") || Route::is("$prefix.service.*"),
             'id' => 'services',
             'priority' => 4,
-            'permissions' => 'service-category.view',
+              'permissions' => ['service.view', 'service-category.create', 'service-category.edit', 'service-category.delete'],
         ]);
 
         // Statuses dropdown menu with service categories
         $serviceCategories = ServiceCategory::orderBy('name')->get();
         $statusChildren = [];
-        
+
         foreach ($serviceCategories as $index => $serviceCategory) {
             $statusChildren[] = [
                 'label' => $serviceCategory->name,
-                'route' => route('admin.status.index', $serviceCategory->id),
-                'active' => Route::is('admin.status.*') && (int) request()->route('serviceCategory') === $serviceCategory->id,
+                'route' => route("$prefix.status.index", $serviceCategory->id),
+                'active' => Route::is("$prefix.status.*") && (int) request()->route('serviceCategory') === $serviceCategory->id,
                 'priority' => ($index + 1) * 10,
-                'permissions' => 'status.view',
+                'permissions' => ['status.view', 'status.create', 'status.edit', 'status.delete'],
             ];
         }
 
-        if (!empty($statusChildren)) {
+        if (! empty($statusChildren)) {
             $this->addMenuItem([
                 'label' => __('Statuses'),
                 'icon' => 'lucide:list-checks',
                 'id' => 'statuses-submenu',
-                'active' => Route::is('admin.status.*'),
+                'active' => Route::is("$prefix.status.*"),
                 'priority' => 5,
                 'permissions' => 'status.view',
                 'children' => $statusChildren,
@@ -183,21 +184,51 @@ class AdminMenuService
         $this->addMenuItem([
             'label' => __('Places'),
             'icon' => 'lucide:map-pin',
-            'route' => route('admin.place.index'),
-            'active' => Route::is('admin.place.*'),
+            'route' => route("$prefix.place.index"),
+            'active' => Route::is("$prefix.place.*"),
             'id' => 'places',
             'priority' => 6,
-            'permissions' => 'place.view',
+            'permissions' => ['place.view', 'place.create', 'place.edit', 'place.delete'],
         ]);
 
         $this->addMenuItem([
             'label' => __('Customers'),
             'icon' => 'lucide:user-circle',
-            'route' => route('admin.customers.index'),
-            'active' => Route::is('admin.customers.*'),
+            'route' => route("$prefix.customers.index"),
+            'active' => Route::is("$prefix.customers.*"),
             'id' => 'customers',
             'priority' => 7,
-            'permissions' => [], // Allow all authenticated users to see the menu - adjust permissions in the controller
+              'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Candidates'),
+            'icon' => 'lucide:file-user',
+            'route' => route("$prefix.candidates.index"),
+            'active' => Route::is("$prefix.candidates.*"),
+            'id' => 'candidates',
+            'priority' => 8,
+            'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Email Templates'),
+            'icon' => 'lucide:mail',
+            'route' => route("$prefix.email-templates.index"),
+            'active' => Route::is("$prefix.email-templates.*"),
+            'id' => 'email-templates',
+            'priority' => 9,
+            'permissions' => ['email_template.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Reports'),
+            'icon' => 'lucide:file-text',
+            'route' => route("$prefix.reports.index"),
+            'active' => Route::is("$prefix.reports.*"),
+            'id' => 'reports',
+            'priority' => 10,
+            'permissions' => ['customer.view'],
         ]);
 
         // $this->registerPostTypesInMenu(null);
@@ -205,36 +236,36 @@ class AdminMenuService
         $this->addMenuItem([
             'label' => __('Media Library'),
             'icon' => 'lucide:image',
-            'route' => route('admin.media.index'),
-            'active' => Route::is('admin.media.*'),
+            'route' => route("$prefix.media.index"),
+            'active' => Route::is("$prefix.media.*"),
             'id' => 'media',
             'priority' => 35,
-            'permissions' => 'media.view',
+            'permissions' => ['media.view', 'media.create', 'media.edit', 'media.delete'],
         ]);
         // $this->addMenuItem([
         //     'label' => __('Modules'),
         //     'icon' => 'lucide:boxes',
-        //     'route' => route('admin.modules.index'),
-        //     'active' => Route::is('admin.modules.index'),
+        //     'route' => route("$prefix.modules.index"),
+        //     'active' => Route::is("$prefix.modules.index"),
         //     'id' => 'modules',
         //     'priority' => 25,
-        //     'permissions' => 'module.view',
+        //     'permissions' => ['module.view'],
         // ], __('More'));
 
         $this->addMenuItem([
             'label' => __('Monitoring'),
             'icon' => 'lucide:monitor',
             'id' => 'monitoring-submenu',
-            'active' => Route::is('admin.actionlog.*'),
+            'active' => Route::is("$prefix.actionlog.*"),
             'priority' => 50,
             'permissions' => ['pulse.view', 'actionlog.view'],
             'children' => [
                 [
                     'label' => __('Action Logs'),
-                    'route' => route('admin.actionlog.index'),
-                    'active' => Route::is('admin.actionlog.index'),
+                    'route' => route("$prefix.actionlog.index"),
+                    'active' => Route::is("$prefix.actionlog.index"),
                     'priority' => 10,
-                    'permissions' => 'actionlog.view',
+                    'permissions' => ['actionlog.view'],
                 ],
                 [
                     'label' => __('Laravel Pulse'),
@@ -242,7 +273,7 @@ class AdminMenuService
                     'active' => false,
                     'target' => '_blank',
                     'priority' => 20,
-                    'permissions' => 'pulse.view',
+                    'permissions' => ['pulse.view'],
                 ],
             ],
         ], __('More'));
@@ -252,28 +283,28 @@ class AdminMenuService
                 'label' => __('Access Control'),
                 'icon' => 'lucide:key',
                 'id' => 'access-control-submenu',
-                'active' => Route::is('admin.roles.*') || Route::is('admin.permissions.*') || Route::is('admin.users.*'),
+                'active' => Route::is("$prefix.roles.*") || Route::is("$prefix.permissions.*") || Route::is("$prefix.users.*"),
                 'priority' => 30,
                 'permissions' => ['role.create', 'role.view', 'role.edit', 'role.delete', 'user.create', 'user.view', 'user.edit', 'user.delete'],
                 'children' => [
                     [
                         'label' => __('Users'),
-                        'route' => route('admin.users.index'),
-                        'active' => Route::is('admin.users.index') || Route::is('admin.users.create') || Route::is('admin.users.edit'),
+                        'route' => route("$prefix.users.index"),
+                        'active' => Route::is("$prefix.users.index") || Route::is("$prefix.users.create") || Route::is("$prefix.users.edit"),
                         'priority' => 10,
-                        'permissions' => 'user.view',
+                        'permissions' => ['user.view'],
                     ],
                     [
                         'label' => __('Roles'),
-                        'route' => route('admin.roles.index'),
-                        'active' => Route::is('admin.roles.index') || Route::is('admin.roles.create') || Route::is('admin.roles.edit'),
+                        'route' => route("$prefix.roles.index"),
+                        'active' => Route::is("$prefix.roles.index") || Route::is("$prefix.roles.create") || Route::is("$prefix.roles.edit"),
                         'priority' => 20,
-                        'permissions' => 'role.view',
+                        'permissions' => ['role.view'],
                     ],
                     [
                         'label' => __('Permissions'),
-                        'route' => route('admin.permissions.index'),
-                        'active' => Route::is('admin.permissions.index') || Route::is('admin.permissions.show'),
+                        'route' => route("$prefix.permissions.index"),
+                        'active' => Route::is("$prefix.permissions.index") || Route::is("$prefix.permissions.show"),
                         'priority' => 30,
                         'permissions' => 'role.view',
                     ],
@@ -286,21 +317,21 @@ class AdminMenuService
             'label' => __('Settings'),
             'icon' => 'lucide:settings',
             'id' => 'settings-submenu',
-            'active' => Route::is('admin.settings.*') || Route::is('admin.translations.*'),
+            'active' => Route::is("$prefix.settings.*") || Route::is("$prefix.translations.*"),
             'priority' => 40,
             'permissions' => ['settings.edit', 'translations.view'],
             'children' => [
                 [
                     'label' => __('Settings'),
-                    'route' => route('admin.settings.index'),
-                    'active' => Route::is('admin.settings.index'),
+                    'route' => route("$prefix.settings.index"),
+                    'active' => Route::is("$prefix.settings.index"),
                     'priority' => 20,
-                    'permissions' => 'settings.edit',
+                    'permissions' => ['settings.edit'],
                 ],
                 [
                     'label' => __('Translations'),
-                    'route' => route('admin.translations.index'),
-                    'active' => Route::is('admin.translations.*'),
+                    'route' => route("$prefix.translations.index"),
+                    'active' => Route::is("$prefix.translations.*"),
                     'priority' => 10,
                     'permissions' => ['translations.view', 'translations.edit'],
                 ],
@@ -310,13 +341,13 @@ class AdminMenuService
         $this->addMenuItem([
             'label' => __('Logout'),
             'icon' => 'lucide:log-out',
-            'route' => route('admin.dashboard'),
+            'route' => route("$prefix.dashboard"),
             'active' => false,
             'id' => 'logout',
             'priority' => 10000,
             'html' => '
                 <li>
-                    <form method="POST" action="' . route('admin.logout.submit') . '">
+                    <form method="POST" action="' . route("$prefix.logout.submit") . '">
                         ' . csrf_field() . '
                         <button type="submit" class="menu-item group w-full text-left menu-item-inactive text-gray-700 dark:text-white hover:text-gray-700">
                             <iconify-icon icon="lucide:log-out" class="menu-item-icon " width="16" height="16"></iconify-icon>

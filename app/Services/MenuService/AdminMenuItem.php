@@ -154,6 +154,7 @@ class AdminMenuItem
         }
 
         $user = Auth::user();
+            
         foreach ($this->permissions as $permission) {
             if ($user && $user->can($permission)) {
                 return true;

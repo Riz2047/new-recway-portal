@@ -34,8 +34,7 @@ enum UserFilterHook: string
     // User Form Field Hooks.
     case USER_FORM_AFTER_AVATAR = 'filter.user.form.after_avatar';
     case USER_FORM_AFTER_SOCIAL_LINKS = 'filter.user.form.after_social_links';
-    case USER_FORM_AFTER_FIRST_NAME = 'filter.user.form.after_first_name';
-    case USER_FORM_AFTER_LAST_NAME = 'filter.user.form.after_last_name';
+    case USER_FORM_AFTER_NAME = 'filter.user.form.after_name';
     case USER_FORM_AFTER_USERNAME = 'filter.user.form.after_username';
     case USER_FORM_AFTER_EMAIL = 'filter.user.form.after_email';
     case USER_FORM_AFTER_PASSWORD = 'filter.user.form.after_password';

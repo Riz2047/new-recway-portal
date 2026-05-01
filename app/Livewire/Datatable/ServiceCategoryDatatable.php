@@ -81,7 +81,13 @@ class ServiceCategoryDatatable extends Datatable
 
     public function renderNameColumn(ServiceCategory $serviceCategory): string
     {
-        return '<span class="font-medium">' . e($serviceCategory->name) . '</span>';
+        return '<button type="button" 
+            class="font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none open-service-types-modal"
+            data-id="' . $serviceCategory->id . '"
+            data-name="' . e($serviceCategory->name) . '"
+            title="' . __('View Service Types') . '">
+            ' . e($serviceCategory->name) . '
+        </button>';
     }
 
     public function renderNameSvColumn(ServiceCategory $serviceCategory): string

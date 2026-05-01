@@ -1,15 +1,10 @@
 <?php
-
 $activeLink = "candidates";
-
 include_once('includes/header.php');
-
-if (!isset($_GET['id'])) {
+if (! isset($_GET['id'])) {
     redirect('index.php');
 }
-
 $statuses = getStatuses();
-
 if (isset($_POST['status'])) {
     $status = $_POST['status'];
     $date = $_POST['date'];
@@ -18,9 +13,8 @@ if (isset($_POST['status'])) {
     $cus_email = $_POST['cus_email'];
     $comment = $_POST['comment'];
     $orderID = $_POST['order_id'];
-    $report = isset($_FILES['report']) && !empty($_FILES['report']['name']) ? $_FILES['report']['name'] : "";
+    $report = isset($_FILES['report']) && ! empty($_FILES['report']['name']) ? $_FILES['report']['name'] : "";
     $interviewID = $_POST['interviewID'];
-
     $last_interview_date = 0;
     $last_staff_id = 0;
     $d_date = 0;
@@ -29,46 +23,39 @@ if (isset($_POST['status'])) {
     $stmt = $conn->prepare($query);
     $stmt->execute([$orderID]);
     $rec_order = $stmt->fetch(PDO::FETCH_ASSOC);
-    if($rec_order){
-        if (isSwedenWorkingHours() == 1) {}else{
+    if ($rec_order) {
+        if (isSwedenWorkingHours() == 1) {
+        } else {
             $last_status = $rec_order['status'];
             $d_date = $rec_order['delivery_date'];
             $last_interview_date = $rec_order['booked'];
         }
     }
-
-
     $reportName = time() . "-" . substr(uniqid(), -6) . ".pdf";
-
-    if (!empty($report)) {
+    if (! empty($report)) {
         move_uploaded_file($_FILES['report']['tmp_name'], '../uploads/' . $reportName);
     }
-
     $status = getStatusById($status);
-
     $date_time = date('Y-m-d H:i:s', strtotime($date . date('H:i:s')));
-
     if ($status->variable == "booked" || $status->variable == "booked_msg_follow") {
         $query = 'UPDATE candidates SET status = ?, booked = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, $date, $_GET['id']]);
     } elseif ($status->variable == "rebooking") {
         $query = 'UPDATE candidates SET status = ?, booked = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, null, $_GET['id']]);
     } else {
         $query = 'UPDATE candidates SET status = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
         if ($status->variable == "approval_received") {
@@ -77,39 +64,32 @@ if (isset($_POST['status'])) {
             $stmt = $conn->prepare($interviewQuery);
             $stmt->execute([$interviewID]);
             $interviews = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-            if (!empty($interviews['delivery_days'])) {
+            if (! empty($interviews['delivery_days'])) {
                 $d_date = getDateAfterDays($interviews['delivery_days']);
                 $query .= ", delivery_date = '{$d_date}'";
             } else {
                 // Set default delivery date based on interviewID
                 $delivery_date = $interviewID == 10 ? date('Y-m-d', strtotime($date . ' +3 days')) : date('Y-m-d', strtotime($date . ' +5 days'));
-        
                 // Adjust if the delivery date falls on a weekend
                 if (date('N', strtotime($delivery_date)) >= 6) {
                     $days_to_add = 8 - date('N', strtotime($delivery_date));
                     $delivery_date = date('Y-m-d', strtotime($delivery_date . ' +' . $days_to_add . ' days'));
                 }
-        
                 $query .= ", delivery_date = '{$delivery_date}'";
             }
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, $_GET['id']]);
-
         // Logging the status change
-        if (isset($_SESSION['staff']->id) && !empty($_SESSION['staff']->id)) {
+        if (isset($_SESSION['staff']->id) && ! empty($_SESSION['staff']->id)) {
             $logQuery = 'INSERT INTO staff_logs (staff_id, log_msg) VALUES (?,?)';
             $logStmt = $conn->prepare($logQuery);
             $res = $logStmt->execute([$_SESSION['staff']->id, " changed the status of <a href='invoice.php?id={$_GET['id']}'>{$orderID}</a> to {$status->status}"]);
         }
     }
-
-
     $res = "true";
-    if (!empty($res)) {
+    if (! empty($res)) {
         // $comment .= !empty($comment) ? '<br>-' . $_SESSION['admin']->name : '';
         $comment .= '<br>-' . $_SESSION['staff']->name;
         if (isSwedenWorkingHours() == 1) {
@@ -119,69 +99,58 @@ if (isset($_POST['status'])) {
                 $res = $stmt->execute([$_GET['id'], $status->status_detail, date('Y-m-d H:i:s'), $comment]);
             } else {
                 $res = $stmt->execute([$_GET['id'], $status->status_detail, $date_time, $comment]);
-            }   
-        }else{
+            }
+        } else {
             $nextWorkingHour = getNextWorkingHour()->format('Y-m-d H:i:s');
             $query = "INSERT INTO history (order_id, `desc`, date_time, comment, last_status,staff_id,last_interview_date,last_delivery_date) VALUES (?,?,?,?,?,?,?,?)";
             $stmt = $conn->prepare($query);
             if ($status->variable == "booked" || $status->variable == "booked_msg_follow") {
-                if(!empty($rec_order['booked'])){
+                if (! empty($rec_order['booked'])) {
                     $last_interview_date = $rec_order['booked'];
-                }else{
+                } else {
                     $last_interview_date = 1;
                 }
                 $res = $stmt->execute([$_GET['id'], $status->status_detail, $nextWorkingHour, $comment, $last_status,$last_staff_id,$last_interview_date,$d_date]);
             } else {
                 if ($status->variable == "approval_received") {
-                    if(!empty($rec_order['delivery_date'])){
+                    if (! empty($rec_order['delivery_date'])) {
                         $d_date = $rec_order['delivery_date'];
-                    }else{
+                    } else {
                         $d_date = 1;
                     }
                 }
                 $res = $stmt->execute([$_GET['id'], $status->status_detail, $nextWorkingHour, $comment, $last_status,$last_staff_id,$last_interview_date,$d_date]);
-            } 
+            }
         }
         $query = 'SELECT * FROM candidates WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$_GET['id']]);
         $candidate = $stmt->fetch();
-
         $query = 'SELECT * FROM staff WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->staff_id]);
         $staff = $stmt->fetch();
-
         $query = 'SELECT * FROM customers WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->cus_id]);
         $customer = $stmt->fetch();
-
         $query = 'SELECT * FROM interviews WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->interview_id]);
         $interview = $stmt->fetch();
-
         $query = 'SELECT * FROM interviews WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->interview_id]);
         $service = $stmt->fetch();
-
         $query = 'SELECT * FROM places WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->place]);
         $place = $stmt->fetch();
-
         $query = 'SELECT * FROM additional_customers WHERE cus_id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->cus_id]);
         $add_cus = $stmt->fetchAll();
-
         if ($status->id == 1 && ($customer->combine_bk_and_security != "0" || $customer->combine_bk_and_security != 0) && ($candidate->combine_interview_id != 0 || $candidate->combine_interview_id != '0')) {
-           
-
-            
-            
             $d_date = null;
             $vasc_id = isset($candidate->vasc_id) ? $candidate->vasc_id : null;
             $security = isset($candidate->security) ? $candidate->security : null;
@@ -201,40 +170,27 @@ if (isset($_POST['status'])) {
             $sendMailCan = 'yes';
             $sendMail = 'yes';
             $place = isset($candidate->place) ? $candidate->place : null;
-            
             $staff_id = isset($candidate->staff_id) ? $candidate->staff_id : 0;
             $country = isset($candidate->country) ? $candidate->country : null;
-           
             $mailMsg1 = null;
             $mailMsg2 = null;
             $mailMsg3 = null;
             $mailMsg4 = null;
-            
-            $meta_info = array(
+            $meta_info = [
                 'send_email_cus' => $sendMail,
                 'send_email_can' => $sendMailCan,
                 'created_by' => $_SESSION['staff']->id,
                 'created_on' => date('Y-m-d H:i:s'),
-                'user' => 'Staff'
-            );
-            
+                'user' => 'Staff',
+            ];
             $query = 'SELECT * FROM interviews WHERE id = ?';
-                $stmt = $conn->prepare($query);
-                $stmt->execute([$interview_id]);
-                $interview = $stmt->fetch();
-            
-        
-            
-        
-            
-        
-            if (!empty($interview->place) || $candidate->combine_interview_id == 2) {
+            $stmt = $conn->prepare($query);
+            $stmt->execute([$interview_id]);
+            $interview = $stmt->fetch();
+            if (! empty($interview->place) || $candidate->combine_interview_id == 2) {
                 $query = 'SELECT * FROM places WHERE id = ?';
-
                 $stmt = $conn->prepare($query);
-
                 $stmt->execute([$candidate->place]);
-
                 $place = $stmt->fetch();
             } else {
                 $place = null;
@@ -244,42 +200,30 @@ if (isset($_POST['status'])) {
             // }
             if ($interview->service_cat_id == 1) {
                 $statusID = 1;
-            } else if ($interview->service_cat_id == 3) {
+            } elseif ($interview->service_cat_id == 3) {
                 $statusID = 13;
-            } else if ($interview->service_cat_id == 9) {
+            } elseif ($interview->service_cat_id == 9) {
                 $statusID = 33;
-            } else if ($interview->service_cat_id == 10) {
+            } elseif ($interview->service_cat_id == 10) {
                 $statusID = 49;
             }
-        
-            
             if ($candidate->id) {
                 $lastInsertId = $candidate->id;
-        
-                
-        
-                
-        
-                
-        
                 $query = 'SELECT * FROM service_categories WHERE id = ?';
                 $stmt = $conn->prepare($query);
                 $stmt->execute([$interview->service_cat_id]);
                 $serviceCat = $stmt->fetch();
-        
                 // $query = "INSERT INTO history (order_id, `desc`) VALUES (?,?)";
                 // $stmt = $conn->prepare($query);
                 // $res = $stmt->execute([$lastInsertId, 'Order Created']);
-        
                 $messages = [];
                 // Create a DateTime object for Sweden's timezone
                 $swedenTimezone = new DateTimeZone('Europe/Stockholm');
                 $swedenTime = new DateTime('now', $swedenTimezone);
                 $currentTime = $swedenTime->format('H:i:s');
                 $dayOfWeek = date('N');
-        
                 $messages = getMessages($cus_id, $interview->id);
-                if (!empty($messages)) {
+                if (! empty($messages)) {
                     $query = 'UPDATE candidates SET status = 1, interview_id = ? WHERE id = ?';
                     $stmt = $conn->prepare($query);
                     $stmt->execute([$candidate->combine_interview_id, $candidate->id]);
@@ -287,16 +231,14 @@ if (isset($_POST['status'])) {
                         // echo json_encode(['success' => true, 'sendMail' => $sendMail, 'customer' => $customer, 'interview' => $interview, 'serviceCat' => $serviceCat, 'messages' => $messages]);
                         $cus_msg = $interview->service_cat_id == 1 || $interview->service_cat_id == 9 ? $messages->cus_msg : $messages->cus_msg_background;
                         // customer email msg
-                        $cusBody = replace($cus_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+                        $cusBody = replace($cus_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                         if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                             saveEmail("Customer", $customer->name, $candidate->order_id, 'Customer Message', $cusBody, $customer->email, $serviceCat->name);
                             $mailMsg1 = sendMail($cusBody, $customer->email, $customer->name, $serviceCat->name);
-                        } 
-                        else {
+                        } else {
                             saveEmail("Customer", $customer->name, $candidate->order_id, 'Customer Message', $cusBody, $customer->email, $serviceCat->name, '1');
                         }
                     }
-        
                     if ($sendMailCan == 'yes') {
                         if ($interview->service_cat_id == 1) {
                             $statusID = 1;
@@ -304,21 +246,20 @@ if (isset($_POST['status'])) {
                             $statusID = 13;
                         } elseif ($interview->service_cat_id == 9) {
                             $statusID = 33;
-                        } else if ($interview->service_cat_id == 10) {
+                        } elseif ($interview->service_cat_id == 10) {
                             $statusID = 49;
                         }
                         $msg = getStatusMessage($statusID, $interview_id, $cus_id);
                         if ($msg) {
                             $msg = $msg->col;
                         }
-        
                         // staff if assigned email msg
-                        if (!empty($staff_id)) {
+                        if (! empty($staff_id)) {
                             $staff_msg = getMessages($candidate->cus_id, $interview->id);
                             if (empty($staff_msg)) {
                                 $staff_msg = getMessages();
                             }
-                            $body = replace($staff_msg->staff_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+                            $body = replace($staff_msg->staff_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                             if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                                 saveEmail("Staff", $staff->name, $candidate->order_id, 'Staff Message', $body, $staff->email, 'Candidate Assigned');
                                 $mailMsg2 = sendMail($body, $staff->email, $staff->name, "Candidate Assigned");
@@ -326,19 +267,15 @@ if (isset($_POST['status'])) {
                                 saveEmail("Staff", $staff->name, $candidate->order_id, 'Staff Message', $body, $staff->email, 'Candidate Assigned', '1');
                             }
                         }
-        
                         // candidate email msg
-                        $canBody = replace($msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
-                        
+                        $canBody = replace($msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                         if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                             saveEmail("Candidate", $name, $candidate->order_id, 'Candidate Message', $canBody, $email, $serviceCat->name);
                             $mailMsg3 = sendMail($canBody, $candidate->email, $candidate->name, $serviceCat->name);
                         } else {
                             saveEmail("Candidate", $name, $candidate->order_id, 'Candidate Message', $canBody, $email, $serviceCat->name, '1');
                         }
-                        
                         if ($customer->sent_email == 1) {
-                        
                             if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                                 saveEmail("Customer", $name, $candidate->order_id, 'CC email of candidate registration', $canBody, $customer->email, $serviceCat->name);
                                 $mailMsg4 = sendMail($canBody, $customer->email, $customer->name, $serviceCat->name);
@@ -347,175 +284,152 @@ if (isset($_POST['status'])) {
                             }
                         }
                     }
-        
-        
                     // admin email msg
                     if (empty($messages->admin_msg)) {
                         $messages->admin_msg = 'Order has been created successfully For ' . $customer->name . '(customer) and OrderID is' . $candidate->order_id;
                     }
-                    $adminBody = replace($messages->admin_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
-        
+                    $adminBody = replace($messages->admin_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                     $query = 'SELECT * FROM admin LIMIT 1';
                     $stmt = $conn->prepare($query);
                     $stmt->execute();
                     $admin = $stmt->fetch();
-        
                     if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                         saveEmail("Admin", $admin->name, $candidate->order_id, 'Admin Message', $adminBody, $admin->email, 'Order Created');
                         $mailMsg5 = sendMail($adminBody, $admin->email, $admin->name, "Order Created");
-                        } else {
+                    } else {
                         saveEmail("Admin", $admin->name, $candidate->order_id, 'Admin Message', $adminBody, $admin->email, 'Order Created', '1');
                     }
                     $msg = getStatusMessage($status->id, $interview->id, $candidate->cus_id);
-                    if (!empty($msg)) {
-            $msg = $msg->col;
-            // Create a DateTime object for Sweden's timezone
-            $swedenTimezone = new DateTimeZone('Europe/Stockholm');
-            $swedenTime = new DateTime('now', $swedenTimezone);
-            $currentTime = $swedenTime->format('H:i:s');
-            $dayOfWeek = date('N');
-            //matching time between 8am to 5pm
-            if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
-                            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, !empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status);
-                if (!empty($add_cus)) { // additional customers email send
-                    foreach ($add_cus as $ad_cu) {
-                        saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status);
-                    }
-                }
-
-                if (isEmailAllowed($candidate->cus_id, $status->id)) {
-                    $directory = "../security-report-uploads/";
-                    $filename = $candidate->basic_investigation_result;
-                    if (($status->variable == "approved" || $status->variable == "denied") && !empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
-                        sendMail($body, $cus_email, $cus_name, $status->status, $directory . $filename);
-                        if (!empty($add_cus)) { // additional customers email send
-                            foreach ($add_cus as $ad_cu) {
-                                sendMail($body, $ad_cu->email, $ad_cu->name, $status->status, $directory . $filename);
+                    if (! empty($msg)) {
+                        $msg = $msg->col;
+                        // Create a DateTime object for Sweden's timezone
+                        $swedenTimezone = new DateTimeZone('Europe/Stockholm');
+                        $swedenTime = new DateTime('now', $swedenTimezone);
+                        $currentTime = $swedenTime->format('H:i:s');
+                        $dayOfWeek = date('N');
+                        //matching time between 8am to 5pm
+                        if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
+                            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, ! empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                            saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status);
+                            if (! empty($add_cus)) { // additional customers email send
+                                foreach ($add_cus as $ad_cu) {
+                                    saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status);
+                                }
+                            }
+                            if (isEmailAllowed($candidate->cus_id, $status->id)) {
+                                $directory = "../security-report-uploads/";
+                                $filename = $candidate->basic_investigation_result;
+                                if (($status->variable == "approved" || $status->variable == "denied") && ! empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
+                                    sendMail($body, $cus_email, $cus_name, $status->status, $directory . $filename);
+                                    if (! empty($add_cus)) { // additional customers email send
+                                        foreach ($add_cus as $ad_cu) {
+                                            sendMail($body, $ad_cu->email, $ad_cu->name, $status->status, $directory . $filename);
+                                        }
+                                    }
+                                } else {
+                                    sendMail($body, $cus_email, $cus_name, $status->status);
+                                    if (! empty($add_cus)) { // additional customers email send
+                                        foreach ($add_cus as $ad_cu) {
+                                            sendMail($body, $ad_cu->email, $ad_cu->name, $status->status);
+                                        }
+                                    }
+                                }
+                            }
+                            if ($status->variable == "canceledbycustomer") {
+                                $body = $msg;
+                                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                                saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled');
+                                sendMail($body, $candidate->email, $candidate->name, 'Order Canceled');
+                            }
+                        } else {
+                            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, ! empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                            saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status, "1");
+                            if (! empty($add_cus)) { // additional customers email send
+                                foreach ($add_cus as $ad_cu) {
+                                    saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status, "1");
+                                }
+                            }
+                            if ($status->variable == "canceledbycustomer") {
+                                $body = $msg;
+                                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                                saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled', "1");
                             }
                         }
-                    } else {
-                        sendMail($body, $cus_email, $cus_name, $status->status);
-                        if (!empty($add_cus)) { // additional customers email send
-                            foreach ($add_cus as $ad_cu) {
-                                sendMail($body, $ad_cu->email, $ad_cu->name, $status->status);
-                            }
-                        }
                     }
-                }
-
-                if ($status->variable == "canceledbycustomer") {
-                    $body = $msg;
-                                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                    saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled');
-                    sendMail($body, $candidate->email, $candidate->name, 'Order Canceled');
-                }
-            } else {
-                            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, !empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status, "1");
-                if (!empty($add_cus)) { // additional customers email send
-                    foreach ($add_cus as $ad_cu) {
-                        saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status, "1");
-                    }
-                }
-                if ($status->variable == "canceledbycustomer") {
-                    $body = $msg;
-                                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $interview->title, !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-                    saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled', "1");
-                }
-            }
-        }
                 } else {
                     flash("email messages not found for combined security Interview!", "errorMsg");
-                    
                 }
-                
             }
-        
-
-    }
-    else{
-        
-        //okokokokokok
-        $msg = getStatusMessage($status->id, $service->id, $candidate->cus_id);
-        if (!empty($msg)) {
-            $msg = $msg->col;
-            // Create a DateTime object for Sweden's timezone
-            $swedenTimezone = new DateTimeZone('Europe/Stockholm');
-            $swedenTime = new DateTime('now', $swedenTimezone);
-            $currentTime = $swedenTime->format('H:i:s');
-            $dayOfWeek = date('N');
-            //matching time between 8am to 5pm
-            if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
-                $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID,  $date, !empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status);
-                if (!empty($add_cus)) { // additional customers email send
-                    foreach ($add_cus as $ad_cu) {
-                        saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status);
-                    }
-                }
-
-                if (isEmailAllowed($candidate->cus_id, $status->id)) {
-                    $directory = "../security-report-uploads/";
-                    $filename = $candidate->basic_investigation_result;
-                    if (($status->variable == "approved" || $status->variable == "denied") && !empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
-                        sendMail($body, $cus_email, $cus_name, $status->status, $directory . $filename);
-                        if (!empty($add_cus)) { // additional customers email send
-                            foreach ($add_cus as $ad_cu) {
-                                sendMail($body, $ad_cu->email, $ad_cu->name, $status->status, $directory . $filename);
-                            }
+        } else {
+            //okokokokokok
+            $msg = getStatusMessage($status->id, $service->id, $candidate->cus_id);
+            if (! empty($msg)) {
+                $msg = $msg->col;
+                // Create a DateTime object for Sweden's timezone
+                $swedenTimezone = new DateTimeZone('Europe/Stockholm');
+                $swedenTime = new DateTime('now', $swedenTimezone);
+                $currentTime = $swedenTime->format('H:i:s');
+                $dayOfWeek = date('N');
+                //matching time between 8am to 5pm
+                if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
+                    $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, ! empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                    saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status);
+                    if (! empty($add_cus)) { // additional customers email send
+                        foreach ($add_cus as $ad_cu) {
+                            saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status);
                         }
-                    } else {
-                        sendMail($body, $cus_email, $cus_name, $status->status);
-                        if (!empty($add_cus)) { // additional customers email send
-                            foreach ($add_cus as $ad_cu) {
-                                sendMail($body, $ad_cu->email, $ad_cu->name, $status->status);
+                    }
+                    if (isEmailAllowed($candidate->cus_id, $status->id)) {
+                        $directory = "../security-report-uploads/";
+                        $filename = $candidate->basic_investigation_result;
+                        if (($status->variable == "approved" || $status->variable == "denied") && ! empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
+                            sendMail($body, $cus_email, $cus_name, $status->status, $directory . $filename);
+                            if (! empty($add_cus)) { // additional customers email send
+                                foreach ($add_cus as $ad_cu) {
+                                    sendMail($body, $ad_cu->email, $ad_cu->name, $status->status, $directory . $filename);
+                                }
+                            }
+                        } else {
+                            sendMail($body, $cus_email, $cus_name, $status->status);
+                            if (! empty($add_cus)) { // additional customers email send
+                                foreach ($add_cus as $ad_cu) {
+                                    sendMail($body, $ad_cu->email, $ad_cu->name, $status->status);
+                                }
                             }
                         }
                     }
-                }
-
-                if ($status->variable == "canceledbycustomer") {
-                    $body = $msg;
-                    $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                    saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled');
-                    sendMail($body, $candidate->email, $candidate->name, 'Order Canceled');
-                }
-            } else {
-                $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, !empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
-                saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status, "1");
-                if (!empty($add_cus)) { // additional customers email send
-                    foreach ($add_cus as $ad_cu) {
-                        saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status, "1");
+                    if ($status->variable == "canceledbycustomer") {
+                        $body = $msg;
+                        $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                        saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled');
+                        sendMail($body, $candidate->email, $candidate->name, 'Order Canceled');
                     }
-                }
-                if ($status->variable == "canceledbycustomer") {
-                    $body = $msg;
-                    $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-                    saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled', "1");
+                } else {
+                    $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, ! empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                    saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status, "1");
+                    if (! empty($add_cus)) { // additional customers email send
+                        foreach ($add_cus as $ad_cu) {
+                            saveEmail("Additional Customer", $ad_cu->name, $orderID, $status->status . ' Message', $body, $ad_cu->email, $status->status, "1");
+                        }
+                    }
+                    if ($status->variable == "canceledbycustomer") {
+                        $body = $msg;
+                        $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
+                        saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled', "1");
+                    }
                 }
             }
         }
-        }
-         $combine_status_array = explode(',', $customer->combine_status);
-        if ( $status->id && $combine_status_array && in_array($status->id, $combine_status_array)) {
+        $combine_status_array = explode(',', $customer->combine_status);
+        if ($status->id && $combine_status_array && in_array($status->id, $combine_status_array)) {
             $combine_bk_and_security_array = explode(',', $customer->combine_bk_and_security);
             if ($combine_bk_and_security_array && in_array($candidate->interview_id, $combine_bk_and_security_array)) {
                 // Update candidate to status 1 and set interview_id to combine_interview_id
-                
                 // $query = 'UPDATE candidates SET status = 1, interview_id = ? WHERE id = ?';
                 // $stmt = $conn->prepare($query);
                 // $stmt->execute([$candidate->combine_interview_id, $_GET['id']]);
-                
                 // Recursively call the same function with updated status and interview_id
                 $_POST['status'] = 1; // Set status to 1
-                
                 $_POST['interviewID'] = $candidate->combine_interview_id; // Set interview_id to combine_interview_id
                 $_POST['comment'] = "Background Check is transferred to Security Check Interview.";
                 // Call the same function recursively
@@ -529,40 +443,31 @@ if (isset($_POST['status'])) {
         flash("statusUpdated", "Could not update status!", "errorMsg");
     }
 }
-
-
 $query = 'SELECT * FROM candidates WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_GET['id']]);
 $candidate = $stmt->fetch();
-
 $query = 'SELECT * FROM customers WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->cus_id]);
 $customer = $stmt->fetch();
-
 $query = 'SELECT * FROM staff WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->staff_id]);
 $staff = $stmt->fetch();
-
 $query = 'SELECT * FROM interviews WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->interview_id]);
 $interview = $stmt->fetch();
-
 $query = 'SELECT * FROM service_categories';
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $servicesCats = $stmt->fetchAll();
-
 ?>
 <?php flash("statusUpdated"); ?>
 <div class="mx-lg-4 main-content">
     <div class="container">
-
         <div class="row ">
-
             <div class="col-lg-12">
                 <div class="table-section">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -575,41 +480,56 @@ $servicesCats = $stmt->fetchAll();
                     <input type="hidden" name="current_interview_id" id="current_interview_id" value="<?php echo $candidate->interview_id ?>">
                     <?php
                         $srs = null;
-
-                        if (!empty($candidate->meta_data)) {
-                            $data = json_decode($candidate->meta_data, true);
-
-                            if (!empty($data) && is_array($data)) {
-                                foreach ($data as $key => $value) {
-                                    if ($key == "This interview is suggested in the SRS portal?") {
-                                        if (!empty($value)) {
-                                            if (strtolower($value) == "yes") {
-                                                $srs = 1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ?>
+if (! empty($candidate->meta_data)) {
+    $data = json_decode($candidate->meta_data, true);
+    if (! empty($data) && is_array($data)) {
+        foreach ($data as $key => $value) {
+            if ($key == "This interview is suggested in the SRS portal?") {
+                if (! empty($value)) {
+                    if (strtolower($value) == "yes") {
+                        $srs = 1;
+                    }
+                }
+            }
+        }
+    }
+}
+?>
                     <form id="status-form" class="update-form" method="post">
                         <div class="row">
                             <div class="col-lg-6 mb-3" id="">
                                 <label class="form-label" for="">Status</label>
                                 <?php
-                                $cusStatuses = explode(',', $customer->statuses);
-                                ?>
+        $cusStatuses = explode(',', $customer->statuses);
+// Background-only mode: only show Background Check service statuses
+if (function_exists('getStaffAllowedPermissions')) {
+    getStaffAllowedPermissions(); // ensures $_SESSION['user_category'] is set
+}
+$userCategory = $_SESSION['user_category'] ?? null;
+$hasBackgroundPermission = function_exists('staffHasPermission') && staffHasPermission('view_background_orders');
+// In statuses table, status_type refers to service_categories.id; 3 = Background Check
+$backgroundServiceCategoryId = 3;
+$statusBackgroundOnly = ($userCategory == 5 && $hasBackgroundPermission);
+?>
                                 <select class="form-control" name="status" id="change-status" style="">
-                                    <?php if (!empty($servicesCats)) : ?>
+                                    <?php if (! empty($servicesCats)) : ?>
                                         <?php foreach ($servicesCats as $servicesCat) : ?>
+                                                <?php
+                // If background-only, skip non-background service categories
+                if ($statusBackgroundOnly && (int)$servicesCat->id !== (int)$backgroundServiceCategoryId) {
+                    continue;
+                }
+                                            ?>
                                             <optgroup label="<?php echo $servicesCat->name ?>">
                                                 <?php $statuses = getStatusesByService($servicesCat->id) ?>
                                                 <?php foreach ($statuses as $key => $status) : ?>
                                                     <?php if (in_array($status->sID, $cusStatuses)) : ?>
-                                                        <option data-status-variable="<?php echo $status->variable ?>" <?php echo $status->sID == $candidate->status ? 'selected' : '' ?>
-                                                        <?php if (!empty($srs) && ($status->sID == 4 || $status->sID == 7)) { ?> disabled <?php } ?>        
-                                                        value="<?php echo $status->sID ?>"><?php echo $status->status ?></option>
+                                                        <option 
+                                                        data-status-variable="<?php echo $status->variable ?>" 
+                                                        <?php echo $status->sID == $candidate->status ? 'selected' : '' ?>
+                                                        <?php if (! empty($srs) && ($status->sID == 4 || $status->sID == 7)) { ?> disabled <?php } ?>        
+                                                        value="<?php echo $status->sID ?>"><?php echo $status->status ?>
+                                                    </option>
                                                     <?php endif; ?>
                                                 <?php endforeach; ?>
                                             </optgroup>
@@ -621,22 +541,18 @@ $servicesCats = $stmt->fetchAll();
                                 <label class="form-label">Date</label>
                                 <input type="date" id="date" required name="date" class="form-control">
                             </div>
-
                             <!-- <div class="col-lg-12 mb-3 service_cost">
                                 <label class="form-label">Travelling Cost</label>
                                 <input type="number" id="travelling_cost" value="<?php echo $candidate->travel_cost ?>" class="form-control" name="travelling_cost" >
                             </div> -->
-
                             <div class="col-lg-12 mb-3">
                                 <label class="form-label" for="comment">Comment</label>
                                 <textarea name="comment" class="form-control" id="comment"></textarea>
                             </div>
-
                             <div class="col-lg-12 mb-3">
                                 <label class="form-label">Upload Report</label>
                                 <input name="report" type="file" class="form-control">
                             </div>
-
                             <input type="hidden" name="cus_name" value="<?php echo $customer->name ?>">
                             <input type="hidden" name="cus_email" value="<?php echo $customer->email ?>">
                             <input type="hidden" name="can_name" value="<?php echo $candidate->name ?>">
@@ -647,7 +563,6 @@ $servicesCats = $stmt->fetchAll();
                             <input type="hidden" name="interviewID" value="<?php echo $interview->id ?>">
                         </div>
                     </form>
-
                     <div class="d-flex justify-content-end">
                         <button type="button" class="btn-primary bg-primary" id="trigger_btn" onclick="check_date()">Update</button>
                         <button type="submit" name="update" id="form_submit_btn" class="btn-primary bg-primary report-btn report-btn-update" style="display:none">Update</button>
@@ -659,7 +574,6 @@ $servicesCats = $stmt->fetchAll();
 </div>
 </div>
 </div>
-
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
@@ -677,18 +591,13 @@ $servicesCats = $stmt->fetchAll();
         </div>
     </div>
 </div>
-
 <?php
-
 include_once('includes/footer.php');
-
 ?>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js" integrity="sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js" integrity="sha512-0bEtK0USNd96MnO4XhH8jhv3nyRF0eK87pJke6pkYf3cM0uDIhNJy9ltuzqgypoIFXw3JSuiy04tVk4AjpZdZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 <script id="report-template" type="text/template">
     <div id="report-section">
         <div class="row">
@@ -696,43 +605,34 @@ include_once('includes/footer.php');
                 <label class="form-label">Reason</label>
                 <textarea id="reason" name="reason_denied" placeholder="Reason for denied" rows="3" class="w-100 sign-textarea form-control"></textarea>
             </div>
-
             <div class="col-lg-12 mb-3">
                 <label class="form-label">Where did the interview take place?</label>
                 <input type="text" name="city" id="city_report" placeholder="Where did the interview take place?" class="w-100 sign-input form-control" oninput="check_field()">
             </div>
         </div>
-
         <div class="row">
-
                         <div class="col-md-12" id="city_text_msg" style="display:none">
                 <p class="text-danger">Please Fill the Interview Place Filed First !!</p>
             </div>
-
             <div class="col-lg-6 mb-3">
                 <button type="button" id="preview" onclick="check_field()" data-bs-toggle="modal" data-bs-target="#exampleModal" class="btn-fill w-100 mt-4 mx-0 report-btn btn-primary bg-primary"><a>Preview Report</a></button>
             </div>
-
             <div class="col-lg-6 mb-3">
                 <button type="button" id="generate" onclick="check_field()" class="btn-fill w-100 mt-4 mx-0 report-btn btn-primary bg-primary"><a>Generate Report</a></button>
             </div>
-
             <!--        <div class="col-lg-4 ">-->
             <!--            <button type="button" id="submit" class="btn-fill w-100 mt-4 mx-0 report-btn"><a>Submit Report</a></button>-->
             <!--        </div>-->
         </div>
-
         <div class="col-lg-12 mt-4">
             <p id="report-msg"></p>
         </div>
     </div>
 </script>
-
 <script>
     var candidate = <?php echo json_encode($candidate); ?>;
     var customer = <?php echo json_encode($customer); ?>;
     var staff = <?php echo json_encode($staff); ?>;
-
     function check_field() {
         var city = $('#city_report').val()
         if (city != '') {
@@ -760,7 +660,6 @@ include_once('includes/footer.php');
             $('#trigger_btn').attr('disabled', false)
         }
     })
-
     function check_date() {
         var candidate_present_status = $("#updated_status").val();
         var combine_bk_and_security = $("#updated_customer").val().split(',');
@@ -779,14 +678,11 @@ include_once('includes/footer.php');
             alert('Please Select Date First');
         }
          if (combine_status_array && combine_status_array.includes(status) && combine_bk_and_security.includes(interview_id) && (combine_interview_id == 0 || combine_interview_id == '0') ){
-            
                             // showpopup('Please select security interview first candidate update page');
                             flash("errorMsg", "Please select security interview first (Candidate update page)");
                             // that.prop("disabled", false);
-
                             // $("#update_status_msg").html("")
                             // return;
-            
         }
         else {
             $('#form_submit_btn').click();
@@ -800,7 +696,6 @@ include_once('includes/footer.php');
         //     return;
         // } 
     }
-
     $("#change-status").on("change", function() {
         var statusVariable = $(this).find("option:selected").data("status-variable")
         $("#report-section").remove()
@@ -814,7 +709,6 @@ include_once('includes/footer.php');
             $('#trigger_btn').attr('disabled', false)
         }
     })
-
     // $("#send-report-status").on("change", function () {
     //     var statusVariable = $("#change-status").find("option:selected").data("status-variable")
     //     $("#report-section").remove()
@@ -825,16 +719,12 @@ include_once('includes/footer.php');
     //         }
     //     }
     // })
-
     window.jsPDF = window.jspdf.jsPDF;
-
     // $(window).on('load', function() {
     //     $("#preview").click()
     // })
-
     $("body").on("click", ".report-btn", function(e) {
         e.preventDefault();
-
         // Create new jsPdf instance
         const doc = new jsPDF()
         var x = 10;
@@ -842,20 +732,17 @@ include_once('includes/footer.php');
         var leftMargin = 10;
         var rightMargin = 10;
         var statusVariable = $("#change-status").find("option:selected").data("status-variable")
-
         if ($(this).hasClass("report-btn-update")) {
             if ((statusVariable !== "approved" && statusVariable !== "denied") || customer.send_security_report == 0) {
                 $("#status-form").submit()
                 return;
             }
         }
-
         // Define header function
         const addHeader = function() {
             y = 5
             doc.addImage("../assets/images/vattenfall.png", 'PNG', (doc.internal.pageSize.width / 2) - 25, y, 50, 8)
         }
-
         // Define footer function
         const addFooter = function() {
             doc.setTextColor("#9298A0")
@@ -868,16 +755,13 @@ include_once('includes/footer.php');
             };
             const formattedDate = date.toLocaleDateString('en-US', options);
             doc.text(formattedDate, leftMargin, doc.internal.pageSize.height - 5)
-
             doc.text("Confidentiality class: C3 - Restricted", doc.internal.pageSize.width - 56, doc.internal.pageSize.height - 10)
             doc.text("(after completion of the form)", doc.internal.pageSize.width - 56, doc.internal.pageSize.height - 5)
         }
-
         const addTable = function(caption, table) {
             doc.setFontSize(12);
             doc.setFont("Helvetica", "Bold");
             doc.text(caption, leftMargin, y)
-
             y += 3
             var data = [];
             table.forEach(function(row) {
@@ -886,7 +770,6 @@ include_once('includes/footer.php');
                     value: row[1]
                 })
             })
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -910,11 +793,9 @@ include_once('includes/footer.php');
                     },
                 },
                 didParseCell: function(data) {
-
                 }
             })
         }
-
         // Function to draw a checkmark symbol
         function drawCheckmark(doc, x, y) {
             var tickSize = 2; // Size of the tick lines
@@ -923,7 +804,6 @@ include_once('includes/footer.php');
             doc.line(x, y, x + tickSize, y + tickSize); // Draw the first tick line
             doc.line(x - 0.2 + tickSize, y - 0.2 + tickSize, x + tickSize * 2, y - tickSize); // Draw the second tick line
         }
-
         const addTable2 = function(table) {
             y += 3;
             var data = [];
@@ -934,7 +814,6 @@ include_once('includes/footer.php');
                     col2: row[2],
                     col3: row[3]
                 };
-
                 if (index > 2) {
                     rowData.key = {
                         content: rowData.key,
@@ -942,10 +821,8 @@ include_once('includes/footer.php');
                     };
                     delete rowData.col1;
                 }
-
                 data.push(rowData);
             });
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -984,17 +861,14 @@ include_once('includes/footer.php');
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
                 }
             });
         }
-
         const addTable3 = function(table, status) {
             y += 3
             var data = [];
@@ -1004,7 +878,6 @@ include_once('includes/footer.php');
                     value: row[1]
                 })
             })
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -1034,50 +907,40 @@ include_once('includes/footer.php');
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
-
                     if (data.cell.section === "body" && data.column.index === 1 && status === "approved") {
                         var cellWidth = data.cell.width;
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
                 }
             })
         }
-
         function getTextWidth(text, fontSize) {
             // Text width in mm
             return (doc.getStringUnitWidth(text) * fontSize) / (72 / 25.6)
         }
-
         function pxToMm(px) {
             return px * 25.4 / 72;
         }
-
         // Add first page with header
         addHeader()
         addFooter()
-
         // Report Data
         y += 20;
         doc.setFontSize(14)
         doc.setTextColor("#000000")
         doc.setFont("Helvetica", 'Bold')
         doc.text("Result of the basic investigation", leftMargin, y)
-
         y += 10;
         doc.setFontSize(12)
         doc.setFont("Helvetica", '')
@@ -1087,7 +950,6 @@ include_once('includes/footer.php');
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         y += 33;
         para = `This form must be used when reporting back after a basic investigation has been completed.
         With basic investigation according to ch. 3 Section 3 of the Swedish Protective Security Act (2018:585) refers to an investigation into personal circumstances of importance for the security vetting. The investigation shall include grades, certificates, references and information provided by the person to whom the examination applies, as well as other information to the extent that it is relevant to the examination. The detailed requirements can be found in Vattenfall's requirements specification for Security Vetting.`;
@@ -1095,7 +957,6 @@ include_once('includes/footer.php');
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         // Generate Table
         y += 35
         const table = [];
@@ -1104,7 +965,6 @@ include_once('includes/footer.php');
         table.push(["E-post / E-mail", customer.email])
         table.push(["Företag / Company", customer.company])
         addTable(caption, table)
-
         y += 28
         table.length = 0
         caption = "Bakgrundskontroll genomförd av / Basic investigation conducted by"
@@ -1113,7 +973,6 @@ include_once('includes/footer.php');
         table.push(["E-post / E-mail", "info@recway.se"])
         table.push(["Företag / Company", "Recway AB"])
         addTable(caption, table)
-
         y += 37
         table.length = 0
         caption = "Intervjuarens uppgifter / Information about the interviewer"
@@ -1122,7 +981,6 @@ include_once('includes/footer.php');
         table.push(["E-post / E-mail", staff.email])
         table.push(["Företag / Company", "Recway AB"])
         addTable(caption, table)
-
         y += 37
         table.length = 0
         console.log(candidate)
@@ -1131,7 +989,6 @@ include_once('includes/footer.php');
         table.push(["Personnummer (ååmmdd-xxxx) Birth date (yymmdd-xxxx)", candidate.security])
         table.push(["VASC-ID", candidate.vasc_id])
         addTable(caption, table)
-
         y += 35
         doc.setDrawColor(0, 0, 0)
         // doc.setFillColor(0,0,0)
@@ -1146,17 +1003,14 @@ The form sends by e-mail to: securityvetting@vattenfall.com`;
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         doc.addPage()
         addHeader()
         addFooter()
-
         y += 20;
         doc.setFontSize(14)
         doc.setTextColor("#000000")
         doc.setFont("Helvetica", 'Bold')
         doc.text("Result of the basic investigation", leftMargin, y)
-
         y += 7;
         doc.setFontSize(12)
         doc.setFont("Helvetica", '')
@@ -1167,7 +1021,6 @@ Select which of the background screening activities that have been performed. De
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         y += 26
         doc.setFontSize(8)
         doc.text("Not Applicable*", doc.internal.pageSize.width / 2, y)
@@ -1175,7 +1028,6 @@ Select which of the background screening activities that have been performed. De
         doc.text("Ja/Yes", (doc.internal.pageSize.width / 2) + 31, y)
         doc.setFontSize(8)
         doc.text("Nej/No", (doc.internal.pageSize.width / 2) + 61, y)
-
         table.length = 0
         table.push([`Kontroll av CV (Curriculum Vitae)*
 Verification of Resumé/CV`, "", "", ""])
@@ -1198,7 +1050,6 @@ Verification of corporate and associated activities`, "", "", ""])
         table.push([`Kontroll av rättsliga processer och historiska/pågående domar
 Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         addTable2(table)
-
         y = doc.lastAutoTable.finalY + 5;
         doc.setFontSize(10)
         doc.setFont("Helvetica", "Bold")
@@ -1206,7 +1057,6 @@ Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text("(markera med ett X)", leftMargin + 75, y)
-
         y += 5
         doc.setFontSize(10)
         doc.setFont("Helvetica", "Bold")
@@ -1214,13 +1064,11 @@ Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text("(mark with an X) ", leftMargin + 55, y)
-
         y += 2
         doc.setFontSize(8)
         doc.text("Ja/Yes", (doc.internal.pageSize.width / 2) + 30, y)
         doc.setFontSize(8)
         doc.text("Nej/No", (doc.internal.pageSize.width / 2) + 60, y)
-
         table.length = 0
         table.push([`Det finns en god personlig kännedom om den prövade
 There is a god knowledge about the vetted person`, "", ""])
@@ -1229,7 +1077,6 @@ The individual can be assumed to be loyal to the interests to be protected by th
         table.push([`Individen kan i övrigt anses pålitlig från säkerhetssynpunkt.
 The individual can otherwise be considered reliable from a security point of view.`, "", ""])
         addTable3(table, statusVariable)
-
         y = doc.lastAutoTable.finalY + 2;
         doc.rect(leftMargin, y, doc.internal.pageSize.width - (leftMargin * 2), 15)
         para = $("#reason").val()
@@ -1238,7 +1085,6 @@ The individual can otherwise be considered reliable from a security point of vie
         doc.text(para ? para : "", leftMargin + 2, y + 8, {
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2)
         })
-
         y += 19
         doc.text(`Datum för bakgrundskontroll /
 Date for the background check`, leftMargin, y)
@@ -1252,7 +1098,6 @@ Date for the background check`, leftMargin, y)
         var formattedDate = date.toLocaleDateString('en-US', options);
         doc.setFont("Helvetica", "Bold")
         doc.text(bcd ? formattedDate : "N/A", leftMargin, y + 6)
-
         y += 10
         doc.setFont("Helvetica", "")
         var interview_date = candidate.booked
@@ -1266,7 +1111,6 @@ Date for the background check`, leftMargin, y)
         doc.text(`Datum för intervjun / Date for the interview`, leftMargin, y)
         doc.setFont("Helvetica", "Bold")
         doc.text(interview_date ? formattedDate : "N/A", leftMargin, y + 3)
-
         y -= 10
         doc.text(`Vidimering av genomförd grundutredning`, doc.internal.pageSize.width - 65, y)
         doc.setFont("Helvetica", "")
@@ -1274,7 +1118,6 @@ Date for the background check`, leftMargin, y)
         doc.setFont("Helvetica", "Bold")
         var city = $("#city_report").val()
         doc.text(city ? city : "", doc.internal.pageSize.width - 51, y + 3)
-
         y += 3
         doc.setFont("Helvetica", "")
         var dateVal = $("#date").val()
@@ -1288,20 +1131,17 @@ Date for the background check`, leftMargin, y)
         doc.text(`Datum / Date : `, doc.internal.pageSize.width - 65, y + 3)
         doc.setFont("Helvetica", "Bold")
         doc.text(formattedDate, doc.internal.pageSize.width - 45, y + 3)
-
         y += 3
         doc.setFont("Helvetica", "")
         doc.text(`Signatur/ansvarig för genomförd
 grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         doc.setFont("Helvetica", "Bold")
         doc.text(staff.name ? staff.name : "", doc.internal.pageSize.width - 43, y + 6.5)
-
         y += 12
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text(`* Dessa kontroller utförs av Vattenfall i fall av nyrekryteringar. Vid konsult/entreprenörsuppdrag utförs de av leverantören själv.
    These controls are carried out by Vattenfall, in cases of recruitments. For consultants, they are carried out by the supplier itself.`, leftMargin, y)
-
         var blobPDF = new Blob([doc.output('blob')], {
             type: "application/pdf"
         })
@@ -1313,16 +1153,13 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         } else {
             $("#report-msg").removeClass()
             $("#report-msg").empty()
-
             $("#report-msg").addClass("text-danger text-center")
             $("#report-msg").html(`<div class="lds-ring"><div></div><div></div><div></div><div></div></div>` + "Please wait while the report is being submitted...")
-
             // Convert the PDF blob to FormData object
             var formData = new FormData();
             formData.append('file', blobPDF, 'filename.pdf');
             formData.append('id', candidate.id);
             formData.append('filename', candidate.order_id);
-
             // Send the form data to the PHP script using AJAX
             $.ajax({
                 url: '../security-report-upload.php',
@@ -1334,7 +1171,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     console.log(response)
                     $("#report-msg").removeClass()
                     $("#report-msg").empty()
-
                     if (response.includes("Error")) {
                         $("#report-msg").addClass("text-error text-center")
                     } else {
@@ -1347,31 +1183,25 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     console.log('Error uploading file: ' + error);
                 }
             });
-
         }
     })
-
     // $(document).ready(function() {
     //     var selectElement = document.querySelector('#change-status'); 
     //     var selectedValue = selectElement.value;
     //     var serviceCostDiv = document.querySelector('.service_cost');
-
     //     if (selectedValue == "4") {
     //         serviceCostDiv.removeAttribute('hidden');
     //     }
-
     //     toggleDivVisibility(this);
     //     // Bind the change event to the select element
     //     selectElement.addEventListener('change', function() {
     //         toggleDivVisibility(this);
     //     });
     // });
-
     // function toggleDivVisibility(selectElement) {
     //     var interviewPlace = <?php echo json_encode($interview->place); ?>;
     //     var selectedValue = selectElement.value;
     //     var serviceCostDiv = document.querySelector('.service_cost');
-
     //     if (selectedValue == "4" && interviewPlace == '1') {
     //         serviceCostDiv.removeAttribute('hidden');
     //     } else {

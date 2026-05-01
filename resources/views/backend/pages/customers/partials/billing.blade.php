@@ -8,7 +8,7 @@
             <div>
                 <label for="pref" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {{ __('Reference') }}
-                    <span class="block text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">
+                    <span class="text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">
                         {{ __('(Invoice Recipient)') }}
                     </span>
                 </label>
@@ -60,6 +60,5 @@
         </div>
     </div>
 </div>
-
 
 

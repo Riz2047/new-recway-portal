@@ -24,9 +24,6 @@ class UserPermissionSeeder extends Seeder
             ['id' => 10, 'title' => 'View-department', 'user_type' => 0],
             ['id' => 11, 'title' => 'Create-department', 'user_type' => 0],
             ['id' => 12, 'title' => 'Update-department', 'user_type' => 0],
-            ['id' => 13, 'title' => 'View-department-user', 'user_type' => 0],
-            ['id' => 14, 'title' => 'Create-department-user', 'user_type' => 0],
-            ['id' => 15, 'title' => 'Update-department-user', 'user_type' => 0],
             ['id' => 16, 'title' => '3-Background-Check-Questions', 'user_type' => 0],
             ['id' => 22, 'title' => 'view_customer', 'user_type' => 3],
             ['id' => 23, 'title' => 'create_customer', 'user_type' => 3],
@@ -52,7 +49,7 @@ class UserPermissionSeeder extends Seeder
             ['id' => 45, 'title' => 'view_own_logs', 'user_type' => 3],
             ['id' => 46, 'title' => 'view_all_logs', 'user_type' => 3],
             ['id' => 47, 'title' => 'delete_logs', 'user_type' => 3],
-            ['id' => 48, 'title' => 'change_staff', 'user_type' => 3],
+            ['id' => 48, 'title' => 'view_staff', 'user_type' => 3],
             ['id' => 49, 'title' => 'view_statistics', 'user_type' => 3],
         ];
 

@@ -1,10 +1,13 @@
 <?php
-
+echo "<pre>";
+print_r($_GET);
+echo "</pre>";
+exit;
 $activeLink = "candidates";
 
-include_once ('includes/header.php');
+include_once('includes/header.php');
 
-if(!isset($_GET['id'])){
+if (! isset($_GET['id'])) {
     redirect('index.php');
 }
 
@@ -33,7 +36,7 @@ $customer = findByQuery("SELECT company FROM customers WHERE id = {$candidate->c
                     <form action="process.php" method="post" class="update-form">
                         <div class="row">
                             <div id="report-html">
-                                <?php if(!empty($report_html)): ?>
+                                <?php if (! empty($report_html)): ?>
                                     <?php echo $report_html->report_data ?>
                                 <?php else: ?>
                                     <div class="elements">
@@ -1456,7 +1459,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 <?php
 
-include_once ('includes/footer.php');
+include_once('includes/footer.php');
 
 ?>
 

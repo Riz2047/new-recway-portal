@@ -6,7 +6,6 @@ namespace App\Livewire\Datatable;
 
 use App\Enums\Hooks\UserActionHook;
 use App\Enums\Hooks\UserFilterHook;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
@@ -66,19 +65,19 @@ class StaffDatatable extends Datatable
 
     public function toggleEmailColumn(): void
     {
-        $this->showEmail = !$this->showEmail;
+        $this->showEmail = ! $this->showEmail;
         $this->updatedShowEmail($this->showEmail);
     }
 
     public function togglePhoneColumn(): void
     {
-        $this->showPhone = !$this->showPhone;
+        $this->showPhone = ! $this->showPhone;
         $this->updatedShowPhone($this->showPhone);
     }
 
     public function toggleOrdersColumn(): void
     {
-        $this->showOrders = !$this->showOrders;
+        $this->showOrders = ! $this->showOrders;
         $this->updatedShowOrders($this->showOrders);
     }
 
@@ -95,7 +94,7 @@ class StaffDatatable extends Datatable
                 'title' => __('Name'),
                 'width' => null,
                 'sortable' => true,
-                'sortBy' => 'first_name',
+                'sortBy' => 'name',
             ],
         ];
 
@@ -156,7 +155,7 @@ class StaffDatatable extends Datatable
     protected function buildQuery(): QueryBuilder
     {
         $allowedRoles = ['Manager', 'Manager with statistics', 'Moderator', 'User'];
-        
+
         $query = QueryBuilder::for($this->model)
             ->with('roles')
             ->with('userMeta')
@@ -165,8 +164,7 @@ class StaffDatatable extends Datatable
             })
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('first_name', 'like', "%{$this->search}%")
-                        ->orWhere('last_name', 'like', "%{$this->search}%")
+                    $q->where('name', 'like', "%{$this->search}%")
                         ->orWhere('email', 'like', "%{$this->search}%");
                 });
             });
@@ -222,7 +220,7 @@ class StaffDatatable extends Datatable
             ->whereHas('roles', function ($q) use ($allowedRoles) {
                 $q->whereIn('name', $allowedRoles);
             })
-            ->select('id', 'first_name', 'last_name', 'email')
+            ->select('id', 'name', 'email')
             ->get();
 
         if ($assignedStaff->isEmpty()) {
@@ -231,8 +229,8 @@ class StaffDatatable extends Datatable
 
         // Display staff members as badges or comma-separated list
         $staffNames = $assignedStaff->map(function ($staff) {
-            return '<span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-1 mb-1">' 
-                . e($staff->full_name) 
+            return '<span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-1 mb-1">'
+                . e($staff->full_name)
                 . '</span>';
         })->implode('');
 
@@ -249,7 +247,7 @@ class StaffDatatable extends Datatable
     protected function handleBulkDelete(array $ids): int
     {
         $allowedRoles = ['Manager', 'Manager with statistics', 'Moderator', 'User'];
-        
+
         $ids = array_filter($ids, fn ($id) => $id != Auth::id()); // Prevent self-deletion.
         $users = User::whereIn('id', $ids)
             ->whereHas('roles', function ($q) use ($allowedRoles) {
@@ -300,8 +298,8 @@ class StaffDatatable extends Datatable
                 break;
             }
         }
-        
-        if (!$hasAllowedRole) {
+
+        if (! $hasAllowedRole) {
             throw new \Exception(__('This user is not a staff member.'));
         }
 
@@ -336,10 +334,12 @@ class StaffDatatable extends Datatable
 
     public function getRoutes(): array
     {
+        $prefix = request()->is('admin/*') || request()->is('admin') ? 'admin.' : 'staff.';
+
         return [
-            'create' => 'admin.staff.create',
-            'edit' => 'admin.staff.edit',
-            'delete' => 'admin.staff.destroy',
+            'create' => $prefix . 'staff.create',
+            'edit' => $prefix . 'staff.edit',
+            'delete' => $prefix . 'staff.destroy',
         ];
     }
 
@@ -356,5 +356,3 @@ class StaffDatatable extends Datatable
         ];
     }
 }
-
-

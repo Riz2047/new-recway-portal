@@ -22,8 +22,7 @@ beforeEach(function () {
 
     // Create admin user with permissions
     $admin = User::factory()->create([
-        'first_name' => 'Admin',
-        'last_name' => 'User',
+        'name' => 'Admin',
         'email' => 'adminuser@example.com',
         'username' => 'admin_user',
     ]);

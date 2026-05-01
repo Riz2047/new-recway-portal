@@ -28,10 +28,7 @@ class StoreUserRequest extends FormRequest
     {
         return Hook::applyFilters(UserFilterHook::USER_STORE_VALIDATION_RULES, [
             /** @example "John" */
-            'first_name' => 'required|max:50',
-
-            /** @example "Doe" */
-            'last_name' => 'required|max:50',
+            'name' => 'required|max:50',
 
             /** @example "john.doe@example.com" */
             'email' => 'required|max:100|email|unique:users,email',

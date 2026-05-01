@@ -2,7 +2,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
             <p class="text-sm text-gray-500">{{ __('Email') }}</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ $customer->email }}</p>
+            <p class="font-medium text-gray-900 dark:text-gray-100">{{ $customer->user->email }}</p>
 
             <p class="mt-4 text-sm text-gray-500">{{ __('Phone') }}</p>
             <p class="font-medium text-gray-900 dark:text-gray-100">{{ $customer->phone ?? __('N/A') }}</p>
@@ -23,9 +23,9 @@
             <div class="text-center">
                 <div
                     class="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gray-700 text-2xl font-semibold text-white">
-                    {{ strtoupper(substr($customer->name, 0, 1)) }}
+                    {{ strtoupper(substr($customer->user->name, 0, 1)) }}
                 </div>
-                <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $customer->name }}</p>
+                <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $customer->user->name }}</p>
             </div>
         </div>
     </div>

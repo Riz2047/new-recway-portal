@@ -229,3 +229,15 @@ if (! function_exists('generate_secure_password')) {
             ->generatePassword($length, $includeSpecialChars);
     }
 }
+
+/**
+ * Get the current panel (e.g., 'admin' or 'staff') based on the first URL segment.
+ *
+ * @return string|null  The current panel name or null if not identifiable
+ */
+if (! function_exists('panel')) {
+    function panel(): ?string
+    {
+        return request()->segment(1);
+    }
+}

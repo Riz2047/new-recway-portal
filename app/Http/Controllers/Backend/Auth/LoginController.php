@@ -41,7 +41,14 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
+        $path = request()->path();
+        $isStaff = str_starts_with($path, 'staff');
+        $isAdmin = str_starts_with($path, 'admin');
+
         if (Auth::guard('web')->check()) {
+            if ($isStaff) {
+                return redirect()->route('staff.dashboard');
+            }
             return redirect()->route('admin.dashboard');
         }
 
@@ -50,23 +57,26 @@ class LoginController extends Controller
         $email = app()->environment('local') ? 'superadmin@example.com' : '';
         $password = app()->environment('local') ? '12345678' : '';
 
-        return view('backend.auth.login')->with(compact('email', 'password'));
+        $roleType = $isStaff ? 'staff' : 'admin';
+        return view('backend.auth.login')->with(compact('email', 'password', 'roleType'));
     }
 
     public function login(LoginRequest $request): RedirectResponse|Response
     {
+        $path = $request->path();
+        $isStaff = str_starts_with($path, 'staff');
+        $dashboardRoute = $isStaff ? 'staff.dashboard' : 'admin.dashboard';
+
         if (Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password], $request->remember)) {
             $this->demoAppService->maybeSetDemoLocaleToEnByDefault();
             session()->flash('success', 'Successfully Logged in!');
-
-            return redirect()->route('admin.dashboard');
+            return redirect()->route($dashboardRoute);
         }
 
         if (Auth::guard('web')->attempt(['username' => $request->email, 'password' => $request->password], $request->remember)) {
             $this->demoAppService->maybeSetDemoLocaleToEnByDefault();
             session()->flash('success', 'Successfully Logged in!');
-
-            return redirect()->route('admin.dashboard');
+            return redirect()->route($dashboardRoute);
         }
 
         return $this->sendFailedLoginResponse($request);
@@ -74,8 +84,9 @@ class LoginController extends Controller
 
     public function logout(): RedirectResponse
     {
+        $path = request()->path();
+        $isStaff = str_starts_with($path, 'staff');
         Auth::guard('web')->logout();
-
-        return redirect()->route('admin.login');
+        return redirect()->route($isStaff ? 'staff.login' : 'admin.login');
     }
 }

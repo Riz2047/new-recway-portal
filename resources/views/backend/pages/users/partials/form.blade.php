@@ -12,8 +12,7 @@
 'showParentStaff' => false, // Show "Under this staff member" field
 'allStaff' => [], // All staff members for parent staff dropdown
 'parentStaffIds' => [], // Selected parent staff IDs
-'firstNameLabel' => null,
-'lastNameLabel' => null,
+'nameLabel' => null,
 'emailLabel' => null,
 'usernameLabel' => null,
 'passwordLabel' => null,
@@ -30,8 +29,7 @@ $isEdit = $mode === 'edit';
 $isProfile = $mode === 'profile';
 
 // Default labels
-$firstNameLabel = $firstNameLabel ?? __('First Name');
-$lastNameLabel = $lastNameLabel ?? __('Last Name');
+$nameLabel = $nameLabel ?? __('Name');
 $emailLabel = $emailLabel ?? ($isProfile ? __('Email') : __('User Email'));
 $usernameLabel = $usernameLabel ?? __('Username');
 $passwordLabel = $passwordLabel ?? ($isCreate ? __('Password') : __('Password (Optional)'));
@@ -100,22 +98,14 @@ $emptyText = isset($user) && $user?->full_name
 				</h3>
 			</div>
 			<div>
-				<label for="first_name" class="form-label">{{ $firstNameLabel }}</label>
-				<input type="text" name="first_name" id="first_name" required
-					value="{{ old('first_name', $user?->first_name) }}"
-					placeholder="{{ __('Enter First Name') }}"
+				<label for="name" class="form-label">{{ $nameLabel }}</label>
+				<input type="text" name="name" id="name" required
+					value="{{ old('name', $user?->name) }}"
+					placeholder="{{ __('Enter Name') }}"
 					class="form-control"
 					autofocus />
 			</div>
-			{!! Hook::applyFilters(UserFilterHook::USER_FORM_AFTER_FIRST_NAME, '', $user) !!}
-			<div>
-				<label for="last_name" class="form-label">{{ $lastNameLabel }}</label>
-				<input type="text" name="last_name" id="last_name"
-					value="{{ old('last_name', $user?->last_name) }}"
-					placeholder="{{ __('Enter Last Name') }}"
-					class="form-control" />
-			</div>
-			{!! Hook::applyFilters(UserFilterHook::USER_FORM_AFTER_LAST_NAME, '', $user) !!}
+			{!! Hook::applyFilters(UserFilterHook::USER_FORM_AFTER_NAME, '', $user) !!}
 			@if($showUsername)
 			<div>
 				<label for="username" class="form-label">{{ $usernameLabel }}</label>

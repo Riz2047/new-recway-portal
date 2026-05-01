@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -17,158 +19,184 @@ class CustomerService
     public function createCustomer(array $data): Customer
     {
         return DB::transaction(function () use ($data) {
+            // 1. Create User record
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'username' => $data['name'], // Use name as username as requested
+            ]);
+
+            // Assign Customer role (if Spatie roles are used)
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('Customer');
+            }
+
             // Determine registration email template
             $regEmail = $this->determineRegistrationEmail($data);
-            
-            // Prepare customer data
+
+            // Prepare customer data (excluding user fields)
             $customerData = $this->prepareCustomerData($data, $regEmail);
-            
+            $customerData['user_id'] = $user->id;
+
             // Create customer
             $customer = Customer::create($customerData);
-            
+
             // Handle parent customer copying
-            if (!empty($data['parent_id'])) {
-                $this->copyFromParentCustomer($customer, $data['parent_id']);
+            if (! empty($data['parent_id'])) {
+                $this->copyFromParentCustomer($customer, (int) $data['parent_id']);
             } else {
                 // Create default messages for selected services
                 $this->createDefaultMessages($customer->id, $data['services'] ?? []);
             }
-            
+
             // Link services
             $this->syncCustomerServices($customer->id, $data['services'] ?? []);
-            
-            // Create allowed emails for all statuses
-            $this->createAllowedEmails($customer->id);
-            
+
+            // Store allowed statuses in a single row for fast reads/updates
+            $this->syncAllowedEmailStatuses($customer->id, $data['statuses'] ?? null);
+
             // Handle permissions
-            if (!empty($data['permissions'])) {
-                $this->syncPermissions($customer->id, $data['permissions']);
-            }
-            
+            // if (! empty($data['permissions'])) {
+            //     $this->syncPermissions($customer->id, $data['permissions']);
+            // }
+
             // Handle company manager
-            if (!empty($data['company_manager'])) {
+            if (! empty($data['company_manager'])) {
                 $this->createCompanyManager($customer->id, $data['company']);
             }
-            
+
             // Handle standard billing details
-            if (!empty($data['pref']) || !empty($data['ref']) || !empty($data['comment'])) {
+            if (! empty($data['pref']) || ! empty($data['ref']) || ! empty($data['comment'])) {
                 $this->createStandardBillingDetails($customer->id, $data);
             }
-            
+
             // Send registration email if requested
-            if (!empty($data['send_email'])) {
+            if (! empty($data['send_email'])) {
                 $this->sendRegistrationEmail($customer, $regEmail);
             }
-            
+
             return $customer->refresh();
         });
     }
-    
+
     /**
      * Update customer with all related data
      */
     public function updateCustomer(Customer $customer, array $data): Customer
     {
         return DB::transaction(function () use ($customer, $data) {
-            // Prepare customer data
+            // 1. Update User record
+            $userData = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ];
+
+            if (isset($data['password']) && ! empty($data['password'])) {
+                $userData['password'] = Hash::make($data['password']);
+            }
+
+            $customer->user->update($userData);
+
+            // 2. Prepare customer data
             $customerData = $this->prepareCustomerData($data, null, false);
-            
+
             // Update customer
             $customer->update($customerData);
-            
+
             // Handle parent customer copying if changed
             if (isset($data['parent_id']) && $data['parent_id'] != $customer->parent_id) {
-                if (!empty($data['parent_id'])) {
-                    $this->copyFromParentCustomer($customer, $data['parent_id']);
+                if (! empty($data['parent_id'])) {
+                    $this->copyFromParentCustomer($customer, (int) $data['parent_id']);
                 }
             }
-            
+
             // Sync services
             if (isset($data['services'])) {
                 $this->syncCustomerServices($customer->id, $data['services'], true);
             }
-            
+
             // Sync permissions
             if (isset($data['permissions'])) {
                 $this->syncPermissions($customer->id, $data['permissions'], true);
             }
-            
+
+            if (isset($data['statuses'])) {
+                $this->syncAllowedEmailStatuses($customer->id, $data['statuses']);
+            }
+
             // Update child customers if statuses or interview_upload_allowed changed
             if (isset($data['statuses']) || isset($data['interview_upload_allowed'])) {
                 $this->updateChildCustomers($customer, $data);
             }
-            
+
             // Update email addresses in emails table
             if (isset($data['email']) && $data['email'] != $data['old_email'] ?? '') {
                 $this->updateEmailAddresses($data['old_email'], $data['email']);
             }
-            
+
             return $customer->refresh();
         });
     }
-    
+
     /**
      * Determine registration email template based on priority
      */
     private function determineRegistrationEmail(array $data): ?string
     {
         // Priority 1: Custom registration email provided
-        if (!empty($data['changed_registration_email'])) {
+        if (! empty($data['changed_registration_email'])) {
             return $data['changed_registration_email'];
         }
-        
+
         // Priority 2: Parent customer's reg_email
-        if (!empty($data['parent_id'])) {
+        if (! empty($data['parent_id'])) {
             $parent = Customer::find($data['parent_id']);
-            if ($parent && !empty($parent->reg_email)) {
+            if ($parent && ! empty($parent->reg_email)) {
                 return $parent->reg_email;
             }
         }
-        
+
         // Priority 3: Global default (from settings)
         // This would need to be fetched from settings table
         // For now, return null and let the calling code handle it
         return null;
     }
-    
+
     /**
      * Prepare customer data for create/update
      */
     private function prepareCustomerData(array $data, ?string $regEmail = null, bool $isCreate = true): array
     {
         $customerData = [
-            'name' => $data['name'],
-            'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'company' => $data['company'] ?? null,
             'org_no' => $data['org_no'] ?? null,
             'cost_place' => $data['org_no'] ?? null, // cost_place is same as org_no
             'parent_id' => $data['parent_id'] ?? null,
             'dep_id' => $data['cus_department'] ?? null,
-            'interview_template' => !empty($data['interview_template']),
-            'send_security_report' => !empty($data['send_security_report']),
-            'sent_email' => !empty($data['send_email']),
+            'interview_template' => ! empty($data['interview_template']),
+            'send_security_report' => ! empty($data['send_security_report']),
+            'sent_email' => ! empty($data['send_email']),
             'combine_bk_and_security' => $this->prepareCombineServices($data['combine_bk_and_security'] ?? []),
-            'timra_report' => !empty($data['timra_report']),
             'combine_status' => $this->prepareCombineStatuses($data['combine_status'] ?? []),
+            'combine_interview_service' => $this->prepareCombineInterviewService($data['combine_interview_service'] ?? null),
+            'timra_report' => ! empty($data['timra_report']),
+            'ellevio_report' => ! empty($data['ellevio_report']),
             'invoice_period' => $data['invoice_period'] ?? 'month',
             'last_invoice_sent' => $this->calculateLastInvoiceSent($data['invoice_period'] ?? 'month', $data['last_invoice_sent'] ?? null),
             'client_wish' => $data['client_wish'] ?? null,
-            'interview_upload_allowed' => !empty($data['interview_upload_allowed']),
-            'interviewed' => !empty($data['interviewed']),
+            'interview_upload_allowed' => (bool) ($data['interview_upload_allowed'] ?? false),
             'remainder_email_template' => $data['remainder_email_template'] ?? null,
-            'bk_interviewed' => !empty($data['bk_interviewed']),
+            'bk_interviewed' => ! empty($data['bk_interviewed']),
             'bk_remainder_email_template' => $data['bk_remainder_email_template'] ?? null,
+            'send_email_question' => ! empty($data['send_email_question']),
         ];
-        
+
         if ($isCreate) {
-            $customerData['password'] = $data['password'];
             $customerData['reg_email'] = $regEmail;
             $customerData['statuses'] = $this->prepareStatusesString($data['statuses'] ?? []);
         } else {
-            if (isset($data['password']) && !empty($data['password'])) {
-                $customerData['password'] = $data['password'];
-            }
             if (isset($data['statuses'])) {
                 $customerData['statuses'] = $this->prepareStatusesString($data['statuses']);
             }
@@ -179,10 +207,28 @@ class CustomerService
                 $customerData['groups'] = $this->prepareGroupsString($data['groups']);
             }
         }
-        
-        return array_filter($customerData, fn($value) => $value !== null || is_bool($value));
+
+        return array_filter(
+            $customerData,
+            static fn (mixed $value, string|int $key): bool => $value !== null
+                || is_bool($value)
+                || $key === 'combine_interview_service',
+            ARRAY_FILTER_USE_BOTH
+        );
     }
-    
+
+    /**
+     * Stored interview service id as string (nullable text column). Empty / "0" clears.
+     */
+    private function prepareCombineInterviewService(mixed $value): ?string
+    {
+        if ($value === null || $value === '' || $value === false || $value === '0' || $value === 0) {
+            return null;
+        }
+
+        return (string) $value;
+    }
+
     /**
      * Prepare statuses as comma-separated string
      */
@@ -190,7 +236,7 @@ class CustomerService
     {
         return implode(',', $statuses);
     }
-    
+
     /**
      * Prepare groups as comma-separated string
      */
@@ -198,7 +244,7 @@ class CustomerService
     {
         return implode(',', $groups);
     }
-    
+
     /**
      * Prepare combine services as comma-separated string
      */
@@ -209,7 +255,7 @@ class CustomerService
         }
         return $services ?? '0';
     }
-    
+
     /**
      * Prepare combine statuses as comma-separated string
      */
@@ -220,7 +266,7 @@ class CustomerService
         }
         return $statuses ?? '';
     }
-    
+
     /**
      * Calculate last_invoice_sent based on invoice period
      */
@@ -229,7 +275,7 @@ class CustomerService
         if ($providedDate) {
             return $providedDate;
         }
-        
+
         $today = strtotime(date('Y-m-d'));
         switch ($period) {
             case 'day':
@@ -242,24 +288,22 @@ class CustomerService
                 return date('Y-m-01', strtotime('first day of last month', $today));
         }
     }
-    
+
     /**
      * Copy data from parent customer
      */
     private function copyFromParentCustomer(Customer $customer, int $parentId): void
     {
         $parent = Customer::findOrFail($parentId);
-        
+
         // Copy order forms
-        $this->copyOrderForms($customer->id, $parentId);
-        
+        // $this->copyOrderForms($customer->id, $parentId);
         // Copy messages
         $this->copyMessages($customer->id, $parentId);
-        
         // Copy customer reports
-        $this->copyCustomerReports($customer->id, $parentId);
+        // $this->copyCustomerReports($customer->id, $parentId);
     }
-    
+
     /**
      * Copy order forms from parent
      */
@@ -274,21 +318,34 @@ class CustomerService
             WHERE cus_id = ?
         ", [$customerId, $parentId]);
     }
-    
+
     /**
      * Copy messages from parent
      */
     private function copyMessages(int $customerId, int $parentId): void
     {
-        // Implementation depends on messages table structure
-        DB::statement("
-            INSERT INTO messages (cus_id, interview_id, ...)
-            SELECT ? as cus_id, interview_id, ...
-            FROM messages
-            WHERE cus_id = ?
-        ", [$customerId, $parentId]);
+        if (! Schema::hasTable('messages')) {
+            return;
+        }
+
+        $serviceColumn = $this->getMessagesServiceColumn();
+        $rows = DB::table('messages')
+            ->where('cus_id', $parentId)
+            ->get()
+            ->map(function ($row) use ($customerId) {
+                $data = (array) $row;
+                unset($data['id']);
+                $data['cus_id'] = $customerId;
+
+                return $data;
+            })
+            ->all();
+
+        if (! empty($rows)) {
+            DB::table('messages')->insert($rows);
+        }
     }
-    
+
     /**
      * Copy customer reports from parent
      */
@@ -297,9 +354,9 @@ class CustomerService
         $metaInfo = json_encode([
             'created_by' => auth()->id(),
             'created_on' => now()->toDateTimeString(),
-            'user' => 'Admin'
+            'user' => 'Admin',
         ]);
-        
+
         DB::statement("
             INSERT INTO customer_reports_html (cus_id, report_data, interview_id, lang, meta_info)
             SELECT ? as cus_id, report_data, interview_id, lang, ? as meta_info
@@ -307,7 +364,7 @@ class CustomerService
             WHERE cus_id = ?
         ", [$customerId, $metaInfo, $parentId]);
     }
-    
+
     /**
      * Create default messages for services
      */
@@ -318,111 +375,128 @@ class CustomerService
             return;
         }
 
-        // Get default messages (cus_id = 0, interview_id = 0)
+        $serviceColumn = $this->getMessagesServiceColumn();
+
+        // Get default messages (cus_id = 0, service column = 0)
         $defaultMessages = DB::table('messages')
             ->where('cus_id', 0)
-            ->where('interview_id', 0)
+            ->where($serviceColumn, 0)
             ->first();
-        
+
         if ($defaultMessages) {
             foreach ($services as $serviceId) {
                 $messageData = (array) $defaultMessages;
-                unset($messageData['id'], $messageData['cus_id'], $messageData['interview_id']);
+                unset($messageData['id'], $messageData['cus_id'], $messageData[$serviceColumn]);
                 $messageData['cus_id'] = $customerId;
-                $messageData['interview_id'] = $serviceId;
-                
+                $messageData[$serviceColumn] = $serviceId;
+
                 DB::table('messages')->insert($messageData);
             }
         }
     }
-    
+
     /**
      * Sync customer services
      */
     private function syncCustomerServices(int $customerId, array $services, bool $updateChildren = false): void
     {
         // Get current services
-        $currentServices = DB::table('customer_services')
+        $currentServices = DB::table('service_type_user')
             ->where('cus_id', $customerId)
-            ->pluck('service_id')
+            ->pluck('service_type_id')
             ->toArray();
-        
+
         // Services to remove
         $toRemove = array_diff($currentServices, $services);
-        if (!empty($toRemove)) {
-            DB::table('customer_services')
+        if (! empty($toRemove)) {
+            DB::table('service_type_user')
                 ->where('cus_id', $customerId)
-                ->whereIn('service_id', $toRemove)
+                ->whereIn('service_type_id', $toRemove)
                 ->delete();
-            
+
             if ($updateChildren) {
                 $this->removeServicesFromChildren($customerId, $toRemove);
             }
         }
-        
+
         // Services to add
         $toAdd = array_diff($services, $currentServices);
-        if (!empty($toAdd)) {
+        if (! empty($toAdd)) {
             foreach ($toAdd as $serviceId) {
-                DB::table('customer_services')->insert([
+                DB::table('service_type_user')->insertOrIgnore([
                     'cus_id' => $customerId,
-                    'service_id' => $serviceId,
+                    'service_type_id' => $serviceId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
-            
+
             if ($updateChildren) {
                 $this->addServicesToChildren($customerId, $toAdd);
             }
         }
     }
-    
+
     /**
      * Remove services from child customers
      */
     private function removeServicesFromChildren(int $parentId, array $serviceIds): void
     {
         $children = Customer::where('parent_id', $parentId)->pluck('id');
-        foreach ($children as $childId) {
-            DB::table('customer_services')
-                ->where('cus_id', $childId)
-                ->whereIn('service_id', $serviceIds)
+        foreach ($children as $childCustomerId) {
+            DB::table('service_type_user')
+                ->where('cus_id', $childCustomerId)
+                ->whereIn('service_type_id', $serviceIds)
                 ->delete();
         }
     }
-    
+
     /**
      * Add services to child customers
      */
     private function addServicesToChildren(int $parentId, array $serviceIds): void
     {
         $children = Customer::where('parent_id', $parentId)->pluck('id');
-        foreach ($children as $childId) {
+        foreach ($children as $childCustomerId) {
             foreach ($serviceIds as $serviceId) {
-                DB::table('customer_services')->insertOrIgnore([
-                    'cus_id' => $childId,
-                    'service_id' => $serviceId,
+                DB::table('service_type_user')->insertOrIgnore([
+                    'cus_id' => $childCustomerId,
+                    'service_type_id' => $serviceId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
         }
     }
-    
+
+    private function getMessagesServiceColumn(): string
+    {
+        return Schema::hasColumn('messages', 'servicetype_id') ? 'servicetype_id' : 'interview_id';
+    }
+
     /**
      * Create allowed emails for all statuses
      */
-    private function createAllowedEmails(int $customerId): void
+    private function syncAllowedEmailStatuses(int $customerId, ?array $statuses = null): void
     {
-        // If table doesn't exist yet, skip gracefully
-        if (! Schema::hasTable('allowed_emails') || ! Schema::hasTable('statuses')) {
+        if (! Schema::hasTable('allowed_emails')) {
             return;
         }
 
-        DB::statement("
-            INSERT INTO allowed_emails (cus_id, status_id, allowed)
-            SELECT ? as cus_id, id as status_id, 1 as allowed
-            FROM statuses
-        ", [$customerId]);
+        if ($statuses === null) {
+            $statuses = Schema::hasTable('statuses')
+                ? DB::table('statuses')->pluck('id')->map(fn ($id) => (int) $id)->toArray()
+                : [];
+        }
+
+        $statusIds = array_values(array_unique(array_map('intval', $statuses)));
+
+        DB::table('allowed_emails')->updateOrInsert(
+            ['cus_id' => $customerId],
+            ['allowed_status_ids' => json_encode($statusIds, JSON_THROW_ON_ERROR)]
+        );
     }
-    
+
     /**
      * Sync permissions
      */
@@ -430,20 +504,20 @@ class CustomerService
     {
         if ($replace) {
             DB::table('user_allowed_permissions')
-                ->where('user_id', $customerId)
+                ->where('cus_id', $customerId)
                 ->where('user_type', 2) // 2 = customer
                 ->delete();
         }
-        
+
         foreach ($permissions as $permissionId) {
             DB::table('user_allowed_permissions')->insertOrIgnore([
                 'per_id' => $permissionId,
-                'user_id' => $customerId,
+                'cus_id' => $customerId,
                 'user_type' => 2, // 2 = customer
             ]);
         }
     }
-    
+
     /**
      * Create company manager record
      */
@@ -457,9 +531,10 @@ class CustomerService
         DB::table('company_manager')->insert([
             'company' => $company,
             'cus_id' => $customerId,
+            'can_view_report' => 1,
         ]);
     }
-    
+
     /**
      * Create standard billing details
      */
@@ -477,7 +552,7 @@ class CustomerService
             'comment' => $data['comment'] ?? null,
         ]);
     }
-    
+
     /**
      * Send registration email
      */
@@ -487,46 +562,46 @@ class CustomerService
             // Get default from settings
             $emailTemplate = $this->getDefaultRegistrationEmail();
         }
-        
+
         if (empty($emailTemplate)) {
             return;
         }
-        
+
         // Replace placeholders
         $body = $this->replaceEmailPlaceholders(
             $emailTemplate,
-            $customer->name,
+            $customer->user->name,
             $customer->company,
-            $customer->email,
-            $customer->password ?? ''
+            $customer->user->email,
+            $customer->user->password ?? '' // Note: password placeholder might need raw password if available
         );
-        
+
         $subject = "Registration";
-        
+
         // Check if within Swedish working hours (Mon-Fri, 08:00-18:00)
         $swedenTime = now('Europe/Stockholm');
-        $isWorkingHours = $swedenTime->isWeekday() 
-            && $swedenTime->format('H:i:s') >= '08:00:00' 
+        $isWorkingHours = $swedenTime->isWeekday()
+            && $swedenTime->format('H:i:s') >= '08:00:00'
             && $swedenTime->format('H:i:s') < '18:00:00';
-        
+
         // Save email
         $this->saveEmail(
             "Customer",
-            $customer->name,
+            $customer->user->name,
             "N/A",
             'Customer Registration Message',
             $body,
-            $customer->email,
+            $customer->user->email,
             $subject,
             $isWorkingHours ? null : '1' // Delay if outside working hours
         );
-        
+
         // Send immediately if within working hours
         if ($isWorkingHours) {
-            $this->sendMail($body, $customer->email, $customer->name, $subject);
+            $this->sendMail($body, $customer->user->email, $customer->user->name, $subject);
         }
     }
-    
+
     /**
      * Get default registration email from settings
      */
@@ -535,10 +610,10 @@ class CustomerService
         $setting = DB::table('settings')
             ->where('option_name', 'cus_reg_msg')
             ->first();
-        
+
         return $setting->option_value ?? null;
     }
-    
+
     /**
      * Replace email placeholders
      */
@@ -550,10 +625,10 @@ class CustomerService
             '{email}' => $email,
             '{password}' => $password,
         ];
-        
+
         return str_replace(array_keys($replacements), array_values($replacements), $text);
     }
-    
+
     /**
      * Save email to database
      */
@@ -570,7 +645,7 @@ class CustomerService
             'email_delay' => $emailDelay,
         ]);
     }
-    
+
     /**
      * Send email via mailer
      */
@@ -585,31 +660,31 @@ class CustomerService
             'subject' => $subject,
         ]);
     }
-    
+
     /**
      * Update child customers when parent is updated
      */
     private function updateChildCustomers(Customer $customer, array $data): void
     {
         $children = Customer::where('parent_id', $customer->id)->get();
-        
+
         foreach ($children as $child) {
             $updateData = [];
-            
+
             if (isset($data['statuses'])) {
                 $updateData['statuses'] = $data['statuses'];
             }
-            
+
             if (isset($data['interview_upload_allowed'])) {
                 $updateData['interview_upload_allowed'] = $data['interview_upload_allowed'];
             }
-            
-            if (!empty($updateData)) {
+
+            if (! empty($updateData)) {
                 $child->update($updateData);
             }
         }
     }
-    
+
     /**
      * Update email addresses in emails table
      */
@@ -620,4 +695,3 @@ class CustomerService
             ->update(['email' => $newEmail]);
     }
 }
-

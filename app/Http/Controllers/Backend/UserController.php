@@ -54,6 +54,7 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        dd($request->all());
         $this->authorize('create', User::class);
 
         $data = $this->addHooks(

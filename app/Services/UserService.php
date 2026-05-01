@@ -96,10 +96,10 @@ class UserService
     private function prepareUserData(array $data, bool $isCreate = true): array
     {
         $userData = [
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
+            'name' => $data['name'],
             'email' => $data['email'],
-            'username' => $data['username'],
+            'phone' => $data['phone'] ?? null,
+            'username' => $data['name'] ?? null,
         ];
 
         if ($isCreate || $this->shouldUpdatePassword($data)) {

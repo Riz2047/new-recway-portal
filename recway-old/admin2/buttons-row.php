@@ -1,7 +1,5 @@
 <?php
 
-
-
 $query = 'SELECT * FROM service_categories';
 
 $stmt = $conn->prepare($query);
@@ -9,8 +7,6 @@ $stmt = $conn->prepare($query);
 $stmt->execute();
 
 $serviceCats = $stmt->fetchAll();
-
-
 
 ?>
 
@@ -167,7 +163,7 @@ $serviceCats = $stmt->fetchAll();
         background-color: #33b5e5;
         color: white;
     }
-    
+
 
 
 
@@ -225,11 +221,11 @@ $serviceCats = $stmt->fetchAll();
         background-color: #198754;
         color: white;
     }
+
     .badge-success {
         color: white;
         background-color: #198754;
     }
-
 </style>
 
 <div class="buttons-row">
@@ -238,29 +234,29 @@ $serviceCats = $stmt->fetchAll();
 
         <div class=" col-lg-3 col-md-3 order-md-1 order-1  mb-3 ">
 
-            <a href="candidates.php" class="tab-card yellow-card tab_card_customize rounded-card" <?php if (!isset($_GET['service'])) : ?> style="background-color:#ffbf43;color:white" <?php endif; ?>>
+            <a href="candidates.php" class="tab-card yellow-card tab_card_customize rounded-card" <?php if (! isset($_GET['service'])) : ?> style="background-color:#ffbf43;color:white" <?php endif; ?>>
 
                 All Orders
 
             </a>
 
-                <?php if (!isset($_GET['service'])) : ?>
+            <?php if (! isset($_GET['service'])) : ?>
 
-                    <div class="arrow-down-yellow"></div>
+                <div class="arrow-down-yellow"></div>
 
             <?php endif; ?>
 
         </div>
 
-        <?php if (!empty($serviceCats)) : ?>
+        <?php if (! empty($serviceCats)) : ?>
 
             <?php foreach ($serviceCats as $key => $serviceCat) : ?>
 
                 <div class=" col-lg-3 col-md-3 order-md-1 order-3 mb-3  position-relative">
 
                     <a href="?service=<?php echo $serviceCat->id ?><?php echo isset($_GET['id']) ? '&id=' . $_GET['id'] : '' ?>"
-                    data-catid="<?php echo $serviceCat->id ?>" 
-                    class="tab-card 
+                        data-catid="<?php echo $serviceCat->id ?>"
+                        class="tab-card 
                         <?php if ($serviceCat->id == 1): ?>
                             warning-card
                             <?php elseif ($serviceCat->id == 3): ?>
@@ -292,12 +288,12 @@ $serviceCats = $stmt->fetchAll();
 
                     <?php if (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 1): ?>
                         <div class="arrow-down-warning"></div>
-                        <?php elseif (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 3): ?>
-                            <div class="arrow-down-purple"></div>
+                    <?php elseif (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 3): ?>
+                        <div class="arrow-down-purple"></div>
                     <?php elseif (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 9): ?>
                         <div class="arrow-down-cyan"></div>
-                        <?php elseif (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 10): ?>
-                            <div class="arrow-down-success"></div>
+                    <?php elseif (isset($_GET['service']) && $_GET['service'] == $serviceCat->id && $_GET['service'] == 10): ?>
+                        <div class="arrow-down-success"></div>
                     <?php endif; ?>
 
                 </div>
@@ -320,20 +316,20 @@ $serviceCats = $stmt->fetchAll();
 
                 <?php
 
-$serviceCatId = $_GET['service'] ?? null;
+                $serviceCatId = $_GET['service'] ?? null;
 
-                $statuses2 = getStatusesByService($serviceCatId)
+$statuses2 = getStatusesByService($serviceCatId)
 
-                ?>
+?>
 
-                <?php if (!empty($statuses2)) : ?>
+                <?php if (! empty($statuses2)) : ?>
 
                     <?php foreach ($statuses2 as $status) : ?>
 
                         <span>
 
                             <a href="candidates.php?status=<?php echo $status->sID ?><?php echo isset($_GET['service']) ? '&service=' . $_GET['service'] : '' ?>"
-                            class="
+                                class="
                             <?php if ($status->service_cat_id == 1): ?>
                                 customize-warning
                                 <?php elseif ($status->service_cat_id == 3): ?>

@@ -20,26 +20,84 @@ if (isset($_POST['order'])) {
     $staff_id = isset($_POST['staff']) ? $_POST['staff'] : 0;
     $country = isset($_POST['country']) ? $_POST['country'] : null;
     $form_builder = isset($_POST['form_builder']) ? $_POST['form_builder'] : null;
-    $security_interview_service_type = isset($_POST['security_interview_service_type']) ? $_POST['security_interview_service_type'] : '0';
-    $meta_info = array(
+    $security_interview_service_type = isset($_POST['security_interview_service_type']) ? $_POST['security_interview_service_type'] : $customer->combine_interview_id;
+    $hasPersonalId = isset($_POST['hasPersonalId']) ? $_POST['hasPersonalId'] : 0;
+    $meta_info = [
         'send_email_cus' => $sendMail,
         'send_email_can' => $sendMailCan,
         'created_by' => $_SESSION['staff']->id,
         'created_on' => date('Y-m-d H:i:s'),
-        'user' => 'Staff'
-    );
-    if (!empty($meta_info)) {
+        'user' => 'Staff',
+    ];
+    if (! empty($meta_info)) {
         $meta_info = json_encode($meta_info);
     }
-    if (!empty($form_builder)) {
+    if (! empty($form_builder)) {
         $form_builder = json_encode($form_builder);
     }
     $query = "SELECT * FROM candidates";
     $stmt = $conn->prepare($query);
     $stmt->execute();
     $candidates = $stmt->fetchAll();
+    $query = 'SELECT * FROM customers WHERE id = ?';
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$cus_id]);
+    $customer = $stmt->fetch();
+    $selectedServiceCategoryId = null;
+    $query = 'SELECT service_cat_id FROM interviews WHERE id = ?';
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$interview_id]);
+    $selectedInterview = $stmt->fetch();
+    if (! empty($selectedInterview)) {
+        $selectedServiceCategoryId = $selectedInterview->service_cat_id;
+    }
+
+    // Check for duplicate candidate within the same company
+    $company = trim($customer->company);
+
+    // Find all customers in the same company
+    $query = "SELECT id FROM customers WHERE TRIM(company) = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$company]);
+    $companyCustomerIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (! empty($companyCustomerIds)) {
+        $placeholders = implode(',', array_fill(0, count($companyCustomerIds), '?'));
+        $isPNR = preg_match('/^(\d{6}|\d{8})-?\d{4}$/', $security);
+
+        $query = "SELECT c.id FROM candidates c
+                        LEFT JOIN interviews i ON c.interview_id = i.id
+						WHERE cus_id IN ($placeholders) 
+						AND (email = ? OR phone = ?";
+
+        $params = array_merge($companyCustomerIds, [$email, $phone]);
+
+        if ($isPNR) {
+            // Normalize input: remove dash for comparison
+            $normalizedSecurity = str_replace('-', '', $security);
+            $query .= " OR REPLACE(security, '-', '') = ?";
+            $params[] = $normalizedSecurity;
+        }
+
+        $query .= ")";
+        if (! empty($selectedServiceCategoryId)) {
+            $query .= " AND i.service_cat_id = ?";
+            $params[] = $selectedServiceCategoryId;
+        }
+        $query .= " AND c.expired = 0 LIMIT 1";
+        $stmt = $conn->prepare($query);
+        $stmt->execute($params);
+        $duplicate = $stmt->fetch();
+
+        if ($duplicate) {
+            flash("candidateAdded", "Candidate already registered: This candidate is already registered in your company.", "errorMsg");
+            echo "<script>window.location.href='" . $_SERVER['PHP_SELF'] . "';</script>";
+            exit;
+        }
+    }
+
     $order_ids = [];
-    if (!empty($candidates)) {
+    if (! empty($candidates)) {
         foreach ($candidates as $candidate) {
             array_push($order_ids, $candidate->order_id);
         }
@@ -53,17 +111,17 @@ if (isset($_POST['order'])) {
     $stmt = $conn->prepare($query);
     $stmt->execute([$interview_id]);
     $interview = $stmt->fetch();
-    if (!empty($interview->place) || $security_interview_service_type == 2) {
+    if (! empty($interview->place) || $security_interview_service_type == 2) {
     } else {
         $place = null;
     }
     if ($interview->service_cat_id == 1) {
         $statusID = 1;
-    } else if ($interview->service_cat_id == 3) {
+    } elseif ($interview->service_cat_id == 3) {
         $statusID = 13;
-    } else if ($interview->service_cat_id == 9) {
+    } elseif ($interview->service_cat_id == 9) {
         $statusID = 33;
-    } else if ($interview->service_cat_id == 10) {
+    } elseif ($interview->service_cat_id == 10) {
         $statusID = 49;
     }
     $query = "SELECT * FROM customer_services WHERE cus_id = ? AND service_id = ?";
@@ -80,10 +138,10 @@ if (isset($_POST['order'])) {
         $data = $stmt->fetch();
         $service_cost = $data->cost;
     }
-    $query = "INSERT INTO candidates (order_id, vasc_id, security, name, surname, email, phone, place, country, cv, referensperson, reference, comment, note, cus_id, interview_id, status,staff_id, meta_data,interview_template,meta_info, service_cost,combine_interview_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    $query = "INSERT INTO candidates (order_id, vasc_id, security, name, surname, email, phone, place, country, cv, referensperson, reference, comment, note, cus_id, interview_id, status,staff_id, meta_data,interview_template,meta_info, service_cost,combine_interview_id, hasPersonalId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $conn->prepare($query);
     $files = null;
-    if (!empty($_FILES['files']['name'][0])) {
+    if (! empty($_FILES['files']['name'][0])) {
         $totalFiles = count($_FILES['files']['name']);
         $filesArray = []; // to store filenames temporarily
         for ($i = 0; $i < $totalFiles; $i++) {
@@ -103,13 +161,13 @@ if (isset($_POST['order'])) {
         $files = implode(',', $filesArray);
     }
     $template_file = null;
-    if (!empty($_FILES['template']['name'])) {
+    if (! empty($_FILES['template']['name'])) {
         $fileName = time() . '-' . $_FILES['template']['name'];
         $fileName = str_replace(",", "", $fileName);
-        $template_file  = $fileName;
+        $template_file = $fileName;
         move_uploaded_file($_FILES['template']['tmp_name'], '../uploads/' . $fileName);
     }
-    $res = $stmt->execute([$uid, $vasc_id, $security, $name, $surname, $email, $phone, $place, $country, isset($files) ? $files : null, $referensperson, $reference, $comment, $note, $cus_id, $interview_id, $statusID, $staff_id, $form_builder, $template_file, $meta_info, $service_cost, $security_interview_service_type]);
+    $res = $stmt->execute([$uid, $vasc_id, $security, $name, $surname, $email, $phone, $place, $country, isset($files) ? $files : null, $referensperson, $reference, $comment, $note, $cus_id, $interview_id, $statusID, $staff_id, $form_builder, $template_file, $meta_info, $service_cost, $security_interview_service_type, $hasPersonalId]);
     if ($res) {
         $lastInsertId = $conn->lastInsertId();
         $query = 'SELECT * FROM candidates WHERE id = ?';
@@ -146,14 +204,14 @@ if (isset($_POST['order'])) {
         $currentTime = $swedenTime->format('H:i:s');
         $dayOfWeek = date('N');
         $messages = getMessages($cus_id, $interview->id);
-        if (!empty($messages)) {
+        if (! empty($messages)) {
             // email msg for customer
             if ($sendMail == 'yes') {
-                $cus_msg = $interview->service_cat_id == 1 || $interview->service_cat_id == 9 ? $messages->cus_msg : $messages->cus_msg_background;
-                $cusBody = replace($cus_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+                $cus_msg = $interview->service_cat_id == 1 || $interview->service_cat_id == 9 ? $messages->cus_msg : $messages->cus_msg;
+                $cusBody = replace($cus_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                 if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                     saveEmail("Customer", $customer->name, $candidate->order_id, 'Customer Message', $cusBody, $customer->email, $serviceCat->name);
-                    $mailMsg = sendMail($cusBody, $customer->email, $customer->name, $serviceCat->name);
+                    $mailMsg = sendMail($cusBody, $customer->email, $customer->name, $interview->title);
                 } else {
                     saveEmail("Customer", $customer->name, $candidate->order_id, 'Customer Message', $cusBody, $customer->email, $serviceCat->name, '1');
                 }
@@ -165,7 +223,7 @@ if (isset($_POST['order'])) {
                     $statusID = 13;
                 } elseif ($interview->service_cat_id == 9) {
                     $statusID = 33;
-                } else if ($interview->service_cat_id == 10) {
+                } elseif ($interview->service_cat_id == 10) {
                     $statusID = 49;
                 }
                 $msg = getStatusMessage($statusID, $interview_id, $cus_id);
@@ -173,12 +231,12 @@ if (isset($_POST['order'])) {
                     $msg = $msg->col;
                 }
                 // staff if assigned email msg
-                if (!empty($staff_id)) {
+                if (! empty($staff_id)) {
                     $staff_msg = getMessages($candidate->cus_id, $interview->id);
                     if (empty($staff_msg)) {
                         $staff_msg = getMessages();
                     }
-                    $body = replace($staff_msg->staff_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+                    $body = replace($staff_msg->staff_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                     if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                         saveEmail("Staff", $staff->name, $candidate->order_id, 'Staff Message', $body, $staff->email, 'Candidate Assigned');
                         sendMail($body, $staff->email, $staff->name, "Candidate Assigned");
@@ -187,7 +245,7 @@ if (isset($_POST['order'])) {
                     }
                 }
                 // email msg for candidate
-                $canBody = replace($msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+                $canBody = replace($msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
                 if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
                     saveEmail("Candidate", $name, $candidate->order_id, 'Candidate Message', $canBody, $email, $serviceCat->name);
                     $mailMsg = sendMail($canBody, $_POST['email'], $_POST['name'], $serviceCat->name);
@@ -198,7 +256,7 @@ if (isset($_POST['order'])) {
             if (empty($messages->admin_msg)) {
                 $messages->admin_msg = 'Order has been created successfully For ' . $customer->name . '(customer) and OrderID is' . $candidate->order_id;
             }
-            $adminBody = replace($messages->admin_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+            $adminBody = replace($messages->admin_msg, $customer->name, $name . " " . $surname, $customer->company, $interview->title, '', '', '', '', '', $candidate->order_id, '', '', '', $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
             $query = 'SELECT * FROM admin LIMIT 1';
             $stmt = $conn->prepare($query);
             $stmt->execute();
@@ -256,7 +314,7 @@ $staff = $stmt->fetchAll();
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label" for="customer">Customer</label>
                                         <select id="customer" name="customer" class="form-control filter-select"
-                                            onchange="change_services()">
+                                            onchange="get_form_of();change_services()">
                                             <?php foreach ($customers as $customer): ?>
                                                 <option
                                                     data-template="<?php echo isset($customer->interview_template) && $customer->interview_template == 1 ? '1' : '' ?>"
@@ -268,6 +326,23 @@ $staff = $stmt->fetchAll();
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
+                                    <?php
+                                    // Background-only mode: filter to only Background Check (service_cat_id = BACKGROUND_ID / 3)
+                                    if (function_exists('getStaffAllowedPermissions')) {
+                                        getStaffAllowedPermissions(); // ensures $_SESSION['user_category'] is set
+                                    }
+$userCategory = $_SESSION['user_category'] ?? null;
+$hasBackgroundPermission = function_exists('staffHasPermission') && staffHasPermission('view_background_orders');
+$backgroundServiceCategoryId = defined('BACKGROUND_ID') ? BACKGROUND_ID : 3;
+if ($userCategory == 5 && $hasBackgroundPermission) {
+    // Filter to only show Background Check services
+    $interviews = array_filter($interviews, function ($interview) use ($backgroundServiceCategoryId) {
+        return (int)$interview->service_cat_id === (int)$backgroundServiceCategoryId;
+    });
+    // Re-index array after filtering
+    $interviews = array_values($interviews);
+}
+?>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label" for="interview">Service Type</label>
                                         <select id="interview" name="interview" class="form-control filter-select" onchange="get_form_of();check_p_c(this);check_combine_bk_and_security()">
@@ -278,28 +353,28 @@ $staff = $stmt->fetchAll();
                                     </div>
                                     <select id="hidden_interview" style="display:none">
                                         <?php foreach ($interviews as $interview) : ?>
-                                            <option value="<?php echo $interview->id ?>" data-country="<?= $interview->country ?>" data-interview-service-cat-id="<?php echo $interview->service_cat_id ?>" data-place="<?= $interview->place ?>"><?php echo $interview->title ?></option>
+                                            <option value="<?php echo $interview->id ?>" data-country="<?= $interview->country ?>"  data-interview-service-cat-id="<?php echo $interview->service_cat_id ?>"data-place="<?= $interview->place ?>"><?php echo $interview->title ?></option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <div class="col-md-12 col-sm-12 mb-2 d-none" id="security_interview_service_type_div">
-                                        <label class="form-label" for="security_interview_service_type">Security Interview Service Type</label>
-                                        <!-- <select class="form-control" onchange="fetch_form_security_interview_service_type(this);" id="security_interview_service_type" name="security_interview_service_type" required="true"> -->
-                                        <select class="form-control" onchange="check_combine_bk_and_security()" id="security_interview_service_type" name="security_interview_service_type">
-                                            <option value="0">Select Security Interview Service Type</option>
-                                            <?php foreach ($interviews as $interview): ?>
-                                                <?php if ($interview->id == 1 || $interview->id == 2): ?>
-                                                    <option value="<?php echo $interview->id ?>" <?php echo isset($interview_id) && $interview_id == $interview->id ? 'selected' : '' ?>>
-                                                        <?php echo $interview->title ?>
-                                                    </option>
+                            <div class="col-md-12 col-sm-12 mb-2 d-none" id="security_interview_service_type_div">
+                              <label class="form-label" for="security_interview_service_type">Security Interview Service Type</label>
+                              <!-- <select class="form-control" onchange="fetch_form_security_interview_service_type(this);" id="security_interview_service_type" name="security_interview_service_type" required="true"> -->
+                              <select class="form-control" onchange="check_combine_bk_and_security()" id="security_interview_service_type" name="security_interview_service_type">
+                              <option value="0">Select Security Interview Service Type</option>
+                              <?php foreach ($interviews as $interview): ?>
+                                <?php if ($interview->service_cat_id == 1): ?>
+                                                <option value="<?php echo $interview->id ?>" <?php echo isset($interview_id) && $interview_id == $interview->id ? 'selected' : '' ?>>
+                                                    <?php echo $interview->title ?>
+                                                </option>
                                                 <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
+                                        <?php endforeach; ?>
+                                    </select>
+                            </div>
                                     <div class="col-md-12 mb-3">
                                         <label class="form-label" for="interview">Staff</label>
                                         <select id="staff" name="staff" class="form-control filter-select">
                                             <option value="">Select Staff</option>
-                                            <?php if (!empty($staff)) { ?>
+                                            <?php if (! empty($staff)) { ?>
                                                 <?php foreach ($staff as $staf) { ?>
                                                     <option value="<?= $staf->id ?>"><?= $staf->name ?></option>
                                                 <?php } ?>
@@ -346,7 +421,7 @@ $staff = $stmt->fetchAll();
                                     </div>
                                 </div>
                                 <div class="row" id="personal_info_row">
-                                    <div class="form-check form-switch col-md-12 col-sm-12 mb-2 mx-2" id="hasPersonalIdWrapper">
+                                    <div class="form-check col-md-12 col-sm-12 mb-2" id="hasPersonalIdWrapper">
                                         <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" onchange="toggleInputType()">
                                         <label class="form-check-label" for="hasPersonalId">
                                             Has Personal Identification Number
@@ -381,7 +456,7 @@ $staff = $stmt->fetchAll();
                                 <div class="col-md-12 mb-3 d-none pl-0 pr-0" id="place">
                                     <label class="form-label" for="place">Place</label>
                                     <select id="place" name="place" class="form-control filter-select">
-                                        <?php if (!empty($places)) : ?>
+                                        <?php if (! empty($places)) : ?>
                                             <?php foreach ($places as $place) : ?>
                                                 <option value="<?php echo $place->id ?>"><?php echo $place->name ?></option>
                                             <?php endforeach; ?>
@@ -699,12 +774,25 @@ $staff = $stmt->fetchAll();
 include_once('includes/footer.php');
 ?>
 <script>
+        <?php
+    // Ensure background-only variables are available in JavaScript scope
+    if (function_exists('getStaffAllowedPermissions')) {
+        getStaffAllowedPermissions();
+    }
+$jsUserCategory = $_SESSION['user_category'] ?? null;
+$jsHasBackgroundPermission = function_exists('staffHasPermission') && staffHasPermission('view_background_orders');
+$jsShowOnlyBackground = ($jsUserCategory == 5 && $jsHasBackgroundPermission);
+?>
+    var showOnlyBackground = <?php echo $jsShowOnlyBackground ? 'true' : 'false'; ?>;
+    var backgroundServiceCategoryId = <?php echo defined('BACKGROUND_ID') ? BACKGROUND_ID : 3; ?>;
     function bindSsnBehavior() {
+        // Default: treat as Personal ID input
         const hasPersonalId = document.getElementById('hasPersonalId');
         const ssn = document.getElementById('ssn');
         const pnrHelp = document.getElementById('pnrHelp');
         const ssnLabel = document.getElementById('ssnLabel');
         if (!hasPersonalId || !ssn) return;
+        // set default state (unchecked => PNR)
         if (!hasPersonalId.hasAttribute('data-initialized')) {
             hasPersonalId.checked = false;
             hasPersonalId.setAttribute('data-initialized', '1');
@@ -719,7 +807,7 @@ include_once('includes/footer.php');
         const ssnLabel = document.getElementById('ssnLabel');
         const pnrHelp = document.getElementById('pnrHelp');
         if (!securityField) return;
-        if (hasPersonalId && hasPersonalId.checked) {
+        if (!hasPersonalId || !hasPersonalId.checked) {
             securityField.type = 'date';
             securityField.removeAttribute('inputmode');
             securityField.removeAttribute('placeholder');
@@ -734,6 +822,7 @@ include_once('includes/footer.php');
             if (ssnLabel) ssnLabel.innerHTML = 'Personal identification number <span class="text-danger">*</span>';
             if (pnrHelp) pnrHelp.textContent = 'Personal identification number is required';
         }
+        // Clear validation states
         securityField.classList.remove('is-valid', 'is-invalid');
         if (pnrHelp) pnrHelp.classList.remove('text-success', 'text-danger');
     }
@@ -744,106 +833,111 @@ include_once('includes/footer.php');
         if (!securityField) return;
         securityField.classList.remove('is-valid', 'is-invalid');
         if (pnrHelp) pnrHelp.classList.remove('text-success', 'text-danger');
-        if (hasPersonalId && hasPersonalId.checked) {
+        if (!hasPersonalId || !hasPersonalId.checked) {
             if (securityField.value.trim() === '') {
                 securityField.classList.add('is-invalid');
-                if (pnrHelp) {
-                    pnrHelp.textContent = 'Date of birth is required';
-                    pnrHelp.classList.add('text-danger');
-                }
+                if (pnrHelp) { pnrHelp.textContent = 'Date of birth is required'; pnrHelp.classList.add('text-danger'); }
             } else {
                 securityField.classList.add('is-valid');
-                if (pnrHelp) {
-                    pnrHelp.textContent = 'Date of birth is valid';
-                    pnrHelp.classList.add('text-success');
-                }
+                if (pnrHelp) { pnrHelp.textContent = 'Date of birth is valid'; pnrHelp.classList.add('text-success'); }
             }
         } else {
             const validation = validatePNR(securityField.value);
             if (securityField.value.trim() === '') {
                 securityField.classList.add('is-invalid');
-                if (pnrHelp) {
-                    pnrHelp.textContent = 'Personal identification number is required';
-                    pnrHelp.classList.add('text-danger');
-                }
+                if (pnrHelp) { pnrHelp.textContent = 'Personal identification number is required'; pnrHelp.classList.add('text-danger'); }
             } else if (validation.isValid) {
                 securityField.classList.add('is-valid');
-                if (pnrHelp) {
-                    pnrHelp.textContent = validation.message;
-                    pnrHelp.classList.add('text-success');
-                }
+                if (pnrHelp) { pnrHelp.textContent = validation.message; pnrHelp.classList.add('text-success'); }
             } else {
                 securityField.classList.add('is-invalid');
-                if (pnrHelp) {
-                    pnrHelp.textContent = validation.message;
-                    pnrHelp.classList.add('text-danger');
-                }
+                if (pnrHelp) { pnrHelp.textContent = validation.message; pnrHelp.classList.add('text-danger'); }
             }
         }
     }
-    function validatePNR(value) {
-        const raw = (value || '').trim();
-        const cleaned = raw.replace(/[^0-9+]/g, '');
-        let y, m, d, seq;
-        if (/^\d{12}$/.test(cleaned)) {
-            y = parseInt(cleaned.slice(0, 4), 10);
-            m = parseInt(cleaned.slice(4, 6), 10);
-            d = parseInt(cleaned.slice(6, 8), 10);
-            seq = cleaned.slice(8);
-        } else if (/^\d{10}$/.test(cleaned)) {
-            const yy = parseInt(cleaned.slice(0, 2), 10);
-            const currentYear = new Date().getFullYear() % 100;
-            const century = yy > currentYear ? 1900 : 2000;
-            y = century + yy;
-            m = parseInt(cleaned.slice(2, 4), 10);
-            d = parseInt(cleaned.slice(4, 6), 10);
-            seq = cleaned.slice(6);
-        } else if (/^\d{6}[+\-]?\d{4}$/.test(raw)) {
-            const yy = parseInt(raw.slice(0, 2), 10);
-            const delimiter = raw[6];
-            const currentYear = new Date().getFullYear() % 100;
-            let base = yy > currentYear ? 1900 : 2000;
-            if (delimiter === '+') base -= 100;
-            y = base + yy;
-            m = parseInt(raw.slice(2, 4), 10);
-            d = parseInt(raw.slice(4, 6), 10);
-            seq = raw.slice(7).replace(/\D/g, '');
-        } else {
-            return {
-                isValid: false,
-                message: 'Invalid format. Use YYMMDD-XXXX'
-            };
+    // function validatePNR(value) {
+    //     // Normalize
+    //     const raw = (value || '').trim();
+    //     // Accept forms: YYMMDD-XXXX, YYYYMMDDXXXX, YYMMDDXXXX, YYMMDD+XXXX
+    //     const cleaned = raw.replace(/[^0-9+]/g, '');
+    //     let y, m, d, seq;
+    //     if (/^\d{12}$/.test(cleaned)) { // YYYYMMDDXXXX
+    //         y = parseInt(cleaned.slice(0, 4), 10);
+    //         m = parseInt(cleaned.slice(4, 6), 10);
+    //         d = parseInt(cleaned.slice(6, 8), 10);
+    //         seq = cleaned.slice(8);
+    //     } else if (/^\d{10}$/.test(cleaned)) { // YYMMDDXXXX
+    //         const yy = parseInt(cleaned.slice(0, 2), 10);
+    //         // Infer century: naive 1900/2000 windowing based on current year
+    //         const currentYear = new Date().getFullYear() % 100;
+    //         const century = yy > currentYear ? 1900 : 2000;
+    //         y = century + yy;
+    //         m = parseInt(cleaned.slice(2, 4), 10);
+    //         d = parseInt(cleaned.slice(4, 6), 10);
+    //         seq = cleaned.slice(6);
+    //     } else if (/^\d{6}[+\-]?\d{4}$/.test(raw)) { // YYMMDD-XXXX or YYMMDD+XXXX with delimiter kept
+    //         const yy = parseInt(raw.slice(0, 2), 10);
+    //         const delimiter = raw[6];
+    //         const currentYear = new Date().getFullYear() % 100;
+    //         let base = yy > currentYear ? 1900 : 2000;
+    //         if (delimiter === '+') base -= 100; // 100 years older
+    //         y = base + yy;
+    //         m = parseInt(raw.slice(2, 4), 10);
+    //         d = parseInt(raw.slice(4, 6), 10);
+    //         seq = raw.slice(7).replace(/\D/g, '');
+    //     } else {
+    //         return { isValid: false, message: 'Invalid format. Use YYMMDD-XXXX' };
+    //     }
+    //     // Basic date check
+    //     const dt = new Date(y, m - 1, d);
+    //     if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) {
+    //         return { isValid: false, message: 'Invalid date in personal number' };
+    //     }
+    //     // Luhn check on YYMMDDXXXX (10 digits)
+    //     const ten = ('' + ('' + (y % 100)).padStart(2, '0') + ('' + m).padStart(2, '0') + ('' + d).padStart(2, '0') + seq).replace(/\D/g, '');
+    //     if (!/^\d{10}$/.test(ten)) {
+    //         return { isValid: false, message: 'Invalid personal number length' };
+    //     }
+    //     if (!luhn10(ten)) {
+    //         return { isValid: false, message: 'Invalid personal number checksum' };
+    //     }
+    //     return { isValid: true, message: 'Personal identification number is valid' };
+    // }
+function validatePNR(pnr) {
+        // Check if the PNR is empty (optional field)
+        if (!pnr.trim()) {
+          return { isValid: false, message: 'Personal identification number is required' };
         }
-        const dt = new Date(y, m - 1, d);
-        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) {
-            return {
-                isValid: false,
-                message: 'Invalid date in personal number'
-            };
+        // Allow format: YYMMDD-XXXX or YYMMDDXXXX (with or without dash)
+        const pnrPattern = /^(\d{6})-?(\d{4})$/;
+        const match = pnr.match(pnrPattern);
+        if (!match) {
+          return { isValid: false, message: 'Required format is YYMMDD-XXXX or YYMMDDXXXX' };
         }
-        const ten = ('' + ('' + (y % 100)).padStart(2, '0') + ('' + m).padStart(2, '0') + ('' + d).padStart(2, '0') + seq).replace(/\D/g, '');
-        if (!/^\d{10}$/.test(ten)) {
-            return {
-                isValid: false,
-                message: 'Invalid personal number length'
-            };
+        // Combine the matched groups to get the full 10-digit number
+        const cleanPNR = match[1] + match[2];
+        // Extract date components
+        const year = parseInt(cleanPNR.substring(0, 2));
+        const month = parseInt(cleanPNR.substring(2, 4));
+        const day = parseInt(cleanPNR.substring(4, 6));
+        // Validate year (should be between 00-99, but we'll be more lenient)
+        if (year < 0 || year > 99) {
+          return { isValid: false, message: 'Invalid year in Personal identification number' };
         }
-        if (!luhn10(ten)) {
-            return {
-                isValid: false,
-                message: 'Invalid personal number checksum'
-            };
+        // Validate month (should be between 01-12)
+        if (month < 1 || month > 12) {
+          return { isValid: false, message: 'Invalid month in Personal identification number(01-12)' };
         }
-        return {
-            isValid: true,
-            message: 'Personal identification number is valid'
-        };
-    }
+        if (day < 1 || day > 31) {
+          return { isValid: false, message: `Invalid day in Personal identification number(01-31)` };
+        }
+        return { isValid: true, message: 'Personal identification number is valid' };
+      }
     function luhn10(num) {
         let sum = 0;
         for (let i = 0; i < num.length; i++) {
             let digit = parseInt(num[i], 10);
-            if (i % 2 === 0) {
+            if (i % 2 === 0) { // double even index (0-based) per Swedish PNR on 10-digit string
                 digit *= 2;
                 if (digit > 9) digit -= 9;
             }
@@ -862,13 +956,13 @@ include_once('includes/footer.php');
         // Only handle place field if security_interview_service_type_div is hidden
         // (i.e., when we're not in the combined BK and security flow)
         if ($('#security_interview_service_type_div').hasClass('d-none')) {
-            if (place == 1) {
-                $('#place').removeClass('d-none')
-                $("select[name='place']").prop("disabled", false)
-            } else {
-                $('#place').addClass('d-none')
-                $("select[name='place']").prop("disabled", true)
-            }
+        if (place == 1) {
+            $('#place').removeClass('d-none')
+            $("select[name='place']").prop("disabled", false)
+        } else {
+            $('#place').addClass('d-none')
+            $("select[name='place']").prop("disabled", true)
+        }
         }
         if (country == 1) {
             $('#country').removeClass('d-none')
@@ -891,7 +985,13 @@ include_once('includes/footer.php');
             dataType: "json",
             success: function(response) {
                 if (response != '') {
+                    // Background-only filter: only show service_cat_id = 3 (Background Check)
+                    // showOnlyBackground and backgroundServiceCategoryId are defined globally at top of script
                     $(response).each(function(i, e) {
+                        // If background-only mode, skip services that aren't Background Check
+                        if (showOnlyBackground && e.service_cat_id != backgroundServiceCategoryId) {
+                            return; // skip this iteration
+                        }
                         html += `<option value="` + e.id + `">` + e.title + `</option>`
                     })
                 }
@@ -941,10 +1041,20 @@ include_once('includes/footer.php');
                                     var is_tra = real_data[5] ? real_data[5] : '';
                                     var is_new = real_data[6] ? real_data[6] : '';
                                     if (name === 'security') {
-                                        per_info_html += `<div class="form-check form-switch col-md-12 col-sm-12 mb-2 mx-2" id="hasPersonalIdWrapper">\n                                                <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" onchange="toggleInputType()">\n                                                <label class="form-check-label" for="hasPersonalId">Has Personal Identification Number</label>\n                                            </div>`;
-                                        per_info_html += `<div class="col-lg-6 mb-3">\n                                                <label class="form-label" id="ssnLabel">${label} <span class="text-danger">*</span></label>\n                                                <input type="text" class="form-control" name="security" id="ssn" ${req} placeholder="${placehol || 'YYMMDD-XXXX'}"/>\n                                                <small id="pnrHelp" class="form-text"></small>\n                                            </div>`;
+                                        // Inject SSN toggle and helper like create_order.blade.php
+                                        per_info_html += `<div class="form-check col-md-12 col-sm-12 mb-2" id="hasPersonalIdWrapper">
+                                                <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" onchange="toggleInputType()">
+                                                <label class="form-check-label" for="hasPersonalId">Has Personal Identification Number</label>
+                                            </div>`;
+                                        per_info_html += `<div class="col-lg-6 mb-3">
+                                                <label class="form-label" id="ssnLabel">${label} <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" name="security" id="ssn" ${req} placeholder="${placehol || 'YYMMDD-XXXX'}"/>
+                                                <small id="pnrHelp" class="form-text"></small>
+                                            </div>`;
                                     } else if (name != 'document_file') {
-                                        per_info_html += `<div class="col-lg-6 mb-3">\n                                                    <label class="form-label">` + label + `</label>\n                                                    <input type="` + type + `" class="form-control" `
+                                        per_info_html += `<div class="col-lg-6 mb-3">
+                                                    <label class="form-label">` + label + `</label>
+                                                    <input type="` + type + `" class="form-control" `
                                         if (is_new != '') {
                                             per_info_html += `name="form_builder[` + name + `]" `
                                         } else {
@@ -1020,6 +1130,7 @@ include_once('includes/footer.php');
                                     </div>`
                         }
                         $('#personal_info_row').html(per_info_html)
+                        // Initialize SSN field behavior if present
                         if (document.getElementById('ssn')) {
                             bindSsnBehavior();
                         }
@@ -1027,7 +1138,35 @@ include_once('includes/footer.php');
                         $('#document_row').html(doc_file_html)
                     }
                 } else {
-                    var personal_info_row = `<div class="form-check form-switch col-md-12 col-sm-12 mb-2 mx-2" id="hasPersonalIdWrapper">\n                                        <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" onchange="toggleInputType()">\n                                        <label class="form-check-label" for="hasPersonalId">Has Personal Identification Number</label>\n                                    </div>\n                                    <div class="col-lg-6 mb-3">\n                                        <label class="form-label" id="ssnLabel" for="ssn">Social Security Number <span class="text-danger">*</span></label>\n                                        <input type="text" class="form-control" name="security" required id="ssn" placeholder="YYMMDD-XXXX">\n                                        <small id="pnrHelp" class="form-text"></small>\n                                    </div>\n\n                                    <div class="col-lg-6 mb-3">`
+                    var personal_info_row = `<div class="form-check col-md-12 col-sm-12 mb-2" id="hasPersonalIdWrapper">
+                                        <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" onchange="toggleInputType()">
+                                        <label class="form-check-label" for="hasPersonalId">Has Personal Identification Number</label>
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <label class="form-label" id="ssnLabel" for="ssn">Social Security Number <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="security" required id="ssn" placeholder="YYMMDD-XXXX">
+                                        <small id="pnrHelp" class="form-text"></small>
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <label class="form-label" for="vasc_id">VASC ID</label>
+                                        <input type="text" class="form-control" name="vasc_id" id="vasc_id">
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <label class="form-label" for="name">Name</label>
+                                        <input type="text" class="form-control" name="name" required id="name">
+                                    </div>
+                                    <div class="col-lg-6 mb-3">
+                                        <label class="form-label" for="surname">Surname</label>
+                                        <input type="text" class="form-control" name="surname" required id="surname">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="email">Email</label>
+                                        <input type="email" class="form-control" name="email" required id="email">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="phone">Phone</label>
+                                        <input type="text" class="form-control" name="phone" required id="phone">
+                                    </div>`;
                     var document_row = `<div class="col-lg-12 mb-3">
                                         <div class="form-group file-area w-100">
                                             <div class="d-flex justify-content-between">
@@ -1079,6 +1218,7 @@ include_once('includes/footer.php');
                                     </div>`
                     }
                     $('#personal_info_row').html(personal_info_row)
+                    bindSsnBehavior();
                     $('#document_row').html(document_row)
                     $('#billing_info_row').html(billing_info_row)
                 }
@@ -1090,25 +1230,66 @@ include_once('includes/footer.php');
         });
     }
     $(document).ready(function() {
+        get_form_of();
         change_services();
+        check_p_c(null)
+        // Bind SSN behavior for initial static markup
         if (document.getElementById('ssn')) {
             bindSsnBehavior();
         }
+
+        // $('#addCandidateForm').on('submit', function(e) {
+        //     e.preventDefault();
+            
+        //     var formData = new FormData(this);
+        //     formData.append('type', 'create_candidate');
+        //     formData.append('user_type', 'Staff');
+            
+        //     var btn = $(this).find('button[type="submit"]');
+        //     btn.prop('disabled', true).text('Saving...');
+            
+        //     $.ajax({
+        //         type: "POST",
+        //         url: "../includes/pages.php",
+        //         data: formData,
+        //         processData: false,
+        //         contentType: false,
+        //         dataType: "json",
+        //         success: function(response) {
+        //             if (response.success) {
+        //                 toastr.success(response.message);
+        //                 setTimeout(function() {
+        //                     window.location.href = 'candidates.php';
+        //                 }, 1500);
+        //             } else {
+        //                 toastr.error(response.message);
+        //                 btn.prop('disabled', false).text('Save');
+        //             }
+        //         },
+        //         error: function() {
+        //             toastr.error('An error occurred. Please try again.');
+        //             btn.prop('disabled', false).text('Save');
+        //         }
+        //     });
+        // });
     })
-    function check_combine_bk_and_security() {
+    get_form_of();
+    change_services();
+    check_p_c(null)
+function check_combine_bk_and_security(){
         var selectedCustomer = $('#customer option:selected');
         var interview = $('#interview').val();
         var selectedInterview = $('#hidden_interview option[value="' + interview + '"]');
-        console.log(selectedCustomer.data('combine-bk-and-security'), 'selectedCustomer');
+        console.log(selectedCustomer.data('combine-bk-and-security'),'selectedCustomer');
         var combine_bk_and_security = selectedCustomer.length > 0 ? selectedCustomer.data('combine-bk-and-security') : 0;
         var combine_bk_and_security_array = combine_bk_and_security.length > 0 ? combine_bk_and_security.split(',') : 0;
         var service_cat_id = selectedInterview.length > 0 ? selectedInterview.data('interview-service-cat-id') : 0;
-        if (combine_bk_and_security_array && combine_bk_and_security_array.includes(selectedInterview.val()) && service_cat_id == 3) {
+        if(combine_bk_and_security_array && combine_bk_and_security_array.includes(selectedInterview.val()) && service_cat_id == 3){
             console.log('Showing security interview service type div');
             $('#security_interview_service_type_div').removeClass('d-none');
             // Initialize place field state when security interview service type div is shown
             var securityServiceType = $('#security_interview_service_type').val();
-            console.log(securityServiceType, 'hehehehehhe');
+            console.log(securityServiceType,'hehehehehhe');
             if (securityServiceType == 2) {
                 $('div[id="place"]').removeClass('d-none');
                 $('select[name="place"]').prop("disabled", false);
@@ -1116,9 +1297,9 @@ include_once('includes/footer.php');
                 $('div[id="place"]').addClass('d-none');
                 $('select[name="place"]').prop("disabled", true);
             }
-        } else {
+        }else{
             $('#security_interview_service_type_div').addClass('d-none');
             $('#security_interview_service_type').val('0');
         }
-    }
+       }
 </script>

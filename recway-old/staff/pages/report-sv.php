@@ -1,13 +1,11 @@
 <?php
 
-
-
 $activeLink = "candidates";
 include_once('../../includes/functions.php');
 
 $idArray = null;
 
-if (!empty($_GET['id'])) {
+if (! empty($_GET['id'])) {
 
     if (strpos($_GET['id'], ',') !== false) {
 
@@ -17,37 +15,36 @@ if (!empty($_GET['id'])) {
 
 }
 
-
 $service = 0;
 $for_customer = 0;
 $cus_id = null;
 $service_id = null;
-if (isset($idArray[0]) && !empty($idArray[0]) && $idArray[0] == 'service_id') {
+if (isset($idArray[0]) && ! empty($idArray[0]) && $idArray[0] == 'service_id') {
     $for_customer = 1;
     $cus_id = $idArray[2];
     $service_id = $idArray[3];
     $report_html = findByQuery("SELECT * FROM customer_reports_html WHERE cus_id = '{$cus_id}' AND interview_id = {$service_id} AND `lang` = 'sv'");
-    if(empty($report_html)){
+    if (empty($report_html)) {
         $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$service_id} AND `customer` = 0 AND `lang` = 'sv'");
     }
 } else {
-if (isset($idArray[1]) && !empty($idArray[1]) && $idArray[1] == 'service') {
+    if (isset($idArray[1]) && ! empty($idArray[1]) && $idArray[1] == 'service') {
 
-    $service = 1;
+        $service = 1;
 
-}
+    }
 
-$ser_repo = 0;
+    $ser_repo = 0;
 
-if (isset($service) && !empty($service)) {
+    if (isset($service) && ! empty($service)) {
 
-    $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$idArray[0]} AND `customer` = 0 AND `lang` = 'sv'");
+        $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$idArray[0]} AND `customer` = 0 AND `lang` = 'sv'");
 
-    $ser_repo = 1;
+        $ser_repo = 1;
 
-} else {
+    } else {
 
-    $candidate = findByQuery("SELECT candidates.*, staff.name AS staffName, interviews.title AS serviceTitle 
+        $candidate = findByQuery("SELECT candidates.*, staff.name AS staffName, interviews.title AS serviceTitle 
 
 FROM candidates 
 
@@ -57,37 +54,33 @@ INNER JOIN interviews ON candidates.interview_id = interviews.id
 
 WHERE candidates.id = {$_GET['id']}");
 
-    $customer = findByQuery("SELECT company, name FROM customers WHERE id = {$candidate->cus_id}");
+        $customer = findByQuery("SELECT company, name FROM customers WHERE id = {$candidate->cus_id}");
 
+        $default_tem = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$candidate->interview_id} AND `customer` = 0 AND `lang` = 'sv'");
 
+        $saved_rep = findByQuery("SELECT * FROM reports_html WHERE candidate_id = {$_GET['id']} AND lang = 'sv'");
 
-    $default_tem = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$candidate->interview_id} AND `customer` = 0 AND `lang` = 'sv'");
+        $company_report_html = findByQuery("SELECT * FROM customer_reports_html WHERE cus_id = '{$candidate->cus_id}' AND interview_id = {$candidate->interview_id} AND lang = 'sv'");
 
-    $saved_rep = findByQuery("SELECT * FROM reports_html WHERE candidate_id = {$_GET['id']} AND lang = 'sv'");
+        if (! empty($default_tem)) {
 
-    $company_report_html = findByQuery("SELECT * FROM customer_reports_html WHERE cus_id = '{$candidate->cus_id}' AND interview_id = {$candidate->interview_id} AND lang = 'sv'");
+            $report_html = $default_tem;
 
+        }
 
+        if (! empty($company_report_html)) {
 
-    if (!empty($default_tem)) {
+            $report_html = $company_report_html;
 
-        $report_html = $default_tem;
+        }
 
-    }
+        if (! empty($saved_rep)) {
 
-    if (!empty($company_report_html)) {
+            $report_html = $saved_rep;
 
-        $report_html = $company_report_html;
-
-    }
-
-    if (!empty($saved_rep)) {
-
-        $report_html = $saved_rep;
+        }
 
     }
-
-}
 }
 
 ?>
@@ -134,51 +127,51 @@ WHERE candidates.id = {$_GET['id']}");
 
                         <div id="report-html">
 
-                            <?php if (!empty($report_html)) : ?>
-                                <?php if (isset($for_customer) && !empty($for_customer)) { ?>
+                            <?php if (! empty($report_html)) : ?>
+                                <?php if (isset($for_customer) && ! empty($for_customer)) { ?>
                                     <?php
-                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
-                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
-                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
-                                        ' ' .
-                                        (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
-                                        ?>
-                                    <?php }else{ ?>
+                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
+                                    ' ' .
+                                    (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
+                                    ?>
+                                    <?php } else { ?>
                                 <?php
 
-                                if (isset($ser_repo) && !empty($ser_repo)) {
+                                if (isset($ser_repo) && ! empty($ser_repo)) {
 
-                                    $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
 
-                                    $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
 
-                                    $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
+                                    $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
 
                                         ' ' .
 
-                                        (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
+                                        (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
 
                                 } else {
 
-                                    $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '', $report_html->report_data);
 
-                                    $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '', $report_html->report_data);
+                                    $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '', $report_html->report_data);
 
-                                    $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
+                                    $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
 
                                         ' ' .
 
-                                        (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : ''), $report_html->report_data);
+                                        (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : ''), $report_html->report_data);
 
                                 }
 
-                                ?>
+                                        ?>
 <?php } ?>
                                 <?php echo $report_html->report_data ?>
 
                             <?php else : ?>
 
-                                <?php if (!empty($company_report_html)) : ?>
+                                <?php if (! empty($company_report_html)) : ?>
 
                                     <?php echo $company_report_html->report_data ?>
 
@@ -220,7 +213,7 @@ WHERE candidates.id = {$_GET['id']}");
 
                                                 <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-                                                <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
+                                                <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
 
                                                 <select id="" class="form-select mb-3">
 
@@ -266,7 +259,7 @@ WHERE candidates.id = {$_GET['id']}");
 
                                                 <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-                                                <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
+                                                <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
 
                                                 <select id="" class="form-select mb-3">
 
@@ -2957,7 +2950,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
                         </div>
 
                         <!--                        </div>-->
-                        <?php if (isset($for_customer) && !empty($for_customer)) { ?>
+                        <?php if (isset($for_customer) && ! empty($for_customer)) { ?>
                             <div class="col-lg-6 ">
                                 <button type="button" id="preview" data-bs-toggle="modal"
                                     data-bs-target="#backgroundReportModal"
@@ -2968,7 +2961,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
                                 <button type="button" class="btn-primary-sm bg-primary w-100 mt-4 mx-0" onclick="save_report_for_customer('<?= $cus_id ?>')"><a>Save Report</a></button>
                             </div>
                         <?php } else { ?>
-                        <?php if (isset($service) && !empty($service)) { ?>
+                        <?php if (isset($service) && ! empty($service)) { ?>
 
                             <div class="col-lg-6 ">
 
@@ -2986,7 +2979,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
 
                         <?php }  ?>
 
-                        <?php if (isset($service) && !empty($service)) { ?>
+                        <?php if (isset($service) && ! empty($service)) { ?>
 
                             <div class="col-lg-6 ">
 
@@ -3034,13 +3027,13 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
 
                         <div id="report-html">
 
-                            <?php if (!empty($report_html)) : ?>
+                            <?php if (! empty($report_html)) : ?>
 
                                 <?php echo $report_html->report_data ?>
 
                             <?php else : ?>
 
-                                <?php if (!empty($company_report_html)) : ?>
+                                <?php if (! empty($company_report_html)) : ?>
 
                                     <?php echo $company_report_html->report_data ?>
 
@@ -5080,49 +5073,31 @@ Sammanfattningsvis, avseende avvikelsen i hans CV, måste det noteras att trots 
 
                                                 <p class="f-16 mb-0 pb-0 w-600">Text Description</p>
 
-                                                <textarea name="comment_description[]" id="" required="" placeholder="Text description" rows="3" class="w-100 sign-textarea mb-3 comment_descriptions" spellcheck="true">
+<textarea id="" name="comment_description[]" required placeholder="Text description" rows="3" class="w-100 sign-textarea mb-3 comment_descriptions" spellcheck="true">
+Recway genomför bakgrundskontroller genom en strukturerad och dokumenterad process. Informationsinhämtning sker, i den utsträckning det är lagligen tillåtet och relevant för uppdraget, från offentliga register och myndighetskällor, kommersiella databaser samt öppna källor.
 
-Recway genomför bakgrundskontroller genom en strukturell inhämtning av offentliga uppgifter
+Kontroller genomförs i enlighet med vald kontrollnivå och uppdragets riskprofil. Verifiering av utbildning eller tidigare anställning sker när detta ingår i beställd kontroll.
 
-från myndighetsregister för att verifiera och komplettera uppgifter som kandidaten har lämnat om
+Efter genomförd informationsinhämtning analyseras samtliga uppgifter manuellt av behörig säkerhetshandläggare. Bedömningen sker utifrån:
 
-sig själv, exempelvis i CV. För att verifiera CV-meriter kontrollerar Recway hos svenska
+• Relevans i förhållande till uppdraget  
+• Aktualitet  
+• Identifierade riskindikatorer  
+• Proportionalitet  
 
-universitet, högskolor och tidigare arbetsgivare.
+Varje ärende bedöms individuellt inom ramen för Recways fastställda metodik.
 
+Rapporten är strukturerad per kontrollområde och innehåller:
 
+• Kontrollens omfattning  
+• Redovisning av relevanta uppgifter  
+• Eventuella observationer  
+• Sammanfattande bedömning  
 
-Efter att informationen har samlats in, analyserar Recway materialet för att identifiera eventuella
+I den sammanfattande bedömningen används vid behov färgkodning (grön, gul eller röd) som ett överskådligt stöd för den samlade risknivån. Färgkodningen utgör ett beslutsstöd och är inte kopplad till en enskild uppgift isolerat.
 
-samband och avvikelser. Recway använder en färgkodning där rött betyder anmärkningsvärda
-
-avvikelser, gult betyder noterbara avvikelser, och grönt betyder att inga avvikelser har påträffats.
-
-Det är viktigt att poängtera att avvikelse bedömningen inte görs efter någon förutbestämd
-
-standard eller mall, utan varje fall bedöms individuellt.
-
-
-
-En röd- eller gulmarkering innebär att en eller flera faktorer är av ovanlig eller anmärkningsvärd
-
-karaktär. Det fungerar som en signal om att något avviker från det normala och kan behöva
-
-undersökas närmare. Exempel på anmärkningsvärda avvikelser kan vara flera återkommande
-
-skulder hos Kronofogdemyndigheten eller flera konkurser.
-
-
-
-Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka alla möjliga uppgifter
-
-om kandidaten. Bakgrundskontrollerna ger en grundlig bedömning baserat på tillgänglig
-
-information, men det finns ingen garanti för att all relevant information kan inhämtas.
-
-
-
-                                                    </textarea>
+Bakgrundskontrollen baseras på vid kontrolltillfället tillgänglig information från lagligen åtkomliga källor. Rapporten utgör beslutsunderlag och innebär inte ett anställnings- eller affärsbeslut.
+</textarea>
 
                                                 <select id="" class="form-select mb-3">
 
@@ -5211,7 +5186,7 @@ information, men det finns ingen garanti för att all relevant information kan i
                             <?php endif; ?>
 
                         </div>
-                        <?php if (isset($for_customer) && !empty($for_customer)) { ?>
+                        <?php if (isset($for_customer) && ! empty($for_customer)) { ?>
                             <div class="col-lg-6 ">
                                 <button type="button" id="preview" data-bs-toggle="modal"
                                     data-bs-target="#backgroundReportModal"
@@ -5222,7 +5197,7 @@ information, men det finns ingen garanti för att all relevant information kan i
                                 <button type="button" class="btn-primary-sm bg-primary w-100 mt-4 mx-0" onclick="save_report_for_customer('<?= $cus_id ?>')"><a>Save Report</a></button>
                             </div>
                         <?php } else { ?>
-                        <?php if (isset($service) && !empty($service)) { ?>
+                        <?php if (isset($service) && ! empty($service)) { ?>
 
                             <div class="col-lg-6 ">
 
@@ -5240,7 +5215,7 @@ information, men det finns ingen garanti för att all relevant information kan i
 
                         <?php }  ?>
 
-                        <?php if (isset($service) && !empty($service)) { ?>
+                        <?php if (isset($service) && ! empty($service)) { ?>
 
                             <div class="col-lg-6 ">
 
@@ -6008,7 +5983,7 @@ information, men det finns ingen garanti för att all relevant information kan i
 
 <script>
 
-    <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?>
+    <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?>
 
         var candidate = {};
 
@@ -9495,9 +9470,9 @@ information, men det finns ingen garanti för att all relevant information kan i
 
         var interview_id = $.trim(<?php if (isset($idArray[0])) {
 
-                                        echo $idArray[0];
+            echo $idArray[0];
 
-                                    } ?>);
+        } ?>);
 
         $("#report-msg").removeClass()
 
@@ -9647,7 +9622,7 @@ information, men det finns ingen garanti för att all relevant information kan i
 
         <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-        <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
+        <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
 
         <select id="" class="form-select mb-3">
 
@@ -9695,7 +9670,7 @@ information, men det finns ingen garanti för att all relevant information kan i
 
         <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-        <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
+        <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
 
         <select id="" class="form-select mb-3">
 
@@ -11697,7 +11672,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
 
         <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-        <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
+        <textarea name="intro" id="" required placeholder="Introduktion" rows="3" class="w-100 sign-textarea mb-3">Vi på Recway AB är glada över att ha fått i uppdrag av <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> att genomföra ett noggrant <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. Detta är en viktig process för att säkerställa att den potentiella kandidaten är lämplig och pålitlig för tjänsten i fråga. Genom att undersöka individens kriminella historia, utbildning, anställningshistoria och ekonomiska status kan vi identifiera eventuella varningstecken och minska risken för tjänstefel. Vi är ett företag som lägger stor vikt vid integritet och säkerhet och vi kommer att genomföra denna kritiska process med största omsorg och professionalism.</textarea>
 
         <select id="" class="form-select mb-3">
 
@@ -11745,7 +11720,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
 
         <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-        <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
+        <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway genomförde en bakgrundskontroll på <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. Denna rapport innehåller en beskrivning av uppdraget, en sammanfattning av vår analys och en sammanfattning av den information som samlats in.</textarea>
 
         <select id="" class="form-select mb-3">
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 /**
  * Frontend auth imports.
  */
+
+use Amp\Http\Client\Request;
 use App\Http\Controllers\Auth\RegisterController as UserRegisterController;
 use App\Http\Controllers\Auth\LoginController as UserLoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController as UserForgotPasswordController;

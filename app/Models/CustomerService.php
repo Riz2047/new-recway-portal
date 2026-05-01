@@ -7,29 +7,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerService extends Model
 {
-    protected $table = 'customer_services';
-    
-    public $timestamps = false;
-    
+    protected $table = 'service_type_user';
+
     protected $fillable = [
+        'service_type_id',
         'cus_id',
-        'service_id',
-        'service_cost',
     ];
-    
+
     /**
-     * Get the customer
+     * Get the customer.
      */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'cus_id');
     }
-    
+
     /**
-     * Get the service/interview
+     * Get the service type.
      */
     public function service(): BelongsTo
     {
-        return $this->belongsTo(Interview::class, 'service_id');
+        return $this->belongsTo(ServiceType::class, 'service_type_id');
     }
 }

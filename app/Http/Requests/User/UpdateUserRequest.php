@@ -44,10 +44,7 @@ class UpdateUserRequest extends FormRequest
 
         return Hook::applyFilters(UserFilterHook::USER_UPDATE_VALIDATION_RULES, [
             /** @example "Jane" */
-            'first_name' => 'required|max:50',
-
-            /** @example "Smith" */
-            'last_name' => 'required|max:50',
+            'name' => 'required|max:50',
 
             /** @example "jane.smith@example.com" */
             'email' => 'required|max:100|email|unique:users,email,' . ($userId ?? 'NULL'),

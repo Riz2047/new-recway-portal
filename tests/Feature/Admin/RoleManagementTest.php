@@ -24,8 +24,7 @@ beforeEach(function () {
 
     // Create an admin user with full permissions
     $this->admin = User::factory()->create([
-        'first_name' => 'Admin',
-        'last_name' => 'User',
+        'name' => 'Admin',
         'email' => 'admin@example.com',
         'username' => 'admin',
     ]);
@@ -41,8 +40,7 @@ beforeEach(function () {
 
     // Create regular user with no permissions
     $this->regularUser = User::factory()->create([
-        'first_name' => 'Regular',
-        'last_name' => 'User',
+        'name' => 'Regular',
         'email' => 'regular@example.com',
         'username' => 'regular',
     ]);

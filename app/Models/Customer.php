@@ -4,17 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Customer extends Model
 {
     protected $table = 'customers';
-    
+
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'user_id',
         'phone',
         'company',
         'org_no',
@@ -27,6 +26,7 @@ class Customer extends Model
         'send_security_report',
         'sent_email',
         'combine_bk_and_security',
+                'combine_interview_service',
         'timra_report',
         'combine_status',
         'invoice_period',
@@ -34,7 +34,6 @@ class Customer extends Model
         'client_wish',
         'groups',
         'interview_upload_allowed',
-        'interviewed',
         'remainder_email_template',
         'bk_interviewed',
         'bk_remainder_email_template',
@@ -44,17 +43,12 @@ class Customer extends Model
         'send_email_question',
     ];
 
-    protected $hidden = [
-        'password',
-    ];
-
     protected $casts = [
         'interview_template' => 'boolean',
         'send_security_report' => 'boolean',
         'sent_email' => 'boolean',
         'timra_report' => 'boolean',
         'interview_upload_allowed' => 'boolean',
-        'interviewed' => 'boolean',
         'bk_interviewed' => 'boolean',
         'send_email_question' => 'boolean',
         'last_invoice_sent' => 'date',
@@ -62,11 +56,11 @@ class Customer extends Model
     ];
 
     /**
-     * Set password attribute with hashing
+     * Get the user associated with the customer
      */
-    public function setPasswordAttribute($value)
+    public function user(): BelongsTo
     {
-        $this->attributes['password'] = Hash::make($value);
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -86,11 +80,33 @@ class Customer extends Model
     }
 
     /**
-     * Get customer services
+     * Orders/candidates that belong to this customer.
+     */
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Candidate::class, 'cus_id');
+    }
+
+    /**
+     * Legacy relation for customer service rows.
      */
     public function services(): HasMany
     {
-        return $this->hasMany(CustomerService::class, 'cus_id');
+        return $this->hasMany(CustomerService::class, 'cus_id', 'id');
+    }
+
+    /**
+     * Service types assigned to the customer's user.
+     */
+    public function serviceTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ServiceType::class,
+            'service_type_user',
+            'cus_id',
+            'service_type_id',
+            'id'
+        )->withTimestamps();
     }
 
     /**
@@ -130,5 +146,34 @@ class Customer extends Model
             return [];
         }
         return explode(',', $this->groups);
+    }
+
+    /**
+     * Get allowed email statuses as IDs array from the single-row JSON storage.
+     */
+    public function getAllowedEmailStatusIdsAttribute(): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('allowed_emails')) {
+            return [];
+        }
+
+        $value = \Illuminate\Support\Facades\DB::table('allowed_emails')
+            ->where('cus_id', $this->id)
+            ->value('allowed_status_ids');
+
+        if (empty($value)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) $value, true);
+
+        return is_array($decoded)
+            ? array_values(array_unique(array_map('intval', $decoded)))
+            : [];
+    }
+
+    public function billing(): HasOne
+    {
+        return $this->hasOne(StandardBillingDetails::class, 'cus_id');
     }
 }

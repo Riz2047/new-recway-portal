@@ -61,8 +61,7 @@ test('authenticated user can create user', function () {
     $this->authenticateAdmin();
 
     $userData = [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -74,8 +73,7 @@ test('authenticated user can create user', function () {
     $response->assertStatus(201);
 
     $this->assertDatabaseHas('users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
     ]);
@@ -85,7 +83,7 @@ test('user creation requires first name', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'last_name' => 'Doe',
+        'name' => 'Doe',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -93,14 +91,14 @@ test('user creation requires first name', function () {
     ]);
 
     $response->assertStatus(422)
-        ->assertJsonPath('errors.first_name', ['The first name field is required.']);
+        ->assertJsonPath('errors.name', ['The name field is required.']);
 });
 
 test('user creation requires last name', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -115,8 +113,7 @@ test('user creation requires email', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'username' => 'johndoe',
         'password' => 'password123',
         'password_confirmation' => 'password123',
@@ -131,8 +128,7 @@ test('user creation requires unique email', function () {
     User::factory()->create(['email' => 'existing@example.com']);
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'existing@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -157,8 +153,7 @@ test('user creation validates email format', function () {
 
     foreach ($invalidEmails as $email) {
         $response = $this->postJson('/api/v1/users', [
-            'first_name' => 'John',
-            'last_name' => 'Doe',
+            'name' => 'John',
             'email' => $email,
             'username' => 'johndoe',
             'password' => 'password123',
@@ -173,8 +168,7 @@ test('user creation requires password', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
     ]);
@@ -187,8 +181,7 @@ test('user creation requires password confirmation', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -202,8 +195,7 @@ test('user creation validates minimum password length', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => '123',
@@ -245,8 +237,7 @@ test('authenticated user can update user', function () {
     $user = User::factory()->create();
 
     $updateData = [
-        'first_name' => 'Updated',
-        'last_name' => 'Name',
+        'name' => 'Updated',
         'email' => 'updated@example.com',
         'username' => 'updated_username',
     ];
@@ -266,8 +257,7 @@ test('authenticated user can update user', function () {
 
     $this->assertDatabaseHas('users', [
         'id' => $user->id,
-        'first_name' => 'Updated',
-        'last_name' => 'Name',
+        'name' => 'Updated',
         'email' => 'updated@example.com',
         'username' => 'updated_username',
     ]);
@@ -279,8 +269,7 @@ test('user update validates unique email', function () {
     $user2 = User::factory()->create(['email' => 'user2@example.com']);
 
     $response = $this->putJson("/api/v1/users/{$user1->id}", [
-        'first_name' => $user1->first_name,
-        'last_name' => $user1->last_name,
+        'name' => $user1->name,
         'email' => 'user2@example.com',
         'username' => $user1->username,
     ]);
@@ -364,8 +353,7 @@ test('user management handles edge case inputs', function () {
 
     foreach ($edgeCases as $case => $value) {
         $response = $this->postJson('/api/v1/users', [
-            'first_name' => $value,
-            'last_name' => is_string($value) ? 'Doe' : 'Test',
+            'name' => $value,
             'email' => is_string($value) ? $value . '@example.com' : 'test@example.com',
             'username' => is_string($value) ? $value : 'testuser',
             'password' => 'password123',
@@ -416,8 +404,7 @@ test('user creation with roles', function () {
         $role = Role::create(['name' => 'test-role']);
 
         $response = $this->postJson('/api/v1/users', [
-            'first_name' => 'Jane',
-            'last_name' => 'Doe',
+            'name' => 'Jane',
             'email' => 'jane@example.com',
             'username' => 'janedoe',
             'password' => 'password123',
@@ -435,8 +422,7 @@ test('user creation encrypts password', function () {
     $this->authenticateAdmin();
 
     $response = $this->postJson('/api/v1/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -456,8 +442,7 @@ test('user update without password keeps existing password', function () {
     $originalPassword = $user->password;
 
     $response = $this->putJson("/api/v1/users/{$user->id}", [
-        'first_name' => $user->first_name,
-        'last_name' => $user->last_name,
+        'name' => $user->name,
         'email' => $user->email,
         'username' => $user->username,
     ]);

@@ -45,8 +45,7 @@ test('admin can create user', function () {
     $role = Role::create(['name' => 'editor']);
 
     $response = $this->actingAs($this->admin)->post('/admin/users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
         'password' => 'password123',
@@ -56,8 +55,7 @@ test('admin can create user', function () {
 
     $response->assertRedirect();
     $this->assertDatabaseHas('users', [
-        'first_name' => 'John',
-        'last_name' => 'Doe',
+        'name' => 'John',
         'email' => 'john@example.com',
         'username' => 'johndoe',
     ]);
@@ -68,8 +66,7 @@ test('admin can create user', function () {
 
 test('admin can update user', function () {
     $user = User::create([
-        'first_name' => 'Original',
-        'last_name' => 'Name',
+        'name' => 'Original',
         'email' => 'original@example.com',
         'username' => 'originaluser',
         'password' => Hash::make('password'),
@@ -78,8 +75,7 @@ test('admin can update user', function () {
     $role = Role::create(['name' => 'editor']);
 
     $response = $this->actingAs($this->admin)->put("/admin/users/{$user->id}", [
-        'first_name' => 'Updated',
-        'last_name' => 'Name',
+        'name' => 'Updated',
         'email' => 'updated@example.com',
         'username' => 'updateduser',
         'roles' => ['editor'],
@@ -88,8 +84,7 @@ test('admin can update user', function () {
     $response->assertRedirect();
     $this->assertDatabaseHas('users', [
         'id' => $user->id,
-        'first_name' => 'Updated',
-        'last_name' => 'Name',
+        'name' => 'Updated',
         'email' => 'updated@example.com',
         'username' => 'updateduser',
     ]);
@@ -121,8 +116,7 @@ test('user without permission cannot manage users', function () {
     $response->assertStatus(403);
 
     $response = $this->actingAs($regularUser)->post('/admin/users', [
-        'first_name' => 'New',
-        'last_name' => 'User',
+        'name' => 'New',
         'username' => 'newuser',
         'email' => 'newuser@example.com',
         'password' => 'password123',
@@ -133,11 +127,10 @@ test('user without permission cannot manage users', function () {
 
 test('validation works when creating user', function () {
     $response = $this->actingAs($this->admin)->post('/admin/users', [
-        'first_name' => '',
-        'last_name' => '',
+        'name' => '',
         'email' => '',
         'password' => '',
     ]);
 
-    $response->assertSessionHasErrors(['first_name', 'last_name', 'email', 'password']);
+    $response->assertSessionHasErrors(['name', 'email', 'password']);
 });

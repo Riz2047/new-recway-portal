@@ -128,24 +128,24 @@
                     </div>
                 </div>
 
-                @if($interviews->count() > 0)
+                @if($serviceTypes->count() > 0)
                     <div class="space-y-1">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('Services') }}
                         </label>
                         <div class="space-y-2 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded p-4">
-                            @foreach($interviews as $interview)
+                            @foreach($serviceTypes as $serviceType)
                                 <div class="flex items-center">
                                     <input 
                                         type="checkbox" 
                                         name="services[]" 
-                                        id="service_{{ $interview->id }}" 
-                                        value="{{ $interview->id }}"
+                                        id="service_{{ $serviceType->id }}" 
+                                        value="{{ $serviceType->id }}"
                                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         checked
                                     >
-                                    <label for="service_{{ $interview->id }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $interview->title ?? "Service #{$interview->id}" }}
+                                    <label for="service_{{ $serviceType->id }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $serviceType->name ?? "Service #{$serviceType->id}" }}
                                     </label>
                                 </div>
                             @endforeach
