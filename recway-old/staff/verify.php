@@ -4,15 +4,11 @@ include_once('../includes/functions.php');
 
 $otp = findByQuery("SELECT * FROM otp_verification WHERE email = '{$_SESSION['email']}' AND date_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
 
-
-
 if (empty($otp)) {
 
     redirect("signin.php");
 
 }
-
-
 
 if (isset($_POST['otp'])) {
 
@@ -32,6 +28,7 @@ if (isset($_POST['otp'])) {
         if ($_SESSION['userTable'] === 'admin') {
 
             $_SESSION['admin'] = $user;
+            $_SESSION['oderspi'] = 'check746342534634554754##546456^&390=$5904';
 
         } elseif ($_SESSION['userTable'] === 'customers') {
 
@@ -40,10 +37,9 @@ if (isset($_POST['otp'])) {
         } elseif ($_SESSION['userTable'] === 'staff') {
 
             $_SESSION['staff'] = $user;
+            $_SESSION['oderspi'] = 'check746342534634554754##546456^&390=$5904';
 
         }
-
-
 
         delete("otp_verification", "id", $otp->id);
 
@@ -57,7 +53,7 @@ if (isset($_POST['otp'])) {
 
 }
 
-if (isset($message) && !empty($message)) {
+if (isset($message) && ! empty($message)) {
 
     if (strpos($message, "Logged")) {
 
@@ -72,8 +68,6 @@ if (isset($message) && !empty($message)) {
     flash("loginError", $message, "errorMsg");
 
 }
-
-
 
 ?>
 

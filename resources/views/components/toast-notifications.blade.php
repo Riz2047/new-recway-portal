@@ -47,7 +47,7 @@
         title: $event?.detail?.[0]?.title || $event?.detail?.title || 'Notification',
         message: $event?.detail?.[0]?.message || $event?.detail?.message || '',
     })"
-    class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex max-w-full flex-col gap-3 md:right-4 md:left-auto md:max-w-sm"
+    class="pointer-events-none fixed inset-x-4 top-4 z-50 flex max-w-full flex-col gap-3 md:right-4 md:left-auto md:max-w-sm"
     x-on:mouseenter="$dispatch('pause-auto-dismiss')"
     x-on:mouseleave="$dispatch('resume-auto-dismiss')">
 

@@ -1,11 +1,9 @@
 <?php
-
 include_once('../includes/functions.php');
 setCurrentURL();
-if (!isset($_SESSION['staff'])) {
+if (! isset($_SESSION['staff'])) {
     redirect('signin.php');
 }
-
 $query = 'SELECT * FROM staff WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_SESSION['staff']->id]);
@@ -16,10 +14,10 @@ $query = 'SELECT * FROM user_category WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$login_user->category]);
 $category_permissions = $stmt->fetchAll();
-if (!empty($category_permissions[0]->permissions_id)) {
+if (! empty($category_permissions[0]->permissions_id)) {
     $staff_permissions = explode(',', $category_permissions[0]->permissions_id);
 }
-if (!empty($staff_permissions)) {
+if (! empty($staff_permissions)) {
     foreach ($staff_permissions as $staff_key => $staff_permission) {
         $query = 'SELECT title FROM user_permissions WHERE id = ?';
         $stmt = $conn->prepare($query);
@@ -30,23 +28,24 @@ if (!empty($staff_permissions)) {
 }
 include_once("../includes/expired.php");
 // $candidates_addition_query = '';
-$candidates_addition_query = ' AND staff_id = ' . (int)$_SESSION['staff']->id;;
-if (isset($allowed_staff_permission['view_own_candidate']) && !empty($allowed_staff_permission['view_own_candidate'])) {
+$candidates_addition_query = ' AND staff_id = ' . (int)$_SESSION['staff']->id;
+;
+if (isset($allowed_staff_permission['view_own_candidate']) && ! empty($allowed_staff_permission['view_own_candidate'])) {
     // $candidates_addition_query = ' AND staff_id = ' . (int)$_SESSION['staff']->id;
     $candidates_addition_query = ' AND staff_id = ' . (int)$_SESSION['staff']->id;
 }
-if (isset($allowed_staff_permission['view_all_candidate']) && !empty($allowed_staff_permission['view_all_candidate'])) {
+if (isset($allowed_staff_permission['view_all_candidate']) && ! empty($allowed_staff_permission['view_all_candidate'])) {
     $candidates_addition_query = '';
 }
 $staff_addition_query = '';
-if (isset($_SESSION['staff']->id) && !empty($_SESSION['staff']->id)) {
+if (isset($_SESSION['staff']->id) && ! empty($_SESSION['staff']->id)) {
     $query = 'SELECT * FROM staff WHERE id = ?';
     $stmt = $conn->prepare($query);
     $stmt->execute([$_SESSION['staff']->id]);
     $staff_mem = $stmt->fetch();
-    if (!empty($staff_mem)) {
-        if (isset($staff_mem->staff_members) && !empty($staff_mem->staff_members)) {
-            if (!empty($candidates_addition_query)) {
+    if (! empty($staff_mem)) {
+        if (isset($staff_mem->staff_members) && ! empty($staff_mem->staff_members)) {
+            if (! empty($candidates_addition_query)) {
                 $staff_addition_query .= ',' . (int)$_SESSION['staff']->id;
                 $candidates_addition_query = ' AND staff_id IN (' . $staff_mem->staff_members . $staff_addition_query . ') AND expired = 0';
             }
@@ -66,13 +65,11 @@ function getStatusCountOfStaff($statusId, $candidates_addition_query = '', $quer
     global $conn;
     $serviceClause = '';
     $params = [$statusId];
-
     if (isset($_GET['service']) && is_numeric($_GET['service']) && (int)$_GET['service'] > 0) {
         $stmtSvc = $conn->prepare('SELECT id FROM interviews WHERE service_cat_id = ?');
         $stmtSvc->execute([(int)$_GET['service']]);
         $ids = $stmtSvc->fetchAll(PDO::FETCH_COLUMN);
-
-        if (!empty($ids)) {
+        if (! empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $serviceClause = " AND c.interview_id IN ($placeholders)";
             $params = array_merge($params, $ids);
@@ -80,17 +77,15 @@ function getStatusCountOfStaff($statusId, $candidates_addition_query = '', $quer
             return 0;
         }
     }
-
     $sql = 'SELECT COUNT(*) FROM candidates c WHERE c.status = ? AND c.expired = 0'
          . $serviceClause
          . ($candidates_addition_query ?? '');
-
     $stmt = $conn->prepare($sql);
     $stmt->execute(array_merge($params, $queryParams));
     return (int)$stmt->fetchColumn();
 }
-
-function getneworderscount($serviceCategoryId, $candidates_addition_query = null){
+function getneworderscount($serviceCategoryId, $candidates_addition_query = null)
+{
     global $conn;
     // Resolve New Order status id robustly within this service category
     $stmt = $conn->prepare("SELECT id FROM statuses WHERE status_type = ? AND (LOWER(TRIM(status)) LIKE 'new order%' OR LOWER(TRIM(status)) LIKE 'ny order%') LIMIT 1");
@@ -139,29 +134,29 @@ $stmt->execute();
 $services = $stmt->fetchAll();
 $current_page = basename($_SERVER['PHP_SELF']);
 if ($current_page == 'candidates.php' || $current_page == 'index.php') {
-    if (isset($_GET['status']) && !empty($_GET['status'])) {
+    if (isset($_GET['status']) && ! empty($_GET['status'])) {
         $_SESSION['status'] = $_GET['status'];
-    }else{
-        if(isset($_SESSION['status'])){
+    } else {
+        if (isset($_SESSION['status'])) {
             unset($_SESSION['status']);
         }
     }
-    if (isset($_GET['service']) && !empty($_GET['service'])) {
+    if (isset($_GET['service']) && ! empty($_GET['service'])) {
         $_SESSION['service'] = $_GET['service'];
-    }else{
-    if(isset($_SESSION['service'])){
-        unset($_SESSION['service']);
-    }
+    } else {
+        if (isset($_SESSION['service'])) {
+            unset($_SESSION['service']);
+        }
     }
 }
 $sessionURL = null;
-if (isset($_SESSION['status']) && !empty($_SESSION['status'])) {
+if (isset($_SESSION['status']) && ! empty($_SESSION['status'])) {
     $sessionURL .= "?status=".$_SESSION['status'];
 }
-if (isset($_SESSION['service']) && !empty($_SESSION['service'])) {
-    if(!empty($sessionURL)){
+if (isset($_SESSION['service']) && ! empty($_SESSION['service'])) {
+    if (! empty($sessionURL)) {
         $sessionURL .= "&service=".$_SESSION['service'];
-    }else{
+    } else {
         $sessionURL .= "?service=".$_SESSION['service'];
     }
 }
@@ -171,6 +166,7 @@ if (isset($_SESSION['service']) && !empty($_SESSION['service'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
     <link rel="stylesheet" href="assets/css/tablesBootstrap.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel='stylesheet' href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css'>
@@ -222,6 +218,85 @@ if (isset($_SESSION['service']) && !empty($_SESSION['service'])) {
         background: #ff0000;
         border-radius: 50%;
     }
+    .notification-badge-count {
+        animation: pulse-badge 2s infinite;
+        z-index: 10;
+    }
+    @keyframes pulse-badge {
+        0%, 100% { 
+            transform: scale(1); 
+        }
+        50% { 
+            transform: scale(1.1); 
+        }
+    }
+    #bg-check-menus li a:hover {
+        text-decoration: none !important;
+    }
+    /* Background Check Alert Icon - Red Blinking Circle */
+    .bg-check-alert-icon {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background-color: #ff4444;
+        border-radius: 50%;
+        margin-left: 5px;
+        cursor: pointer;
+        vertical-align: middle;
+        position: relative;
+    }
+    
+    /* Blinking Animation */
+    @keyframes blink {
+        0%, 100% { 
+            opacity: 1; 
+            transform: scale(1);
+        }
+        50% { 
+            opacity: 0.3; 
+            transform: scale(0.9);
+        }
+    }
+    
+    .blink-alert {
+        animation: blink 1.5s infinite;
+    }
+    
+    /* Enhanced Tooltip Styling */
+    .bg-check-alert-icon[data-bs-toggle="tooltip"] {
+        position: relative;
+    }
+    
+    /* Custom tooltip styling for better visibility */
+    .tooltip-inner {
+        white-space: pre-line;
+        text-align: left;
+        max-width: 250px;
+        background-color: #2c3e50 !important;
+        color: #ffffff !important;
+        font-size: 12px;
+        padding: 10px;
+        border-radius: 6px;
+    }
+    
+    .tooltip.bs-tooltip-top .arrow::before {
+        border-top-color: #2c3e50 !important;
+    }
+    
+    #bg-check-menus::-webkit-scrollbar {
+        width: 6px;
+    }
+    #bg-check-menus::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    #bg-check-menus::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+    #bg-check-menus::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
     /* .dropdown-menu {
 position: fixed !important;
 transition: none !important;
@@ -229,7 +304,6 @@ inset: none !important;
 } */
 </style>
 <body>
-    
     <div class="p-0 m-0 w-100">
         <div class="sidebar-section">
             <div class="sidebar">
@@ -243,7 +317,7 @@ inset: none !important;
                             <span class="link_name">Staff Dashboard</span>
                         </a>
                     </li>
-                    <?php if (isset($allowed_staff_permission['view_customer']) && !empty($allowed_staff_permission['view_customer'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_customer']) && ! empty($allowed_staff_permission['view_customer'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'customers' ? 'active' : '' ?>">
                             <a href="customers.php">
                                 <i class="bx bx-user"></i>
@@ -251,13 +325,13 @@ inset: none !important;
                             </a>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_customer']) && !empty($allowed_staff_permission['view_customer'])) { ?>
+                    <?php if (isset($login_user->category) && ! empty($login_user->category) && ($login_user->category == 2 || $login_user->category == 4)) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'customer-invoice' ? 'active' : '' ?>">
-                            <a href="customer-invoice.php">
-                                <i class="bi bi-receipt"></i>
-                                <span class="link_name">Customer Invoice</span>
-                            </a>
-                        </li>
+                        <a href="customer-invoice.php">
+                            <i class="bi bi-receipt"></i>
+                            <span class="link_name">Customer Invoice</span>
+                        </a>
+                    </li>  
                     <?php } ?>
                     <?php if (isset($allowed_staff_permission['view_own_candidate']) || isset($allowed_staff_permission['view_all_candidate'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'candidates' ? 'active' : '' ?>">
@@ -267,7 +341,7 @@ inset: none !important;
                             </a>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_status']) && !empty($allowed_staff_permission['view_status'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_status']) && ! empty($allowed_staff_permission['view_status'])) { ?>
                         <li class="dropdown-li <?php echo isset($activeLink) && $activeLink == 'statuses' ? 'active' : '' ?>">
                             <div class="iocn-link">
                                 <a href="#">
@@ -277,8 +351,23 @@ inset: none !important;
                                 <i class='bx bxs-chevron-down arrow'></i>
                             </div>
                             <ul class="sub-menu">
-                                <?php if (!empty($services)) : ?>
+                                 <?php
+                                    // Background-only role: show only Background Check service in statuses dropdown
+                                    $backgroundServiceId = defined('BACKGROUND_ID') ? BACKGROUND_ID : 3;
+                        if (function_exists('getStaffAllowedPermissions')) {
+                            getStaffAllowedPermissions(); // ensures $_SESSION['user_category'] is set
+                        }
+                        $userCategory = $_SESSION['user_category'] ?? null;
+                        $hasBackgroundPermission = function_exists('staffHasPermission') && staffHasPermission('view_background_orders');
+                        $showOnlyBackground = ($userCategory == 5 && $hasBackgroundPermission);
+                        ?>
+                                <?php if (! empty($services)) : ?>
                                     <?php foreach ($services as $key => $service) : ?>
+                                         <?php
+                                    if ($showOnlyBackground && (int)$service->id !== (int)$backgroundServiceId) {
+                                        continue;
+                                    }
+                                        ?>
                                         <li class="<?php echo $key == 0 ? 'mt-3' : '' ?>">
                                             <a href="statuses.php?id=<?php echo $service->id ?>">
                                                 <?php echo $service->name  ?>
@@ -289,7 +378,7 @@ inset: none !important;
                             </ul>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_service']) && !empty($allowed_staff_permission['view_service'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_service']) && ! empty($allowed_staff_permission['view_service'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'services' ? 'active' : '' ?>">
                             <a href="services.php">
                                 <i class="bi bi-card-checklist"></i>
@@ -297,7 +386,7 @@ inset: none !important;
                             </a>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_statistics']) && !empty($allowed_staff_permission['view_statistics'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_statistics']) && ! empty($allowed_staff_permission['view_statistics'])) { ?>
                     <li class="<?php echo isset($activeLink) && $activeLink == 'analytics' ? 'active' : '' ?>">
                         <a href="analytics.php">
                             <i class="bi bi-graph-up-arrow"></i>
@@ -305,7 +394,23 @@ inset: none !important;
                         </a>
                     </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_place']) && !empty($allowed_staff_permission['view_place'])) { ?>
+										<?php if (isset($allowed_staff_permission['view_statistics']) && ! empty($allowed_staff_permission['view_statistics'])) { ?>
+										<li class="<?php echo isset($activeLink) && $activeLink == 'history' ? 'active' : '' ?>">
+											<a href="history.php">
+												<i class="bi bi-clock-history"></i>
+												<span class="link_name">History</span>
+											</a>
+										</li>
+										<?php } ?>
+										<?php if (isset($allowed_staff_permission['view_statistics']) && ! empty($allowed_staff_permission['view_statistics'])) { ?>
+										<li class="<?php echo isset($activeLink) && $activeLink == 'email_logs' ? 'active' : '' ?>">
+											<a href="email_logs.php">
+												<i class="bi bi-clock-history"></i>
+												<span class="link_name">Email Logs</span>	
+											</a>
+										</li>
+										<?php } ?>
+                    <?php if (isset($allowed_staff_permission['view_place']) && ! empty($allowed_staff_permission['view_place'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'places' ? 'active' : '' ?>">
                             <a href="places.php">
                                 <i class="bi bi-geo-alt"></i>
@@ -313,12 +418,27 @@ inset: none !important;
                             </a>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_message']) && !empty($allowed_staff_permission['view_message'])) { ?>
-                        <li class="<?php echo isset($activeLink) && $activeLink == 'messages' ? 'active' : '' ?>">
-                            <a href="messages.php">
-                                <i class="bi bi-chat-dots"></i>
-                                <span class="link_name">Messages</span>
-                            </a>
+                    <?php if (isset($allowed_staff_permission['view_message']) && ! empty($allowed_staff_permission['view_message'])) { ?>
+                        <li class="dropdown-li <?php echo isset($activeLink) && $activeLink == 'messages' ? 'active' : '' ?><?php echo isset($activeLink) && $activeLink == 'custom_message' ? 'active' : '' ?>">
+												<div class="iocn-link">
+												<a href="#">
+												<i class="bi bi-chat-dots"></i>
+												<span class="link_name">Messages</span>
+											</a>
+											<i class='bx bxs-chevron-down arrow'></i>
+							</div>
+							<ul class="sub-menu">
+                            <li class="mt-3">
+                                <a href="messages.php">
+                                    Message
+                                </a>
+                            </li>
+                            <li>
+                                <a href="custom-message.php">
+                                    Custom Message
+                                </a>
+                            </li>
+                        </ul>
                         </li>
                     <?php } ?>
                     <li class="<?php echo isset($activeLink) && $activeLink == 'profile' ? 'active' : '' ?>">
@@ -327,7 +447,7 @@ inset: none !important;
                             <span class="link_name">Account Settings</span>
                         </a>
                     </li>
-                    <?php if (isset($allowed_staff_permission['view_site_setting']) && !empty($allowed_staff_permission['view_site_setting'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_site_setting']) && ! empty($allowed_staff_permission['view_site_setting'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'settings' ? 'active' : '' ?>">
                             <a href="settings.php">
                                 <i class="bi bi-chat-dots"></i>
@@ -335,7 +455,7 @@ inset: none !important;
                             </a>
                         </li>
                     <?php } ?>
-                    <?php if (isset($allowed_staff_permission['view_documentation']) && !empty($allowed_staff_permission['view_documentation'])) { ?>
+                    <?php if (isset($allowed_staff_permission['view_documentation']) && ! empty($allowed_staff_permission['view_documentation'])) { ?>
                         <li class="<?php echo isset($activeLink) && $activeLink == 'documentation' ? 'active' : '' ?>">
                             <a href="documentation.php">
                                 <i class="bi bi-chat-dots"></i>
@@ -380,13 +500,13 @@ if (isset($_GET['service']) && $_GET['service'] != 'all') {
     $query .= " AND interview_id IN (" . $services . ")";
 }
 $query .= "  ORDER BY CASE
-WHEN booked IS NULL OR booked = '' THEN 1  -- Places empty interview dates at the end
+WHEN booked IS NULL OR booked = NULL THEN 1  -- Places empty interview dates at the end
 ELSE 0
 END, booked ASC";
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $candidates = $stmt->fetchAll();
-if (!empty($candidates)) {
+if (! empty($candidates)) {
     foreach ($candidates as $row) {
         $staffId = $_SESSION['staff']->id;
         $query = "
@@ -400,20 +520,42 @@ GROUP BY comments.order_id
         $stmt2 = $conn->prepare($query);
         $stmt2->execute([
             ':staff_id' => $staffId,
-            ':order_id' => $row->id
+            ':order_id' => $row->id,
         ]);
         $fetched = $stmt2->fetchAll();
-        if (!empty($fetched)) {
+        if (! empty($fetched)) {
             $comment = $fetched[0];
             $readBy = array_filter(array_map('trim', explode(',', $comment->read_by_staff ?? '')));
-            if (!in_array($staffId, $readBy)) {
+            if (! in_array($staffId, $readBy)) {
                 $comments[] = $comment;
             }
         }
     }
 }
+// Background Check Notifications - Get candidates with missing checks (economy=-1 OR criminal_record=-1 OR social=-1)
+$background_check_candidates = [];
+$current_staff_id = (int)$_SESSION['staff']->id;
+$bg_check_query = 'SELECT c.id, c.order_id, c.name, c.surname, c.economy, c.criminal_record, c.social 
+                   FROM candidates c 
+                   LEFT JOIN statuses st ON c.status = st.id
+                   WHERE c.expired = 0 
+                   AND c.staff_id = ?
+                   AND (c.economy = -1 OR c.criminal_record = -1 OR c.social = -1)
+                   AND NOT (c.economy = 0 AND c.criminal_record = 0 AND c.social = 0)
+                   AND (st.variable = "booked" OR st.variable = "booked_msg_follow" OR LOWER(TRIM(st.status)) LIKE "booked%")';
+$bg_check_params = [$current_staff_id];
+$bg_check_param_types = [PDO::PARAM_INT];
+if (isset($_GET['service']) && $_GET['service'] != 'all' && isset($services) && ! empty($services)) {
+    $bg_check_query .= " AND c.interview_id IN (" . $services . ")";
+}
+$bg_check_query .= " ORDER BY c.id DESC LIMIT 20";
+$bg_stmt = $conn->prepare($bg_check_query);
+$bg_stmt->bindValue(1, $current_staff_id, PDO::PARAM_INT);
+$bg_stmt->execute();
+$background_check_candidates = $bg_stmt->fetchAll();
+$bg_check_count = count($background_check_candidates);
 ?>
-<div class="profile-img p-2 mr-3 <?php if (!empty($comments)) { ?> has-dot <?php } ?>">
+<div class="profile-img p-2 mr-3 <?php if (! empty($comments)) { ?> has-dot <?php } ?>">
     <span class="fas fa-bell f-20 text-white"></span>
     <div class="tool-pit" style="width: 250px;padding: 20px 0px 20px 20px;">
         <div class="tool-pit-content">
@@ -421,7 +563,7 @@ GROUP BY comments.order_id
                 <div class="arrow-up me-3" style="top: 5px;right: -4px;"></div>
             </div>
             <ul class="menus" id="comment-menus" style="padding: 0px 10px 4px 10px !important;font-size: small;height: 266px;overflow-y: scroll;">
-            <?php if (!empty($comments)) { ?>
+            <?php if (! empty($comments)) { ?>
                 <?php foreach ($comments as $key => $row) { ?>
                                                 <li style="border-left: 4px solid #33b5e5;margin-bottom: 2px;" id="<?=$row->order_id?>-comment">                           
                                                      <a style="font-size: small;width:100%;display: inline-block;" href="invoice.php?sno=<?= $key + 1 ?>&id=<?php echo $row->order_id ?><?php echo isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?>" class="no-decoration text-black open-candidate " data-sno="<?= $key + 1 ?>" data-id="<?php echo $row->order_id ?>" data-status="<?php echo $_GET['status'] ?? '' ?>">
@@ -430,6 +572,70 @@ GROUP BY comments.order_id
                                             <?php } ?>
                 <?php } else { ?>
                     <p class="no-comments text-muted m-2">No comments found</p>
+                <?php } ?>
+            </ul>
+        </div>
+    </div>
+    </div>
+<!-- Background Check Notification -->
+<div class="profile-img p-2 mr-3 position-relative <?php if ($bg_check_count > 0) { ?> has-dot <?php } ?>" style="cursor: pointer;">
+    <span class="bi bi-shield-check f-20 text-white"></span>
+    <?php if ($bg_check_count > 0) { ?>
+        <span class="notification-badge-count" style="position: absolute; top: 5px; right: 5px; background: #ff4757; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; border: 2px solid #14256a;"><?php echo $bg_check_count > 99 ? '99+' : $bg_check_count; ?></span>
+    <?php } ?>
+    <div class="tool-pit" style="width: 350px;padding: 20px 0px 20px 20px;">
+        <div class="tool-pit-content">
+            <div class="d-flex justify-content-end">
+                <div class="arrow-up me-3" style="top: 5px;right: -4px;"></div>
+            </div>
+            <div style="padding: 15px 20px; background: #14256a; color: white; border-radius: 10px 10px 0 0;">
+                <h5 style="margin: 0; font-size: 16px; font-weight: 600;">Pending Background Checks</h5>
+                <?php if ($bg_check_count > 0) { ?>
+                    <span style="font-size: 12px; opacity: 0.9;"><?php echo $bg_check_count; ?> candidate(s) need attention</span>
+                <?php } ?>
+            </div>
+            <ul class="menus" id="bg-check-menus" style="padding: 10px !important;font-size: small;max-height: 400px;overflow-y: auto;margin: 0;">
+            <?php if (! empty($background_check_candidates)) { ?>
+                <?php foreach ($background_check_candidates as $key => $candidate) {
+                    $missing_checks = [];
+                    if ($candidate->economy == -1) {
+                        $missing_checks[] = 'Economy';
+                    }
+                    if ($candidate->criminal_record == -1) {
+                        $missing_checks[] = 'Criminal Record';
+                    }
+                    if ($candidate->social == -1) {
+                        $missing_checks[] = 'Social';
+                    }
+                    $candidate_name = trim(($candidate->name ?? '') . ' ' . ($candidate->surname ?? ''));
+                    ?>
+                    <li style="border-left: 4px solid #ff4757;margin-bottom: 8px; padding: 10px; background: #f8f9ff; border-radius: 4px;" id="bg-check-<?=$candidate->id?>">
+                        <a style="font-size: small;width:100%;display: inline-block; text-decoration: none; color: #333;" href="invoice.php?id=<?php echo $candidate->id ?><?php echo isset($_GET['status']) ? '&status=' . $_GET['status'] : '' ?>" class="open-candidate" data-id="<?php echo $candidate->id ?>" data-status="<?php echo $_GET['status'] ?? '' ?>">
+                            <div style="font-weight: 600; color: #14256a; margin-bottom: 5px;">
+                                <b><?= htmlspecialchars($candidate->order_id) ?></b>
+                            </div>
+                            <?php if (! empty($candidate_name)) { ?>
+                                <div style="color: #666; margin-bottom: 8px; font-size: 13px;">
+                                    <?= htmlspecialchars($candidate_name) ?>
+                                </div>
+                            <?php } ?>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <?php foreach ($missing_checks as $check) { ?>
+                                    <span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; border: 1px solid #ffc107;">
+                                        ⚠ <?= htmlspecialchars($check) ?>
+                                    </span>
+                                <?php } ?>
+                            </div>
+                        </a>
+                    </li>
+                <?php } ?>
+            <?php } else { ?>
+                <li style="padding: 20px; text-align: center;">
+                    <p class="text-muted m-0" style="font-size: 14px;">
+                        <i class="bi bi-check-circle" style="font-size: 24px; color: #4be69d; display: block; margin-bottom: 10px;"></i>
+                        All background checks are complete
+                    </p>
+                </li>
                 <?php } ?>
             </ul>
         </div>

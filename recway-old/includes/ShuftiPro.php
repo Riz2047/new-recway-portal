@@ -1,15 +1,15 @@
 <?php
 
-class ShuftiPro {
-    
+class ShuftiPro
+{
     public function getShuftiProLink($candidate)
     {
-        $client_id = 'fc19c8797a07ec72d4de7eacb786411967e8621f94026df772be2d9da40e931c';
-        $secret_key = 'cGNrLWAHseXJSOkLtMS75n6ODgAWM1ar';
+        $client_id = 'vZpxoXUTfPN2THPulz1dQ3WSidU0xGk8lv1oLxeKScsymxsvCU1756979095';
+        $secret_key = 'BO7ZessXBsL8MhfCxCn89hqInEhtjo2W';
         $url = 'https://api.shuftipro.com/';
         $verification_request = [
             //your unique request reference
-            "reference" => 'ref-'.rand(4,444).rand(4,444),
+            "reference" => 'ref-'.rand(4, 444).rand(4, 444),
             //URL where you will receive the webhooks from Shufti
             "callback_url" => 'https://dev.orderspi.se/api/shufti-callback?customer_id='.$candidate->cus_id .'&candidate_id='.$candidate->id,
             //end-user email
@@ -17,7 +17,7 @@ class ShuftiPro {
             //end-user country
             "country" => "",
             //URL where end-user will be redirected after verification completed
-            "redirect_url" => "", 
+            "redirect_url" => "",
             //what kind of proofs will be provided to Shufti for verification?
             "verification_mode" => "any",
             //allow end-user to capture photos/videos with the camera only.
@@ -43,7 +43,7 @@ class ShuftiPro {
             'document_number' => "",
             'expiry_date' => "",
             'issue_date' => "",
-            'supported_types' => ['id_card','passport','driving_license']
+            'supported_types' => ['id_card','passport','driving_license'],
         ];
         $auth = $client_id.":".$secret_key;
         $headers = ['Content-Type: application/json'];
@@ -55,18 +55,19 @@ class ShuftiPro {
         //get Shufti Signature
         $sp_signature = $this->get_header_keys($response['headers'])['signature'];
         //calculating signature for verification
-        $calculate_signature = hash('sha256',$response_data.hash('sha256',$secret_key));
-        $decoded_response = json_decode($response_data,true);
-        
-        if($sp_signature == $calculate_signature){
+        $calculate_signature = hash('sha256', $response_data.hash('sha256', $secret_key));
+        $decoded_response = json_decode($response_data, true);
+
+        if ($sp_signature == $calculate_signature) {
             return $response_data;
-        }else{
+        } else {
             return "Invalid signature : $response_data";
         }
     }
-    
+
     //method to send CURL request
-    public function send_curl($url, $post_data, $headers, $auth){
+    public function send_curl($url, $post_data, $headers, $auth)
+    {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_USERPWD, $auth);
@@ -85,14 +86,15 @@ class ShuftiPro {
         curl_close($ch);
         return ['headers' => $headers,'body' => $body];
     }
-    
+
     //following method is to get response headers, here the main intention is to get response Signature from the response headers
-    public function get_header_keys($header_string){
+    public function get_header_keys($header_string)
+    {
         $headers = [];
         $exploded = explode("\n", $header_string);
-        if(!empty($exploded)){
+        if (! empty($exploded)) {
             foreach ($exploded as $key => $header) {
-                if (!$key) {
+                if (! $key) {
                     $headers[] = $header;
                 } else {
                     $header = explode(':', $header);
@@ -102,4 +104,4 @@ class ShuftiPro {
         }
         return $headers;
     }
-} 
+}

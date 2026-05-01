@@ -1,9 +1,7 @@
 <?php
-
 $activeLink = "candidates";
-
 include_once('../../includes/functions.php');
-if (!isset($_SESSION['staff']) && empty($_SESSION['staff'])) {
+if (! isset($_SESSION['staff']) && empty($_SESSION['staff'])) {
     redirect('signin.php');
 }
 $query = 'SELECT * FROM candidates WHERE id = ?';
@@ -15,60 +13,48 @@ if (isset($_GET['a'])) {
     $stmt = $conn->prepare($query);
     $res = $stmt->execute([0, $_GET['id']]);
 }
-
 if (isset($_GET['cid'])) {
     $query = 'DELETE FROM comments WHERE id = ?';
     $stmt = $conn->prepare($query);
     $res = $stmt->execute([$_GET['cid']]);
 }
-
 if (isset($_POST['update'])) {
     $staff_id = $_POST['staff'];
     $can_name = $_POST['can_name'];
     $comment = $_POST['comment'];
-
     $query = 'SELECT * FROM staff WHERE id = ?';
     $stmt = $conn->prepare($query);
     $stmt->execute([$staff_id]);
     $staff = $stmt->fetch();
-
     $query = 'UPDATE candidates SET staff_id = ? WHERE id = ?';
     $stmt = $conn->prepare($query);
     $res = $stmt->execute([$staff_id, $_GET['id']]);
-
-    if (!empty($res)) {
+    if (! empty($res)) {
         $query = 'SELECT * FROM candidates WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$_GET['id']]);
         $candidate = $stmt->fetch();
-
         $query = 'SELECT * FROM interviews WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->interview_id]);
         $interview = $stmt->fetch();
-
         $query = 'SELECT * FROM places WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->place]);
         $place = $stmt->fetch();
-
         $query = "INSERT INTO history (order_id, `desc`, comment) VALUES (?,?,?)";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$_GET['id'], "Staff ({$staff->name}) Assigned to {$candidate->name} {$candidate->surname}", $comment]);
-
         $messages = getMessages($candidate->cus_id, $interview->id);
-        $body = replace($messages->staff_msg, $_POST['cus_name'], $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+        $body = replace($messages->staff_msg, $_POST['cus_name'], $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
         //        $body .= "<br><b>Comment:</b> {$comment}<br><br>";
-
         saveEmail("Staff", $staff->name, $candidate->order_id, 'Staff Message', $body, $staff->email, 'Candidate Assigned');
         sendMail($body, $staff->email, $staff->name, "Candidate Assigned");
-
         flash("staffUpdated", "Staff updated successfully!");
     } else {
         flash("staffUpdated", "Could not update staff!", "errorMsg");
     }
 }
-
 if (isset($_POST['status'])) {
     $status = $_POST['status'];
     $date = $_POST['date'];
@@ -77,65 +63,53 @@ if (isset($_POST['status'])) {
     $cus_email = $_POST['cus_email'];
     $comment = $_POST['comment'];
     $orderID = $_POST['order_id'];
-    $report = isset($_FILES['report']) && !empty($_FILES['report']['name']) ? $_FILES['report']['name'] : "";
+    $report = isset($_FILES['report']) && ! empty($_FILES['report']['name']) ? $_FILES['report']['name'] : "";
     $interviewID = $_POST['interviewID'];
-
     $reportName = time() . "-" . substr(uniqid(), -6) . ".pdf";
-
-    if (!empty($report)) {
+    if (! empty($report)) {
         move_uploaded_file($_FILES['report']['tmp_name'], '../uploads/' . $reportName);
     }
-
     $status = getStatusById($status);
-
     $date_time = date('Y-m-d H:i:s', strtotime($date . date('H:i:s')));
-
     if ($status->variable == "booked") {
         $query = 'UPDATE candidates SET status = ?, booked = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, $date, $_GET['id']]);
     } elseif ($status->variable == "rebooking") {
         $query = 'UPDATE candidates SET status = ?, booked = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, null, $_GET['id']]);
     } else {
         $query = 'UPDATE candidates SET status = ?';
-        if (!empty($report)) {
+        if (! empty($report)) {
             $query .= ", report = '{$reportName}'";
         }
-
         // Set Delivery Date
         if ($status->variable == "approval_received") {
             // Set the delivery date to 3 or 5 days from the current date, depending on the interview ID
             $delivery_date = $interviewID == 10 ? date('Y-m-d', strtotime($date . ' +3 days')) : date('Y-m-d', strtotime($date . ' +5 days'));
-
             // Check if the delivery date falls on a weekend (6 for Saturday or 7 for Sunday)
             if (date('N', strtotime($delivery_date)) >= 6) {
                 // If the delivery date falls on a weekend, add the required number of days to set it to the next Monday
                 $days_to_add = 8 - date('N', strtotime($delivery_date));
                 $delivery_date = date('Y-m-d', strtotime($delivery_date . ' +' . $days_to_add . ' days'));
             }
-
             $query .= ", delivery_date = '{$delivery_date}'";
         }
-
         $query .= " WHERE id = ?";
         $stmt = $conn->prepare($query);
         $res = $stmt->execute([$status->id, $_GET['id']]);
     }
-
     $res = "true";
-    if (!empty($res)) {
+    if (! empty($res)) {
         // $comment .= !empty($comment) ? '<br>-' . $_SESSION['admin']->name : '';
         $comment .= '<br>-' . $_SESSION['staff']->name;
         $query = "INSERT INTO history (order_id, `desc`, date_time, comment) VALUES (?,?,?,?)";
@@ -145,59 +119,48 @@ if (isset($_POST['status'])) {
         } else {
             $res = $stmt->execute([$_GET['id'], $status->status_detail, $date_time, $comment]);
         }
-
         $query = 'SELECT * FROM candidates WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$_GET['id']]);
         $candidate = $stmt->fetch();
-
         $query = 'SELECT * FROM staff WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->staff_id]);
         $staff = $stmt->fetch();
-
         $query = 'SELECT * FROM customers WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->cus_id]);
         $customer = $stmt->fetch();
-    
         $query = 'SELECT * FROM interviews WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->interview_id]);
         $service = $stmt->fetch();
-
         $query = 'SELECT * FROM places WHERE id = ?';
         $stmt = $conn->prepare($query);
         $stmt->execute([$candidate->place]);
         $place = $stmt->fetch();
-
         $msg = getStatusMessage($status->id, $service->id, $candidate->cus_id);
-        if (!empty($msg)) {
+        if (! empty($msg)) {
             $msg = $msg->col;
-            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, !empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
+            $body = replace($msg, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $orderID, $date, ! empty($staff) ? $staff->email : '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
             saveEmail("Customer", $cus_name, $orderID, $status->status . ' Message', $body, $cus_email, $status->status);
-
             if (isEmailAllowed($candidate->cus_id, $status->id)) {
                 $directory = "../security-report-uploads/";
                 $filename = $candidate->interview_report;
-                if (($status->variable == "approved" || $status->variable == "denied") && !empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
+                if (($status->variable == "approved" || $status->variable == "denied") && ! empty($filename) && file_exists($directory . $filename) && $customer->send_security_report == 1) {
                     sendMail($body, $cus_email, $cus_name, $status->status, $directory . $filename);
                 } else {
                     sendMail($body, $cus_email, $cus_name, $status->status);
                 }
             }
-
             if ($status->variable == "canceled") {
                 $body = $msg;
-                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], !empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, !empty($place) ? $place->name : '');
-
+                $body = replace($body, $cus_name, $can_name . " " . $candidate->surname, $_POST['cus_company'], $_POST['interview'], ! empty($staff) ? $staff->name : '', '', '', $status->status, $date, $candidate->order_id, '', '', $comment, $candidate->vasc_id, $service->title, ! empty($place) ? $place->name : '');
                 saveEmail("Candidate", $candidate->name . " " . $candidate->surname, $candidate->order_id, 'Order Cancel Candidate', $body, $candidate->email, 'Order Canceled');
                 sendMail($body, $candidate->email, $candidate->name, 'Order Canceled');
             }
         }
-
-         $combine_status_array = explode(',', $customer->combine_status);
+        $combine_status_array = explode(',', $customer->combine_status);
         if ($combine_status_array && $status->id && in_array($status->id, $combine_status_array)) {
             $combine_bk_and_security_array = explode(',', $customer->combine_bk_and_security);
             if ($combine_bk_and_security_array && in_array($candidate->interview_id, $combine_bk_and_security_array)) {
@@ -205,26 +168,20 @@ if (isset($_POST['status'])) {
                 $query = 'UPDATE candidates SET status = 1, interview_id = ? WHERE id = ?';
                 $stmt = $conn->prepare($query);
                 $stmt->execute([$candidate->combine_interview_id, $_GET['id']]);
-                
                 // Recursively call the same function with updated status and interview_id
                 $_POST['status'] = 1; // Set status to 1
-                
                 $_POST['interviewID'] = $candidate->combine_interview_id; // Set interview_id to combine_interview_id
                 $_POST['comment'] = "Background check is transferred to Security check interview.";
-                
-
                 // Call the same function recursively
                 include __FILE__;
                 return; // Exit to prevent duplicate processing
             }
         }
-
         flash("statusUpdated", "Status updated successfully!");
     } else {
         flash("statusUpdated", "Could not update status!", "errorMsg");
     }
 }
-
 if (isset($_GET['status'])) {
     $query = 'SELECT * FROM candidates WHERE status = ? AND expired = 0 ORDER BY booked ASC';
     $stmt = $conn->prepare($query);
@@ -236,32 +193,25 @@ if (isset($_GET['status'])) {
     $stmt->execute();
     $candidates = $stmt->fetchAll();
 }
-
 $query = 'SELECT * FROM candidates WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_GET['id']]);
 $candidate = $stmt->fetch();
-
 $currentIndex = array_search($candidate->order_id, array_column($candidates, "order_id"));
-
 $candidateNext = $candidates[$currentIndex + 1] ?? "";
 $candidatePrev = $candidates[$currentIndex - 1] ?? "";
-
 $query = "SELECT * FROM history WHERE order_id = {$_GET['id']}";
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $history = $stmt->fetchAll();
-
 $query = "SELECT * FROM customers WHERE id = ?";
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->cus_id]);
 $customer = $stmt->fetch();
-
 $query = 'SELECT * FROM interviews WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->interview_id]);
 $interview = $stmt->fetch();
-
 if (isset($_POST['resend'])) {
     $count = $_POST['count'];
     $user_type = $_POST['user_type'][$_POST['resend']];
@@ -271,32 +221,25 @@ if (isset($_POST['resend'])) {
     $name = $_POST['name'][$_POST['resend']];
     $text = $_POST['text'][$_POST['resend']];
     $subject = $_POST['subject'][$_POST['resend']];
-
     saveEmail($user_type, $name, $order_id, $msg_type, $text, $email, $subject);
     $emailMsg = sendMail($text, $email, $name, $subject);
-
     flash("msgResent", "Email has been resent successfully!");
 }
-
 $query = "SELECT * FROM emails WHERE email = ? ORDER BY id DESC";
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->email]);
 $emails = $stmt->fetchAll();
-
 if (isset($_POST['submit'])) {
     $comment = $_POST['comment'];
-
     $query = 'INSERT INTO comments (order_id, author_id, author_type, comment) VALUES (?,?,?,?)';
     $stmt = $conn->prepare($query);
     $res = $stmt->execute([$_GET['id'], $_SESSION['admin']->id, 'admin', $comment]);
-
-    if (!empty($res)) {
+    if (! empty($res)) {
         flash("commentAdded", "Comment added successfully!");
     } else {
         flash("commentAdded", "Could not add comment!", "errorMsg");
     }
 }
-
 if (isset($_POST['update_candidate'])) {
     $name = $_POST['name'];
     $surname = $_POST['surname'];
@@ -304,22 +247,20 @@ if (isset($_POST['update_candidate'])) {
     $old_email = $_POST['old_email'];
     $phone = $_POST['phone'];
     $security = $_POST['security'];
+    $hasPersonalId = isset($_POST['hasPersonalId']) ? $_POST['hasPersonalId'] : 0;
     $note = $_POST['note'];
     $service = $_POST['service'];
     $vasc_id = $_POST['vasc_id'] ?? null;
     $place = isset($_POST['place']) ? $_POST['place'] : null;
-    $background_check_date = !empty($_POST['background_check_date']) ? $_POST['background_check_date'] : null;
-    $delivery_date = !empty($_POST['delivery_date']) ? $_POST['delivery_date'] : null;
-
-    if (!empty($_FILES['files']['name'][0])) {
-        
+    $background_check_date = ! empty($_POST['background_check_date']) ? $_POST['background_check_date'] : null;
+    $delivery_date = ! empty($_POST['delivery_date']) ? $_POST['delivery_date'] : null;
+    if (! empty($_FILES['files']['name'][0])) {
         $totalFiles = count($_FILES['files']['name']);
         $filesArray = [];
         $files = null;
         for ($i = 0; $i < $totalFiles; $i++) {
             // $fileName = time() . '-' . $_FILES['files']['name'][$i];
             // $files .= $fileName . ',';
-
             // $originalName = $_FILES['files']['name'][$i];
             // $fileExtension = pathinfo($originalName, PATHINFO_EXTENSION);
             // $fileName = time() . '-' . uniqid() . '.' . $fileExtension;
@@ -330,16 +271,15 @@ if (isset($_POST['update_candidate'])) {
             move_uploaded_file($_FILES['files']['tmp_name'][$i], '../uploads/' . $fileName);
         }
         $files = implode(',', $filesArray);
-        $query = 'UPDATE candidates SET name = ?, surname = ?, email = ?, phone = ?, place = ?, security = ?, vasc_id = ?, note = ?, interview_id = ?, background_check_date = ?, delivery_date = ?, cv = ? WHERE id = ?';
+        $query = 'UPDATE candidates SET name = ?, surname = ?, email = ?, phone = ?, place = ?, security = ?, vasc_id = ?, note = ?, interview_id = ?, background_check_date = ?, delivery_date = ?, hasPersonalId = ?, cv = ? WHERE id = ?';
         $stmt = $conn->prepare($query);
-        $res = $stmt->execute([$name, $surname, $email, $phone, $place, $security, $vasc_id, $note, $service, $background_check_date, $delivery_date, $files, $_GET['id']]);
+        $res = $stmt->execute([$name, $surname, $email, $phone, $place, $security, $vasc_id, $note, $service, $background_check_date, $delivery_date, $hasPersonalId, $files, $_GET['id']]);
     } else {
-        $query = 'UPDATE candidates SET name = ?, surname = ?, email = ?, phone = ?, place = ?, security = ?, vasc_id = ?, note = ?, interview_id = ?, background_check_date = ?, delivery_date = ? WHERE id = ?';
+        $query = 'UPDATE candidates SET name = ?, surname = ?, email = ?, phone = ?, place = ?, security = ?, vasc_id = ?, note = ?, interview_id = ?, background_check_date = ?, delivery_date = ?, hasPersonalId = ? WHERE id = ?';
         $stmt = $conn->prepare($query);
-        $res = $stmt->execute([$name, $surname, $email, $phone, $place, $security, $vasc_id, $note, $service, $background_check_date, $delivery_date, $_GET['id']]);
+        $res = $stmt->execute([$name, $surname, $email, $phone, $place, $security, $vasc_id, $note, $service, $background_check_date, $delivery_date, $hasPersonalId, $_GET['id']]);
     }
-
-    if (!empty($res)) {
+    if (! empty($res)) {
         flash("candidateUpdated", "Candidate updated successfully!");
         $query = 'UPDATE emails SET email = ? WHERE email = ?';
         $stmt = $conn->prepare($query);
@@ -348,59 +288,60 @@ if (isset($_POST['update_candidate'])) {
         flash("candidateUpdated", "Could not update candidate!");
     }
 }
-
 $query = 'SELECT * FROM comments WHERE order_id = ? ORDER BY id DESC';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->id]);
 $comments = $stmt->fetchAll();
-
 $totalComments = count($comments);
 $staffId = $_SESSION['staff']->id;
 $unreadCount = 0;
-if (!empty($comments)) {
+if (! empty($comments)) {
     foreach ($comments as $comment) {
         if ($comment->author_id != $staffId) {
             $readBy = explode(',', $comment->read_by_staff ?? '');
-
             $readBy = array_map('trim', $readBy);
-
-            if (!in_array($staffId, $readBy)) {
+            if (! in_array($staffId, $readBy)) {
                 $unreadCount++;
             }
         }
     }
 }
-
 $query = 'SELECT * FROM places WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->place]);
 $place = $stmt->fetch();
-
 $query = 'SELECT * FROM interviews';
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $interviews = $stmt->fetchAll();
-
+if (function_exists('getStaffAllowedPermissions')) {
+    getStaffAllowedPermissions(); // ensures $_SESSION['user_category'] is set
+}
+$userCategory = $_SESSION['user_category'] ?? null;
+$hasBackgroundPermission = function_exists('staffHasPermission') && staffHasPermission('view_background_orders');
+$backgroundServiceCategoryId = defined('BACKGROUND_ID') ? BACKGROUND_ID : 3;
+if ($userCategory == 5 && $hasBackgroundPermission) {
+    $interviews = array_filter($interviews, function ($interview) use ($backgroundServiceCategoryId) {
+        return (int)$interview->service_cat_id === (int)$backgroundServiceCategoryId;
+    });
+    $interviews = array_values($interviews);
+}
 $query = 'SELECT * FROM places';
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $places = $stmt->fetchAll();
-
 $query = 'SELECT * FROM interviews WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->interview_id]);
 $can_interview = $stmt->fetch();
-
 $query = 'SELECT * FROM staff WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->staff_id]);
 $staff = $stmt->fetch();
-
 $query = 'SELECT service_categories.* FROM service_categories LEFT JOIN interviews ON service_categories.id = interviews.service_cat_id LEFT JOIN candidates ON interviews.id = candidates.interview_id WHERE candidates.id = ' . $_GET['id'];
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $servicesCats = $stmt->fetchAll();
-
 $query = 'SELECT * FROM uploaded_pdf_candidate WHERE can_id = ? AND is_trash = 0';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_GET['id']]);
@@ -411,10 +352,10 @@ $query = 'SELECT * FROM user_category WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_SESSION['staff']->category]);
 $category_permissions = $stmt->fetchAll();
-if (!empty($category_permissions[0]->permissions_id)) {
+if (! empty($category_permissions[0]->permissions_id)) {
     $staff_permissions = explode(',', $category_permissions[0]->permissions_id);
 }
-if (!empty($staff_permissions)) {
+if (! empty($staff_permissions)) {
     foreach ($staff_permissions as $staff_key => $staff_permission) {
         $query = 'SELECT title FROM user_permissions WHERE id = ?';
         $stmt = $conn->prepare($query);
@@ -424,18 +365,17 @@ if (!empty($staff_permissions)) {
     }
 }
 $candidates_addition_query = '';
-if (isset($allowed_staff_permission['view_own_candidate']) && !empty($allowed_staff_permission['view_own_candidate'])) {
+if (isset($allowed_staff_permission['view_own_candidate']) && ! empty($allowed_staff_permission['view_own_candidate'])) {
     $candidates_addition_query = ' AND staff_id = ' . $_SESSION['staff']->id;
 }
-if (isset($allowed_staff_permission['view_all_candidate']) && !empty($allowed_staff_permission['view_all_candidate'])) {
+if (isset($allowed_staff_permission['view_all_candidate']) && ! empty($allowed_staff_permission['view_all_candidate'])) {
     $candidates_addition_query = '';
 }
-
 $order_forms = findAllByQuery('SELECT * FROM order_forms WHERE cus_id = ' . $candidate->cus_id . ' AND service_id = ' . $candidate->interview_id);
-if (!empty($order_forms)) {
-    if (!empty($order_forms[0]->form)) {
+if (! empty($order_forms)) {
+    if (! empty($order_forms[0]->form)) {
         $order_form = json_decode($order_forms[0]->form)->form_builder;
-        if (!empty($order_form->billing_info)) {
+        if (! empty($order_form->billing_info)) {
             foreach ($order_form->billing_info as $key => $value) {
                 $k_a = explode(',', $key);
                 if ($k_a[2] == 'pref') {
@@ -449,23 +389,18 @@ if (!empty($order_forms)) {
         }
     }
 }
-
 $query = 'SELECT * FROM staff WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$_SESSION['staff']->id]);
 $log_staff = $stmt->fetch();
-
 $bir_interview_place = null;
-if (!empty($place)) {
+if (! empty($place)) {
     $bir_interview_place = $place->name;
 }
-if (!empty($candidate->BIR_interview_place)) {
+if (! empty($candidate->BIR_interview_place)) {
     $bir_interview_place = $candidate->BIR_interview_place;
 }
-
-
 ?>
-
 <?php flash("staffUpdated"); ?>
 <?php flash("commentAdded"); ?>
 <?php flash("msgResent"); ?>
@@ -478,23 +413,21 @@ if (!empty($candidate->BIR_interview_place)) {
             <div class="col-lg-12 mb-3 d-flex justify-content-between">
                 <div style="font-size: 14px">
                     <?php if (isset($_GET['status'])): ?>
-                        <?php echo !empty($candidatePrev) ? '<a data-id="' . $candidatePrev->id . '" data-status="' . $_GET['status'] . '" class="w-700 me-2 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidatePrev->id . '&status=' . $_GET['status'] . '"><i class="bi bi-arrow-left-short"></i> Previous</a>' : '' ?>
-                        <?php echo !empty($candidateNext) ? '<a data-id="' . $candidateNext->id . '" data-status="' . $_GET['status'] . '" class="w-700 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidateNext->id . '&status=' . $_GET['status'] . '">Next <i class="bi bi-arrow-right-short"></i></a>' : '' ?>
+                        <?php echo ! empty($candidatePrev) ? '<a data-id="' . $candidatePrev->id . '" data-status="' . $_GET['status'] . '" class="w-700 me-2 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidatePrev->id . '&status=' . $_GET['status'] . '"><i class="bi bi-arrow-left-short"></i> Previous</a>' : '' ?>
+                        <?php echo ! empty($candidateNext) ? '<a data-id="' . $candidateNext->id . '" data-status="' . $_GET['status'] . '" class="w-700 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidateNext->id . '&status=' . $_GET['status'] . '">Next <i class="bi bi-arrow-right-short"></i></a>' : '' ?>
                     <?php else: ?>
-                        <?php echo !empty($candidatePrev) ? '<a data-id="' . $candidatePrev->id . '" data-status="" class="w-700 me-2 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidatePrev->id . '"><i class="bi bi-arrow-left-short"></i> Previous</a>' : '' ?>
-                        <?php echo !empty($candidateNext) ? '<a data-id="' . $candidateNext->id . '" data-status="" class="w-700 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidateNext->id . '">Next <i class="bi bi-arrow-right-short"></i></a>' : '' ?>
+                        <?php echo ! empty($candidatePrev) ? '<a data-id="' . $candidatePrev->id . '" data-status="" class="w-700 me-2 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidatePrev->id . '"><i class="bi bi-arrow-left-short"></i> Previous</a>' : '' ?>
+                        <?php echo ! empty($candidateNext) ? '<a data-id="' . $candidateNext->id . '" data-status="" class="w-700 no-decoration text-dark open-candidate" href="invoice.php?id=' . $candidateNext->id . '">Next <i class="bi bi-arrow-right-short"></i></a>' : '' ?>
                     <?php endif; ?>
                 </div>
                 <div class="profile-img">
                     <button class="f-16 w-600 text-dark mb-0 pb-0 btn-primary-sm">Action</button>
-                        <input type="hidden" name="updated_candidate" id="updated_candidate" value="<?php echo $candidate->combine_interview_id ?>">
-                        <input type="hidden" name="updated_status" id="updated_status" value="<?php echo $candidate->status ?>">
-                        <input type="hidden" name="updated_customer" id="updated_customer" value="<?php echo $customer->combine_bk_and_security ?>">
-                        <input type="hidden" name="updated_combine_statuses" id="updated_combine_statuses" value="<?php echo $customer->combine_status ?>">
-                        <input type="hidden" name="current_interview_id" id="current_interview_id" value="<?php echo $candidate->interview_id ?>">
-                    
-
-
+                    <input type="hidden" name="updated_candidate" id="updated_candidate" value="<?php echo $candidate->combine_interview_id ?>">
+                    <input type="hidden" name="updated_customer_combine" id="updated_customer_combine" value="<?php echo $customer->combine_interview_id ?>">
+                    <input type="hidden" name="updated_status" id="updated_status" value="<?php echo $candidate->status ?>">
+                    <input type="hidden" name="updated_customer" id="updated_customer" value="<?php echo $customer->combine_bk_and_security ?>">
+                    <input type="hidden" name="updated_combine_statuses" id="updated_combine_statuses" value="<?php echo $customer->combine_status ?>">
+                    <input type="hidden" name="current_interview_id" id="current_interview_id" value="<?php echo $candidate->interview_id ?>">
                     <div class="tool-pit tool-pit2">
                         <div class="tool-pit-content">
                             <div class="d-flex justify-content-end">
@@ -503,7 +436,6 @@ if (!empty($candidate->BIR_interview_place)) {
                             <div class="tool-pit-content--header">
                                 <!-- <a href="" class="no-decoration text-white">Change Status</a> -->
                             </div>
-
                             <ul class=" menus">
                                 <li><a class="open-report" data-bs-toggle="modal" data-id="<?php echo $candidate->id ?>"
                                         data-lang="en" href="report.php?id=<?php echo $candidate->id ?>">Generate Report
@@ -512,7 +444,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                         data-lang="sv" href="report-sv.php?id=<?php echo $candidate->id ?>">Generate
                                         Report - Sv</a></li>
                             </ul>
-
                         </div>
                     </div>
                 </div>
@@ -526,9 +457,9 @@ if (!empty($candidate->BIR_interview_place)) {
                             Details</button>
                         <button class="tablinks f-14 w-700 "
                             onclick="openCity(event, 'attachment')">Attachments&nbsp;&nbsp;<span
-                                id="cv_pdf"><?php echo !empty($candidate->cv) ? "✔️" : "❌" ?></span>
+                                id="cv_pdf"><?php echo ! empty($candidate->cv) ? "✔️" : "❌" ?></span>
                             <span
-                                id="int_pdf"><?php echo !empty($candidate->interview_template) ? "✔️" : "❌" ?></span></button>
+                                id="int_pdf"><?php echo ! empty($candidate->interview_template) ? "✔️" : "❌" ?></span></button>
                         <button class="tablinks f-14 w-700 " onclick="openCity(event, 'notes')">Additinal notes by
                             customer</button>
                         <button
@@ -537,11 +468,9 @@ if (!empty($candidate->BIR_interview_place)) {
                             <?php if ($totalComments > 0): ?><span id="internal_comment_count"
                                     style="<?php if ($unreadCount > 0): ?>background-color: #2f9265;<?php else: ?>background-color: grey;<?php endif; ?>color: white;border-radius: 100%;padding: 2px 5px 2px 5px;"><?= $totalComments ?></span><?php endif; ?></button>
                     </div>
-
                     <div id="profile" class="tabcontent ">
                         <div class="container">
                             <div class="row">
-
                                 <div class="col-lg-6 order-lg-1 order-2">
                                     <div class="mt-3 ">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0 ">
@@ -550,64 +479,58 @@ if (!empty($candidate->BIR_interview_place)) {
                                             <?php echo $candidate->security ?>
                                         </p>
                                     </div>
-                                    <?php if (!empty($candidate->vasc_id)) { ?>
+                                    <?php if (! empty($candidate->vasc_id)) { ?>
                                         <div class="mt-3">
                                             <p class="f-12 w-600 text-grey mb-0 pb-0 ">
                                                 VASC ID</p>
                                             <p class="f-14 w-700 text-black up_vasc_id"><?= $candidate->vasc_id ?></p>
                                         </div>
                                     <?php } ?>
-
                                     <div class="mt-3">
                                         <?php
                                         $query = 'SELECT * FROM interviews WHERE id = ?';
-                                        $stmt = $conn->prepare($query);
-                                        $stmt->execute([$candidate->interview_id]);
-                                        $interview = $stmt->fetch();
-                                        ?>
+$stmt = $conn->prepare($query);
+$stmt->execute([$candidate->interview_id]);
+$interview = $stmt->fetch();
+?>
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">Service Type</p>
                                         <p class="f-14 w-700 text-black up_service_type"><?php echo $interview->title ?>
                                         </p>
                                     </div>
-
-                                    <?php if (!empty($candidate->booked)) { ?>
+                                    <?php if (! empty($candidate->booked)) { ?>
                                         <div class="mt-3">
                                             <p class="f-12 w-600 text-grey mb-0 pb-0">Interview Date</p>
                                             <p class="f-14 w-700 text-black up_interview_date"><?= $candidate->booked ?></p>
                                         </div>
                                     <?php } ?>
-                                    <?php if (!empty($candidate->delivery_date)) { ?>
+                                    <?php if (! empty($candidate->delivery_date)) { ?>
                                         <div class="mt-3">
                                             <p class="f-12 w-600 text-grey mb-0 pb-0">Delivery Date</p>
                                             <p class="f-14 w-700 text-black up_interview_date">
                                                 <?= $candidate->delivery_date ?></p>
                                         </div>
                                     <?php } ?>
-
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">Email</p>
                                         <p class="f-14 w-700 text-black up_email"><?php echo $candidate->email ?></p>
                                     </div>
-
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">Phone Number</p>
                                         <p class="f-14 w-700 text-black up_phone"><?php echo $candidate->phone ?></p>
                                     </div>
-
-                                    <?php if (!empty($interview->place)): ?>
+                                    <?php if (! empty($interview->place)): ?>
                                         <div class="mt-3">
                                             <p class="f-12 w-600 text-grey mb-0 pb-0">Place</p>
                                             <p class="f-14 w-700 text-black up_place">
-                                                <?php echo !empty($place) ? $place->name : "Null" ?></p>
+                                                <?php echo ! empty($place) ? $place->name : "Null" ?></p>
                                         </div>
                                     <?php endif; ?>
-
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">Company</p>
                                         <p class="f-14 w-700 text-black up_company">
-                                            <?php echo !empty($customer->company) ? $customer->company : 'Null' ?></p>
+                                            <?php echo ! empty($customer->company) ? $customer->company : 'Null' ?></p>
                                     </div>
-                                    <?php if (isset($candidate->meta_data) && !empty($candidate->meta_data)): ?>
+                                    <?php if (isset($candidate->meta_data) && ! empty($candidate->meta_data)): ?>
                                         <?php $can_meta_data = json_decode($candidate->meta_data); ?>
                                         <?php foreach ($can_meta_data as $m_key => $m_value): ?>
                                             <div class="mt-3">
@@ -619,7 +542,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                     <div class="mt-3">
                                         <p class="f-12 w-500 text-grey mb-0 pb-0">Additional notes from customer</p>
                                         <p class="f-14 w-500 text-black up_note">
-                                            <?php echo !empty($candidate->note) ? $candidate->note : "Null" ?>
+                                            <?php echo ! empty($candidate->note) ? $candidate->note : "Null" ?>
                                         </p>
                                     </div>
                                 </div>
@@ -630,13 +553,13 @@ if (!empty($candidate->BIR_interview_place)) {
                                         </h1>
                                     </div>
                                     <div class="candidate-info ">
-                                        <?php //if (isset($_GET['sno']) && !empty($_GET['sno'])) { 
-                                        ?>
-                                        <!-- <h1 class="f-16 w-700 text-black m-0 p-0 text-center">#<?php // echo $_GET['sno'] 
-                                        ?> -->
+                                        <?php //if (isset($_GET['sno']) && !empty($_GET['sno'])) {
+?>
+                                        <!-- <h1 class="f-16 w-700 text-black m-0 p-0 text-center">#<?php // echo $_GET['sno']
+                                                            ?> -->
                                         <!-- </h1> -->
-                                        <?php // } 
-                                        ?>
+                                        <?php // }
+?>
                                         <h1 class="f-16 w-700 text-black m-0 p-0 text-center up_name">
                                             <?php echo $candidate->name . " " . $candidate->surname ?>
                                         </h1>
@@ -647,22 +570,20 @@ if (!empty($candidate->BIR_interview_place)) {
                                             style="background-color: <?php echo $status->color ?>">
                                             <?php echo $status->status ?></div>
                                     </div>
-                                    <!--                                                --><?php //if(!empty($candidate->cv)): 
-                                    ?>
-                                    <?php if (!empty($log_staff->can_upload_report)) { ?>
+                                    <!--                                                --><?php //if(!empty($candidate->cv)):
+                                                    ?>
+                                    <?php if (! empty($log_staff->can_upload_report)) { ?>
                                         <?php if ($can_interview->service_cat_id == 1 || $can_interview->service_cat_id == 9 || $can_interview->service_cat_id == 10) { ?>
                                             <?php
-                                            $spiUploaded = false;
+    $spiUploaded = false;
                                             $ellevioUploaded = false;
                                             $timraUploaded = false;
-
-                                            if (!empty($candidate->interview_report)) {
+                                            if (! empty($candidate->interview_report)) {
                                                 $decoded = json_decode($candidate->interview_report, true);
                                                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                                                     $spiUploaded = isset($decoded['spi']);
                                                     $ellevioUploaded = isset($decoded['ellevio']);
                                                     $timraUploaded = isset($decoded['timra']);
-
                                                 } else {
                                                     $spiUploaded = true;
                                                 }
@@ -670,45 +591,43 @@ if (!empty($candidate->BIR_interview_place)) {
                                             ?>
                                             <div class="mt-3">
                                                 <div class="d-flex justify-content-center">
-                                                <?php if (!empty($customer->interview_upload_allowed)) { ?>
-                                                    <button type="button"
-                                                        class="btn text-white p-2 <?php echo $spiUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
-                                                        onclick="triggerFileInput()">
-                                                        <i class="bi bi-cloud-upload-fill me-2"></i> Upload Interview Report
-                                                    </button>
-                                                <?php } else { ?>
-                                                    <button type="button" onclick="show_activation_text()"
-                                                        class="btn text-white p-2 btn-danger btn-sm">
-                                                        Upload Interview Report
-                                                    </button>
-                                                <?php } ?>
-
+                                                    <?php if (! empty($customer->interview_upload_allowed)) { ?>
+                                                        <button type="button"
+                                                            class="btn text-white p-2 <?php echo $spiUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
+                                                            onclick="triggerFileInput()">
+                                                            <i class="bi bi-cloud-upload-fill me-2"></i> Upload Interview Report
+                                                        </button>
+                                                    <?php } else { ?>
+                                                        <button type="button" onclick="show_activation_text()"
+                                                            class="btn text-white p-2 btn-danger btn-sm">
+                                                            Upload Interview Report
+                                                        </button>
+                                                    <?php } ?>
                                                     <input type="file" id="fileInput" style="display: none;"
                                                         onchange="uploadFile()">
                                                 </div>
-                                                
-                                                <?php if (!empty($customer->ellevio_report)) { ?>
-                                            <div class="d-flex justify-content-center">
-                                                    <button type="button"
-                                                        class="btn text-white p-2 <?php echo $ellevioUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
-                                                        onclick="triggerFile2Input()">
-                                                        <i class="bi bi-cloud-upload-fill me-2"></i> Upload Ellevio Report
-                                                    </button>
-                                                    <input type="file" id="fileInput2" style="display: none;"
-                                                        onchange="uploadEllevioFile()">
+                                                <?php if (! empty($customer->ellevio_report)) { ?>
+                                                    <div class="d-flex justify-content-center">
+                                                        <button type="button"
+                                                            class="btn text-white p-2 <?php echo $ellevioUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
+                                                            onclick="triggerFile2Input()">
+                                                            <i class="bi bi-cloud-upload-fill me-2"></i> Upload Ellevio Report
+                                                        </button>
+                                                        <input type="file" id="fileInput2" style="display: none;"
+                                                            onchange="uploadEllevioFile()">
                                                     </div>
-                                                    <?php } ?>
-                                            <?php if (!empty($customer->timra_report)) { ?>
-                                            <div class="d-flex justify-content-center">
-                                                    <button type="button"
-                                                        class="btn text-white p-2 <?php echo $timraUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
-                                                        onclick="triggerFileTimraInput()">
-                                                        <i class="bi bi-cloud-upload-fill me-2"></i> Upload Timrå Referens
-                                                    </button>
-                                                    <input type="file" id="fileInputTimra" style="display: none;"
-                                                        onchange="uploadTimraFile()">
-                                            </div>
-                                            <?php } ?>
+                                                <?php } ?>
+                                                <?php if (! empty($customer->timra_report)) { ?>
+                                                    <div class="d-flex justify-content-center">
+                                                        <button type="button"
+                                                            class="btn text-white p-2 <?php echo $timraUploaded ? 'btn-success' : 'btn-primary bg-primary'; ?> btn-sm"
+                                                            onclick="triggerFileTimraInput()">
+                                                            <i class="bi bi-cloud-upload-fill me-2"></i> Upload Timrå Referens
+                                                        </button>
+                                                        <input type="file" id="fileInputTimra" style="display: none;"
+                                                            onchange="uploadTimraFile()">
+                                                    </div>
+                                                <?php } ?>
                                             </div>
                                         <?php } ?>
                                     <?php } ?>
@@ -720,28 +639,27 @@ if (!empty($candidate->BIR_interview_place)) {
                                                         id="generate_temp_btn" onclick="pdf_gene(<?= $_GET['id'] ?>)"><i
                                                             class="bi bi-cloud-download-fill me-2"></i>Generate SPI
                                                         Template</button>
-
                                                 <?php } ?>
                                             <?php } ?>
                                             <?php if (empty($candidate->interview_template)) { ?>
-                                                <?php if (!empty($customer->ellevio_report)) { ?>
+                                                <?php if (! empty($customer->ellevio_report)) { ?>
                                                     <button type="button" class="btn btn-sm btn-info text-white p-2"
-                                                        onclick="fillStaffNameInPDF(<?= $_GET['id'] ?>)"><i
+                                                        onclick="pdf_gene_ellevio(<?= $_GET['id'] ?>)"><i
                                                             class="bi bi-cloud-download-fill me-2"></i>Generate Ellevio
                                                         Template</button>
                                                 <?php } ?>
-                                                <?php if (!empty($customer->timra_report)) { ?>
-                                                        <button type="button" class="btn btn-sm btn-info text-white p-2"
-                                                            onclick="pdf_gene_timra(<?= $_GET['id'] ?>)"><i
-                                                                class="bi bi-cloud-download-fill me-2"></i>Generate Timrå
-                                                            Referens</button>
-                                                    <?php } ?>
+                                                <?php if (! empty($customer->timra_report)) { ?>
+                                                    <button type="button" class="btn btn-sm btn-info text-white p-2"
+                                                        onclick="pdf_gene_timra(<?= $_GET['id'] ?>)"><i
+                                                            class="bi bi-cloud-download-fill me-2"></i>Generate Timrå
+                                                        Referens</button>
+                                                <?php } ?>
                                             <?php } ?>
                                         </div>
                                     <?php } ?>
                                     <!-- <div class="mt-3">
                                         <div class="d-flex justify-content-center">
-                                            <?php if (!empty($candidate->cv)) { ?>
+                                            <?php if (! empty($candidate->cv)) { ?>
                                                 <button class="btn-primary-sm bg-primary" data-bs-toggle="modal" data-bs-target="#pdfModal"><i class="bi bi-cloud-download-fill me-2"></i> Download
                                                     PDF</button>
                                             <?php } else { ?>
@@ -749,7 +667,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                             <?php } ?>
                                         </div>
                                     </div>
-
                                     <div class="mt-3">
                                         <div class="d-flex justify-content-center">
                                             <button class="btn-primary-sm bg-primary" data-bs-toggle="modal" data-bs-target="#reportModal"><i class="bi bi-cloud-download-fill me-2"></i> Download
@@ -757,52 +674,46 @@ if (!empty($candidate->BIR_interview_place)) {
                                         </div>
                                     </div> -->
                                     <!--                                                -->
-                                    <?php //endif; 
+                                    <?php //endif;
                                     ?>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     <div id="billing" class="tabcontent ">
                         <div class="container">
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">
-                                            <?php echo !empty($invoice_recipent_label) ? $invoice_recipent_label : 'Invoice Recipient' ?>
+                                            <?php echo ! empty($invoice_recipent_label) ? $invoice_recipent_label : 'Invoice Recipient' ?>
                                         </p>
                                         <p class="f-14 w-700 text-black"><?php echo $candidate->referensperson ?></p>
                                     </div>
-
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">
-                                            <?php echo !empty($invoice_reference_label) ? $invoice_reference_label : 'Invoice Reference' ?>
+                                            <?php echo ! empty($invoice_reference_label) ? $invoice_reference_label : 'Invoice Reference' ?>
                                         </p>
                                         <p class="f-14 w-700 text-black"><?php echo $candidate->reference ?></p>
                                     </div>
-
                                     <div class="mt-3">
                                         <p class="f-12 w-600 text-grey mb-0 pb-0">
-                                            <?php echo !empty($invoice_comment_label) ? $invoice_comment_label : 'Invoice Comment' ?>
+                                            <?php echo ! empty($invoice_comment_label) ? $invoice_comment_label : 'Invoice Comment' ?>
                                         </p>
                                         <p class="f-14 w-700 text-black">
-                                            <?php echo !empty($candidate->comment) ? $candidate->comment : "Null" ?></p>
+                                            <?php echo ! empty($candidate->comment) ? $candidate->comment : "Null" ?></p>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
-
                     <div id="attachment" class="tabcontent ">
                         <div class="container">
                             <form action="#" id="uploadcv" method="post" enctype="multipart/form-data">
-                            <input type="hidden" id="customer" value="<?php echo $customer->id ?>" 
-                               data-combine-bk-and-security="<?php echo $customer->combine_bk_and_security ?>">    
+                                <input type="hidden" id="customer" value="<?php echo $customer->id ?>"
+                                    data-combine-bk-and-security="<?php echo $customer->combine_bk_and_security ?>">
                                 <div class="row">
                                     <p><b>Uploaded Document/CV by customer</b></p>
-                                    
                                     <div class="col-md-6">
                                         <input type="file" name="file_1[]" id="file_1" multiple>
                                         <input type="hidden" name="can_id" value="<?= $_GET['id'] ?>">
@@ -811,7 +722,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                         <button type="submit" class="btn btn-primary float-right btn-sm">Upload</button>
                                     </div>
                                     <div class="col-md-12 mt-2" id="cv_div">
-                                        <?php if (!empty($candidate->cv)):
+                                        <?php if (! empty($candidate->cv)):
                                             $documents = explode(',', $candidate->cv);
                                             $uploadedCount = count($documents);
                                             ?>
@@ -832,23 +743,23 @@ if (!empty($candidate->BIR_interview_place)) {
                                                                 <?= htmlspecialchars($document) ?>
                                                             </td>
                                                             <td class="text-start">
-                                                            <a target="_blank"
-                                                            href="../uploads/<?= htmlspecialchars($document) ?>"
-                                                            class="btn btn-sm d-inline-flex align-items-center justify-content-center me-2"
-                                                            style="background:rgba(33, 116, 241, 1); color:#fff; border-radius:6px; width:38px; height:38px;"
-                                                            onmouseover="this.style.background='rgba(13, 109, 253, 0.7)';"
-                                                            onmouseout="this.style.background='rgba(33, 116, 241, 1)';">
-                                                                <i class="fa fa-eye"></i>
-                                                            </a>
-                                                            <button type="button"
-                                                            onclick="deleteExisting('<?= htmlspecialchars($document) ?>', this)"
-                                                            class="btn btn-sm d-inline-flex align-items-center justify-content-center"
-                                                            style="background:#ec3043ff; color:#fff; border-radius:6px; width:38px; height:38px;"
-                                                            onmouseover="this.style.background='rgba(220, 53, 70, 0.7)';"
-                                                            onmouseout="this.style.background='#ec3043ff';">
-                                                                <i class="fa fa-trash"></i>
-                                                            </button>
-                                                        </td>
+                                                                <a target="_blank"
+                                                                    href="../uploads/<?= htmlspecialchars($document) ?>"
+                                                                    class="btn btn-sm d-inline-flex align-items-center justify-content-center me-2"
+                                                                    style="background:rgba(33, 116, 241, 1); color:#fff; border-radius:6px; width:38px; height:38px;"
+                                                                    onmouseover="this.style.background='rgba(13, 109, 253, 0.7)';"
+                                                                    onmouseout="this.style.background='rgba(33, 116, 241, 1)';">
+                                                                    <i class="fa fa-eye"></i>
+                                                                </a>
+                                                                <button type="button"
+                                                                    onclick="deleteExisting('<?= htmlspecialchars($document) ?>', this)"
+                                                                    class="btn btn-sm d-inline-flex align-items-center justify-content-center"
+                                                                    style="background:#ec3043ff; color:#fff; border-radius:6px; width:38px; height:38px;"
+                                                                    onmouseover="this.style.background='rgba(220, 53, 70, 0.7)';"
+                                                                    onmouseout="this.style.background='#ec3043ff';">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
@@ -858,7 +769,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                             ?>
                                             <p class="mb-0 f-14 pl-3" id="no_cv_text">No Document/CV uploaded by customer</p>
                                             <table class="table table-bordered table-sm d-none" id="cv_table">
-                                               
                                                 <tbody></tbody>
                                             </table>
                                         <?php endif; ?>
@@ -870,7 +780,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                 <div class="row">
                                     <p><b>Interview template by customer</b></p>
                                     <div class="col-md-6" id="int_div">
-                                        <?php if (!empty($candidate->interview_template)):
+                                        <?php if (! empty($candidate->interview_template)):
                                             ?>
                                             <p style="overflow: hidden;white-space: nowrap; text-overflow: ellipsis"
                                                 class="mb-0 w-100 f-14 pt-1"><a target="_blank"
@@ -878,7 +788,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                                     style="cursor: pointer"
                                                     class="text-success"><?php echo $candidate->interview_template ?></a>
                                             </p>
-
                                         <?php else: ?>
                                             <p class="mb-0 w-100 f-14 pl-3">No interview template uploaded by customer</p>
                                         <?php endif; ?>
@@ -896,8 +805,6 @@ if (!empty($candidate->BIR_interview_place)) {
                             <hr class="m-2">
                         </div>
                     </div>
-
-
                     <div id="notes" class="tabcontent ">
                         <div class="container">
                             <div class="row">
@@ -905,20 +812,19 @@ if (!empty($candidate->BIR_interview_place)) {
                                     <div class="mt-3">
                                         <p class="f-12 w-500 text-grey mb-0 pb-0">Note</p>
                                         <p class="f-14 w-500 text-black up_note">
-                                            <?php echo !empty($candidate->note) ? $candidate->note : "Null" ?>
+                                            <?php echo ! empty($candidate->note) ? $candidate->note : "Null" ?>
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     <div id="comments" class="tabcontent " style="height: 500px">
                         <div class="container">
                             <div class="row">
                                 <div class="col-lg-12" id="comments-inner"
                                     style="overflow-y: scroll;max-height: 310px;">
-                                    <?php if (!empty($comments)): ?>
+                                    <?php if (! empty($comments)): ?>
                                         <?php foreach ($comments as $comment):
                                             $query = 'SELECT * FROM ' . $comment->author_type . ' WHERE id = ?';
                                             $stmt = $conn->prepare($query);
@@ -958,21 +864,17 @@ if (!empty($candidate->BIR_interview_place)) {
                                                     id="comment"></textarea>
                                             </div>
                                         </div>
-
                                         <div id="add_comment_msg" class="text-center"></div>
-
                                         <div class="d-flex justify-content-end">
                                             <button id="add_comment_btn" type="submit" name="submit"
                                                 class="btn-primary bg-primary f-10">Add Comment</button>
                                         </div>
                                     </form>
-
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
             <div class="col-lg-4 ">
                 <div class="white-box">
@@ -982,20 +884,19 @@ if (!empty($candidate->BIR_interview_place)) {
                                 <h1 class="f-16 w-700 text-black mb-2 mt-1 pb-0 ">Order History</h1>
                                 <div class="wrapper order-history">
                                     <ul class="sessions mt-2">
-                                        <?php if (!empty($history)): ?>
+                                        <?php if (! empty($history)): ?>
                                             <?php foreach ($history as $h): ?>
                                                 <li>
                                                     <div class="time" <?php if (strtotime($h->date_time) > time()) { ?>
-                                                            style="color:brown" <?php } ?>>
+                                                        style="color:brown" <?php } ?>>
                                                         <?php echo date("M d, Y h:i A", strtotime($h->date_time)) ?></div>
                                                     <p class="f-14 w-500"><?php echo $h->desc ?>
                                                     </p>
                                                     <i><small
-                                                            class="m-0 p-0"><?php echo !empty($h->comment) ? 'Comment: ' . $h->comment : '' ?></small></i>
+                                                            class="m-0 p-0"><?php echo ! empty($h->comment) ? 'Comment: ' . $h->comment : '' ?></small></i>
                                                 </li>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
-
                                     </ul>
                                 </div>
                             </div>
@@ -1010,14 +911,14 @@ if (!empty($candidate->BIR_interview_place)) {
                     <div class="tab2">
                         <?php
                         $color = '';
-                        if ($candidate->economy == 0 && $candidate->social == 0 && $candidate->criminal_record == 0) {
-                            $color = "text-danger";
-                        } elseif ($candidate->economy == 0 || $candidate->social == 0 || $candidate->criminal_record == 0) {
-                            $color = "text-warning";
-                        } elseif ($candidate->economy == 1 && $candidate->social == 1 && $candidate->criminal_record == 1) {
-                            $color = "text-success";
-                        }
-                        ?>
+if ($candidate->economy == 0 && $candidate->social == 0 && $candidate->criminal_record == 0) {
+    $color = "text-danger";
+} elseif ($candidate->economy == 0 || $candidate->social == 0 || $candidate->criminal_record == 0) {
+    $color = "text-warning";
+} elseif ($candidate->economy == 1 && $candidate->social == 1 && $candidate->criminal_record == 1) {
+    $color = "text-success";
+}
+?>
                         <button class="tablinks2 f-14 w-700 text-left"
                             style="font: caption;font-weight: bolder;width: 100%;" id="update_pdf" onclick="open_tab()"
                             style="width: 100% !important;">
@@ -1061,7 +962,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                             </tr>
                                         </thead>
                                         <tbody id="tbody-uploaded-pdf">
-                                            <?php if (!empty($uploaded_pdf)) { ?>
+                                            <?php if (! empty($uploaded_pdf)) { ?>
                                                 <?php foreach ($uploaded_pdf as $upload_pdf) { ?>
                                                     <tr>
                                                         <td>
@@ -1096,55 +997,49 @@ if (!empty($candidate->BIR_interview_place)) {
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
-
         <div class="row justify-content-center  mt-4">
             <div class="col-lg-12 px-lg-0 mb-lg-0 mb-3 ">
                 <div class="white-box">
                     <div class="tab2">
                         <button class="tablinks2 f-14 w-700 " id="defaultOpen2"
                             onclick="editCity(event, 'update-records')">Update Records</button>
-                        <?php if (isset($allowed_staff_permission['change_staff']) && !empty($allowed_staff_permission['change_staff'])) { ?>
+                        <?php if (isset($allowed_staff_permission['change_staff']) && ! empty($allowed_staff_permission['change_staff'])) { ?>
                             <button class="tablinks2 f-14 w-700 " onclick="editCity(event, 'staff2')">Assign Staff</button>
                         <?php } ?>
                         <button class="tablinks2 f-14 w-700 " onclick="editCity(event, 'email')">Email</button>
-                        <?php if (isset($allowed_staff_permission['update_candidate']) && !empty($allowed_staff_permission['update_candidate'])) { ?>
+                        <?php if (isset($allowed_staff_permission['update_candidate']) && ! empty($allowed_staff_permission['update_candidate'])) { ?>
                             <button class="tablinks2 f-14 w-700 " onclick="editCity(event, 'edit-candidate')">Edit
                                 Candidate</button>
                         <?php } ?>
                         <button class="tablinks2 f-14 w-700  " onclick="editCity(event, 'update-status')">Update
                             Status</button>
                     </div>
-
                     <div id="staff2" class="tabcontent2 ">
                         <?php
-
-                        $query = 'SELECT * FROM staff';
-                        $stmt = $conn->prepare($query);
-                        $stmt->execute();
-                        $staff = $stmt->fetchAll();
-                        ?>
+$query = 'SELECT * FROM staff';
+$stmt = $conn->prepare($query);
+$stmt->execute();
+$staff = $stmt->fetchAll();
+?>
                         <div class="container">
                             <div class="row">
                                 <form class="update-form" method="post">
                                     <div class="col-md-12 mb-3" id="">
                                         <label class="form-label" for="">Staff</label>
                                         <select id="" name="staff" class="form-control mb-3 filter-select">
-                                            <?php if (!empty($staff)): ?>
+                                            <?php if (! empty($staff)): ?>
                                                 <?php foreach ($staff as $st): ?>
-                                                    <option <?php echo !empty($candidate->staff_id) && $candidate->staff_id == $st->id ? 'selected' : '' ?>
+                                                    <option <?php echo ! empty($candidate->staff_id) && $candidate->staff_id == $st->id ? 'selected' : '' ?>
                                                         value="<?php echo $st->id ?>"><?php echo $st->name ?></option>
                                                 <?php endforeach; ?>
                                             <?php endif; ?>
                                         </select>
-
                                         <div class="col-lg-12 p-0 mb-3">
                                             <label class="form-label">Comment</label>
                                             <textarea class="sign-textarea w-100" name="comment" rows="3"></textarea>
                                         </div>
-
                                         <input type="hidden" name="can_name" value="<?php echo $candidate->name ?>">
                                         <input type="hidden" name="can_surname"
                                             value="<?php echo $candidate->surname ?>">
@@ -1153,9 +1048,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                             value="<?php echo $customer->company ?>">
                                         <input type="hidden" name="interview" value="<?php echo $interview->title ?>">
                                     </div>
-
                                     <div id="update_staff_msg" class="text-center"></div>
-
                                     <div class="d-flex justify-content-end">
                                         <button type="submit" name="update" id="update_staff_btn"
                                             class="btn-primary bg-primary">Update</button>
@@ -1164,14 +1057,12 @@ if (!empty($candidate->BIR_interview_place)) {
                             </div>
                         </div>
                     </div>
-
                     <div id="email" class="tabcontent2 ">
                         <div class="container">
                             <div class="row">
                                 <div class="col-lg-12 p-0">
                                     <div class="table-section w-100 p-0">
                                         <div class="table-div w-100">
-
                                             <form action="" method="post" id="d-form">
                                                 <table class="display Table w-100">
                                                     <thead>
@@ -1189,21 +1080,19 @@ if (!empty($candidate->BIR_interview_place)) {
                                                             <th class="d-none"></th>
                                                             <th class="d-none"></th>
                                                             <th class="table-head">Action</th>
-
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <?php if (!empty($emails)): ?>
+                                                        <?php if (! empty($emails)): ?>
                                                             <?php $count = 0; ?>
                                                             <?php foreach ($emails as $email): ?>
                                                                 <?php if ($email->user_type == "Candidate"): ?>
                                                                     <?php
-                                                                    $query = 'SELECT * FROM candidates WHERE order_id = ?';
+                                            $query = 'SELECT * FROM candidates WHERE order_id = ?';
                                                                     $stmt = $conn->prepare($query);
                                                                     $stmt->execute([$email->order_id]);
                                                                     $scandidate = $stmt->fetch();
                                                                     ?>
-
                                                                     <tr>
                                                                         <td class="f-14"><?php echo $email->order_id ?></td>
                                                                         <td class="f-14"><?php echo $email->msg_type ?></td>
@@ -1245,18 +1134,22 @@ if (!empty($candidate->BIR_interview_place)) {
                             </div>
                         </div>
                     </div>
-
                     <div id="edit-candidate" class="tabcontent2 ">
                         <div class="container">
                             <form class="update-form" method="post" enctype="multipart/form-data">
-                            <input type="hidden" id="customer" value="<?php echo $customer->id ?>" 
-                            data-combine-bk-and-security="<?php echo $customer->combine_bk_and_security ?>">
+                                <input type="hidden" id="customer" value="<?php echo $customer->id ?>"
+                                    data-combine-bk-and-security="<?php echo $customer->combine_bk_and_security ?>">
                                 <div class="row mb-3">
+                                    <div class="form-check col-md-12 col-sm-12 mb-2" id="hasPersonalIdWrapper">
+                                        <input class="form-check-input" type="checkbox" id="hasPersonalId" name="hasPersonalId" value="1" <?php echo $candidate->hasPersonalId ? 'checked' : '' ?> onchange="toggleInputType();">
+                                        <label class="form-check-label" for="hasPersonalId">
+                                            Has Personal Identification Number
+                                        </label>
+                                    </div>
                                     <div class="col-lg-6 mb-3">
-                                        <label class="form-label" for="security">Social Security Number</label>
-                                        <input type="text" class="form-control"
-                                            value="<?php echo $candidate->security ?>" name="security" required
-                                            id="security">
+                                        <label class="form-label" id="ssnLabel" for="ssn">Social Security Number <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="security" required id="ssn" placeholder="YYMMDD-XXXX" value="<?php echo htmlspecialchars($candidate->security, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <small id="pnrHelp" class="form-text"></small>
                                     </div>
                                     <div class="col-lg-6 mb-3">
                                         <label class="form-label" for="vasc_id">VASC ID</label>
@@ -1291,7 +1184,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                         id="place">
                                         <label class="form-label" for="">Place</label>
                                         <select id="" name="place" class="form-control filter-select">
-                                            <?php if (!empty($places)): ?>
+                                            <?php if (! empty($places)): ?>
                                                 <?php foreach ($places as $place): ?>
                                                     <option <?php echo $place->id == $candidate->place ? 'selected' : '' ?>
                                                         value="<?php echo $place->id ?>"><?php echo $place->name ?></option>
@@ -1301,26 +1194,25 @@ if (!empty($candidate->BIR_interview_place)) {
                                         <select id="hidden_interview" style="display:none">
                                             <?php foreach ($interviews as $inter): ?>
                                                 <option value="<?php echo $inter->id ?>"
-                                                 data-country="<?= $interview->country ?>" 
-                                            data-place="<?= $interview->place ?>"
-                                            data-interview-service-cat-id="<?php echo $interview->service_cat_id ?>"    
-                                                <?php echo $inter->id == $candidate->interview_id ? 'selected' : '' ?>
+                                                    data-country="<?= $interview->country ?>"
+                                                    data-place="<?= $interview->place ?>"
+                                                    data-interview-service-cat-id="<?php echo $interview->service_cat_id ?>"
+                                                    <?php echo $inter->id == $candidate->interview_id ? 'selected' : '' ?>
                                                     data-country="<?= $inter->country ?>" data-place="<?= $inter->place ?>">
                                                     <?php echo $inter->title ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                   <div class="col-md-12 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label class="form-label" for="">Service Type</label>
                                         <select id="interview" name="service" class="form-control filter-select"
                                             onchange="check_combine_bk_and_security()">
-                                            <?php if (!empty($interviews)): ?>
+                                            <?php if (! empty($interviews)): ?>
                                                 <?php foreach ($interviews as $key => $interview_row): ?>
-
                                                     <option
-                                                    data-interview-service-cat-id="<?php echo $interview_row->service_cat_id ?>"
-                                                    <?php echo $interview_row->id == $candidate->interview_id ? 'selected' : '' ?> value="<?php echo $interview_row->id ?>">
+                                                        data-interview-service-cat-id="<?php echo $interview_row->service_cat_id ?>"
+                                                        <?php echo $interview_row->id == $candidate->interview_id ? 'selected' : '' ?> value="<?php echo $interview_row->id ?>">
                                                         <?php echo $interview_row->title ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -1328,21 +1220,19 @@ if (!empty($candidate->BIR_interview_place)) {
                                         </select>
                                     </div>
                                     <div class="col-md-12 col-sm-12 mb-2 d-none" id="security_interview_service_type_div">
-                                            <label class="form-label" for="security_interview_service_type">Security Interview Service Type</label>
-                                            <!-- <select class="form-control" onchange="fetch_form_security_interview_service_type(this);" id="security_interview_service_type" name="security_interview_service_type" required="true"> -->
-                                            <select class="form-control" onchange="check_combine_bk_and_security()" id="security_interview_service_type" name="combine_interview_id">
+                                        <label class="form-label" for="security_interview_service_type">Security Interview Service Type</label>
+                                        <!-- <select class="form-control" onchange="fetch_form_security_interview_service_type(this);" id="security_interview_service_type" name="security_interview_service_type" required="true"> -->
+                                        <select class="form-control" onchange="check_combine_bk_and_security()" id="security_interview_service_type" name="combine_interview_id">
                                             <option value="0">Select Security Interview Service Type</option>
                                             <?php foreach ($interviews as $interview): ?>
-                                                <?php if($interview->id == 1 || $interview->id == 2): ?>
-                                                                <option value="<?php echo $interview->id ?>" <?php echo isset($candidate->combine_interview_id) && $candidate->combine_interview_id == $interview->id ? 'selected' : '' ?>>
-                                                                    <?php echo $interview->title ?>
-                                                                </option>
-                                                                <?php endif; ?>
-                                                            <?php endforeach; ?>
+                                                <?php if ($interview->service_cat_id == 1): ?>
+                                                    <option value="<?php echo $interview->id ?>" <?php echo (isset($candidate->combine_interview_id) && $candidate->combine_interview_id == $interview->id) || (isset($customer->combine_interview_id) && $customer->combine_interview_id == $interview->id) ? 'selected' : '' ?>>
+                                                        <?php echo $interview->title ?>
+                                                    </option>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
                                         </select>
-
                                     </div>
-
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label" for="background_check_date">Background Check
                                             Date</label>
@@ -1356,7 +1246,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                             value="<?php echo $candidate->delivery_date ?>" name="delivery_date"
                                             id="delivery_date">
                                     </div>
-
                                     <div class="col-lg-12 mb-3">
                                         <div class="form-group file-area w-100">
                                             <div class="d-flex justify-content-between">
@@ -1369,7 +1258,8 @@ if (!empty($candidate->BIR_interview_place)) {
                                                 <div class="file-icon"><i style="font-size: 28px; color: #5c636a"
                                                         class="fa-solid fa-cloud-arrow-up "></i></div>
                                                 <div class="default ">Here you can upload several documents
-                                                    <small>(Interview Templates, Documents or CV)</small></div>
+                                                    <small>(Interview Templates, Documents or CV)</small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1380,10 +1270,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                         <textarea name="note" id="" style="width: 100%;" rows="6"
                                             placeholder="Here you can create a note about the order that is visible to both you and us. Please note that this note will not be visible to the individual."><?php echo $candidate->note ?></textarea>
                                     </div>
-
-
                                 </div>
-
                                 <div id="update_candidate_msg" class="text-center"></div>
                                 <div class="d-flex justify-content-end">
                                     <button id="update_candidate_btn" type="submit" name="update_candidate"
@@ -1394,24 +1281,21 @@ if (!empty($candidate->BIR_interview_place)) {
                     </div>
                     <?php
                     $srs = null;
-
-                    if (!empty($candidate->meta_data)) {
-                        $data = json_decode($candidate->meta_data, true);
-
-                        if (!empty($data) && is_array($data)) {
-                            foreach ($data as $key => $value) {
-                                if ($key == "This interview is suggested in the SRS portal?") {
-                                    if (!empty($value)) {
-                                        if (strtolower($value) == "yes") {
-                                            $srs = 1;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+if (! empty($candidate->meta_data)) {
+    $data = json_decode($candidate->meta_data, true);
+    if (! empty($data) && is_array($data)) {
+        foreach ($data as $key => $value) {
+            if ($key == "This interview is suggested in the SRS portal?") {
+                if (! empty($value)) {
+                    if (strtolower($value) == "yes") {
+                        $srs = 1;
                     }
-
-                    ?>
+                }
+            }
+        }
+    }
+}
+?>
                     <div id="update-status" class="tabcontent2 ">
                         <div class="container">
                             <div class="row">
@@ -1420,21 +1304,25 @@ if (!empty($candidate->BIR_interview_place)) {
                                         <div class="col-lg-6 mb-3" id="">
                                             <label class="form-label" for="">Status</label>
                                             <?php
-                                            $cusStatuses = [];
-                                            if (!empty($customer->statuses)) {
-                                                $cusStatuses = explode(',', $customer->statuses);
-                                            }
-                                            ?>
+                        $query = 'SELECT * FROM interviews WHERE id = ?';
+$stmt = $conn->prepare($query);
+$stmt->execute([$candidate->interview_id]);
+$interview = $stmt->fetch();
+$cusStatuses = [];
+if (! empty($customer->statuses)) {
+    $cusStatuses = explode(',', $customer->statuses);
+}
+?>
                                             <select class="form-control filter-select" name="status" id="change-status"
                                                 style="" onchange="show_bir(this)">
-                                                <?php if (!empty($servicesCats)): ?>
+                                                <?php if (! empty($servicesCats)): ?>
                                                     <?php foreach ($servicesCats as $servicesCat): ?>
                                                         <optgroup label="<?php echo $servicesCat->name ?>">
                                                             <?php $statuses = getStatusesByService($servicesCat->id) ?>
                                                             <?php foreach ($statuses as $key => $status): ?>
                                                                 <?php if (in_array($status->sID, $cusStatuses)): ?>
-                                                                    <option data-status-variable="<?php echo $status->variable ?>" <?php echo $status->sID == $candidate->status ? 'selected' : '' ?>                 <?php if (!empty($srs) && ($status->sID == 4 || $status->sID == 7)) { ?>
-                                                                            disabled <?php } ?> value="<?php echo $status->sID ?>">
+                                                                    <option data-status-variable="<?php echo $status->variable ?>" <?php echo $status->sID == $candidate->status ? 'selected' : '' ?> <?php if (! empty($srs) && ($status->sID == 4 || $status->sID == 7)) { ?>
+                                                                        disabled <?php } ?> value="<?php echo $status->sID ?>">
                                                                         <?php echo $status->status ?></option>
                                                                 <?php endif; ?>
                                                             <?php endforeach; ?>
@@ -1447,7 +1335,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                             <label class="form-label">Date</label>
                                             <input type="date" id="date" required name="date" class="form-control">
                                         </div>
-
                                         <?php if ($customer->send_security_report == 1) { ?>
                                             <div class="col-lg-12 mb-3" id="bir_interview_place_row" style="display:none">
                                                 <label class="form-label">Where did the interview take place?</label>
@@ -1456,23 +1343,18 @@ if (!empty($candidate->BIR_interview_place)) {
                                                     disabled="disabled" value="<?= $bir_interview_place ?>">
                                             </div>
                                         <?php } ?>
-
-
                                         <!-- <div class="col-lg-12 mb-3 service_cost" hidden>
                                             <label class="form-label">Travelling Cost</label>
                                             <input type="number" id="travelling_cost" value="<?php echo $candidate->travel_cost ?>" class="form-control" name="travelling_cost">
                                         </div> -->
-
                                         <div class="col-lg-12 mb-3">
                                             <label class="form-label" for="comment">Comment</label>
                                             <textarea name="comment" class="form-control" id="comment"></textarea>
                                         </div>
-
                                         <div class="col-lg-12 mb-3">
                                             <label class="form-label">Upload Report</label>
                                             <input name="report" type="file" class="form-control">
                                         </div>
-
                                         <input type="hidden" name="cus_name" value="<?php echo $customer->name ?>">
                                         <input type="hidden" name="cus_email" value="<?php echo $customer->email ?>">
                                         <input type="hidden" name="can_name" value="<?php echo $candidate->name ?>">
@@ -1484,7 +1366,6 @@ if (!empty($candidate->BIR_interview_place)) {
                                         <input type="hidden" name="interviewID" value="<?php echo $interview->id ?>">
                                     </div>
                                 </form>
-
                                 <div id="update_status_msg" class="text-center"></div>
                                 <div class="d-flex justify-content-end">
                                     <button type="submit" name="update_status"
@@ -1493,7 +1374,6 @@ if (!empty($candidate->BIR_interview_place)) {
                             </div>
                         </div>
                     </div>
-
                     <div id="update-records" class="tabcontent2 ">
                         <div class="container">
                             <div class="row">
@@ -1506,7 +1386,7 @@ if (!empty($candidate->BIR_interview_place)) {
                                         Invoice Sent
                                     </label>
                                     <p class=" f-14 w-600 text-grey mb-0 pb-0 ">Invoice Date: <span
-                                            class="invoice_date f-14 w-700 text-black mb-0 pb-0 "><?php echo !empty($candidate->invoice_date) ? $candidate->invoice_date : 'Null' ?></span>
+                                            class="invoice_date f-14 w-700 text-black mb-0 pb-0 "><?php echo ! empty($candidate->invoice_date) ? $candidate->invoice_date : 'Null' ?></span>
                                     </p>
                                 </div>
                                 <div class="col-4"></div>
@@ -1521,86 +1401,83 @@ if (!empty($candidate->BIR_interview_place)) {
                                     </label>
                                     <p class=" f-14 w-600 text-grey mb-0 pb-0 float-right">Reported Date: <span
                                             class=" f-14 w-700 text-black mb-0 pb-0 "
-                                            id="rep_date_time"><?php echo !empty($candidate->reported_to_sm_on) ? $candidate->reported_to_sm_on : 'Null' ?></span>
+                                            id="rep_date_time"><?php echo ! empty($candidate->reported_to_sm_on) ? $candidate->reported_to_sm_on : 'Null' ?></span>
                                     </p>
                                 </div>
                                 <div class="col-8 record-main d-flex justify-content-between">
                                     <div>
+                                        <?php
+                                        $bgRadioDisabled = (isset($userCategory) && (int)$userCategory === 1) ? ' disabled' : '';
+$bgSpanDisabledAttr = (isset($userCategory) && (int)$userCategory === 1) ? ' data-disabled=1' : '';
+?>
                                         <div class="record d-flex mt-2">
                                             <label class="me-2">
-                                                <input class="economy-radio" <?php echo $candidate->economy == 0 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy-radio" <?php echo $candidate->economy == 0 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>" onclick="colorOfBk()">
                                                 <span class="custom-economy-radio uncheck_economy"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <label class="me-2">
-                                                <input class="economy2-radio" <?php echo $candidate->economy == 1 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy2-radio" <?php echo $candidate->economy == 1 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>" onclick="colorOfBk()">
                                                 <span class="custom-economy2-radio check_economy"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <p class="f-14 w-600 text-grey mb-0 pb-0 ">Economy</p>
                                         </div>
-
                                         <div class="record d-flex mt-2">
                                             <label class="me-2">
-                                                <input class="economy-radio" <?php echo $candidate->criminal_record == 0 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy-radio" <?php echo $candidate->criminal_record == 0 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>-criminal"
                                                     onclick="colorOfBk()">
                                                 <span class="custom-economy-radio uncheck_criminal"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <label class="me-2">
-                                                <input class="economy2-radio" <?php echo $candidate->criminal_record == 1 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy2-radio" <?php echo $candidate->criminal_record == 1 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>-criminal"
                                                     onclick="colorOfBk()">
                                                 <span class="custom-economy2-radio check_criminal"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <p class="f-14 w-600 text-grey mb-0 pb-0 ">Criminal Record</p>
                                         </div>
-
                                         <div class="record d-flex mt-2">
                                             <label class="me-2">
-                                                <input class="economy-radio" <?php echo $candidate->social == 0 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy-radio" <?php echo $candidate->social == 0 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>-social"
                                                     onclick="colorOfBk()">
                                                 <span class="custom-economy-radio uncheck_social"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <label class="me-2">
-                                                <input class="economy2-radio" <?php echo $candidate->social == 1 ? 'checked' : '' ?> type="radio"
+                                                <input class="economy2-radio" <?php echo $candidate->social == 1 ? 'checked' : '' ?><?php echo $bgRadioDisabled; ?> type="radio"
                                                     name="<?php echo $candidate->order_id ?>-social"
                                                     onclick="colorOfBk()">
                                                 <span class="custom-economy2-radio check_social"
-                                                    data-id="<?php echo $candidate->id ?>"></span>
+                                                    data-id="<?php echo $candidate->id ?>" <?php echo $bgSpanDisabledAttr; ?>></span>
                                             </label>
                                             <p class="f-14 w-600 text-grey mb-0 pb-0 ">Social Media</p>
                                         </div>
                                     </div>
-
                                     <p class=" f-14 w-600 text-grey mb-0 pb-0 mt-2">Background Check Date: <span
-                                            class="background_check_date f-14 w-700 text-black mb-0 pb-0 "><?php echo !empty($candidate->background_check_date) ? $candidate->background_check_date : 'Null' ?></span>
+                                            class="background_check_date f-14 w-700 text-black mb-0 pb-0 "><?php echo ! empty($candidate->background_check_date) ? $candidate->background_check_date : 'Null' ?></span>
                                     </p>
                                 </div>
-
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
-
 <?php
 $query = 'SELECT * FROM staff WHERE id = ?';
 $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->staff_id]);
 $staff = $stmt->fetch();
 ?>
-
 <script>
     function open_tab() {
         if ($('#update-pdf').is(':hidden')) {
@@ -1625,7 +1502,7 @@ $staff = $stmt->fetch();
             $('#generate_temp_btn').attr('disabled', true);
         }
     }
-    $(document).ready(function () {
+    $(document).ready(function() {
         show_bir($('select[name="status"]'))
     })
     function openCity(evt, cityName) {
@@ -1657,25 +1534,20 @@ $staff = $stmt->fetch();
                     'read_by_staff': 1,
                     'id': "<?= $_GET['id'] ?>"
                 },
-                success: function (response) {
-                    if (response) {
-                    }
+                success: function(response) {
+                    if (response) {}
                 },
-                error: function () {
-                }
+                error: function() {}
             });
         }
     }
     document.getElementById("defaultOpen").click();
-
-    function check_combine_bk_and_security(){
+    function check_combine_bk_and_security() {
         var selectedCustomer = $('#updated_customer');
         var selectedCandidate = $('#updated_candidate');
         var interview = $('#interview').val();
-        
         // Get the selected option from the main interview dropdown
         var selectedInterviewOption = $('#interview option:selected');
-        
         var combine_bk_and_security_array = selectedCustomer.length > 0 ? selectedCustomer.val().split(',') : null;
         var service_cat_id = selectedInterviewOption.length > 0 ? selectedInterviewOption.data('interview-service-cat-id') : null;
         var combine_interview_id = selectedCandidate.length > 0 ? selectedCandidate.val() : 0;
@@ -1684,8 +1556,8 @@ $staff = $stmt->fetch();
         // console.log('Selected customer:', selectedCustomer.val());
         // console.log('Selected interview:', selectedInterviewOption.text());
         console.log('Selected interview option:', selectedInterviewOption.val());
-        console.log(combine_bk_and_security_array.includes(selectedInterviewOption.val()) ,service_cat_id);
-        if(combine_bk_and_security_array.includes(selectedInterviewOption.val()) && service_cat_id == 3){
+        console.log(combine_bk_and_security_array.includes(selectedInterviewOption.val()), service_cat_id);
+        if (combine_bk_and_security_array.includes(selectedInterviewOption.val()) && service_cat_id == 3) {
             console.log('Showing security interview service type div');
             $('#security_interview_service_type_div').removeClass('d-none');
             // Initialize place field state when security interview service type div is shown
@@ -1697,19 +1569,176 @@ $staff = $stmt->fetch();
                 $('div[id="place"]').addClass('d-none');
                 $('select[name="place"]').prop("disabled", true);
             }
-        }else{
+        } else {
             console.log('Hiding security interview service type div');
             $('#security_interview_service_type_div').addClass('d-none');
             $('#security_interview_service_type').val('0');
         }
     }
-
+    function bindSsnBehavior() {
+        // Default: treat as Personal ID input
+        const hasPersonalId = document.getElementById('hasPersonalId');
+        const ssn = document.getElementById('ssn');
+        const pnrHelp = document.getElementById('pnrHelp');
+        const ssnLabel = document.getElementById('ssnLabel');
+        if (!hasPersonalId || !ssn) return;
+        // set default state (unchecked => PNR)
+        if (!hasPersonalId.hasAttribute('data-initialized')) {
+            hasPersonalId.checked = <?php echo $candidate->hasPersonalId ? 'true' : 'false'; ?>;
+            hasPersonalId.setAttribute('data-initialized', '1');
+        }
+        document.getElementById('ssn').value = "<?php echo htmlspecialchars($candidate->security, ENT_QUOTES, 'UTF-8'); ?>";
+        toggleInputType();
+        ssn.addEventListener('input', validateSecurityField);
+        ssn.addEventListener('blur', validateSecurityField);
+    }
+    function toggleInputType() {
+        const hasPersonalId = document.getElementById('hasPersonalId');
+        const securityField = document.getElementById('ssn');
+        const ssnLabel = document.getElementById('ssnLabel');
+        const pnrHelp = document.getElementById('pnrHelp');
+        if (!securityField) return;
+        // If the security field is being used as a date of birth field, format it correctly
+        if (!hasPersonalId || !hasPersonalId.checked) {
+            if (securityField.type !== 'date') {
+                securityField.type = 'date';
+                securityField.removeAttribute('inputmode');
+                securityField.removeAttribute('placeholder');
+                securityField.value = ''; // Clear value only when switching to date
+            }
+            if (ssnLabel) ssnLabel.innerHTML = 'Date of Birth <span class="text-danger">*</span>';
+            if (pnrHelp) pnrHelp.textContent = 'Date of birth is required';
+        } else {
+            if (securityField.type !== 'text') {
+                securityField.type = 'text';
+                securityField.setAttribute('inputmode', 'numeric');
+                securityField.placeholder = 'YYMMDD-XXXX';
+                securityField.value = ''; // Clear value only when switching to text
+            }
+            if (ssnLabel) ssnLabel.innerHTML = 'Personal identification number <span class="text-danger">*</span>';
+            if (pnrHelp) pnrHelp.textContent = 'Personal identification number is required';
+        }
+        // Clear validation states
+        securityField.classList.remove('is-valid', 'is-invalid');
+        if (pnrHelp) pnrHelp.classList.remove('text-success', 'text-danger');
+    }
+    function validateSecurityField() {
+        const hasPersonalId = document.getElementById('hasPersonalId');
+        const securityField = document.getElementById('ssn');
+        const pnrHelp = document.getElementById('pnrHelp');
+        if (!securityField) return;
+        securityField.classList.remove('is-valid', 'is-invalid');
+        if (pnrHelp) pnrHelp.classList.remove('text-success', 'text-danger');
+        if (!hasPersonalId || !hasPersonalId.checked) {
+            if (securityField.value.trim() === '') {
+                securityField.classList.add('is-invalid');
+                if (pnrHelp) {
+                    pnrHelp.textContent = 'Date of birth is required';
+                    pnrHelp.classList.add('text-danger');
+                }
+            } else {
+                securityField.classList.add('is-valid');
+                if (pnrHelp) {
+                    pnrHelp.textContent = 'Date of birth is valid';
+                    pnrHelp.classList.add('text-success');
+                }
+            }
+        } else {
+            const validation = validatePNR(securityField.value);
+            if (securityField.value.trim() === '') {
+                securityField.classList.add('is-invalid');
+                if (pnrHelp) {
+                    pnrHelp.textContent = 'Personal identification number is required';
+                    pnrHelp.classList.add('text-danger');
+                }
+            } else if (validation.isValid) {
+                securityField.classList.add('is-valid');
+                if (pnrHelp) {
+                    pnrHelp.textContent = validation.message;
+                    pnrHelp.classList.add('text-success');
+                }
+            } else {
+                securityField.classList.add('is-invalid');
+                if (pnrHelp) {
+                    pnrHelp.textContent = validation.message;
+                    pnrHelp.classList.add('text-danger');
+                }
+            }
+        }
+    }
+    function validatePNR(pnr) {
+        // Check if the PNR is empty (optional field)
+        if (!pnr.trim()) {
+            return {
+                isValid: false,
+                message: 'Personal identification number is required'
+            };
+        }
+        // Allow format: YYMMDD-XXXX or YYMMDDXXXX (with or without dash)
+        const pnrPattern = /^(\d{6})-?(\d{4})$/;
+        const match = pnr.match(pnrPattern);
+        if (!match) {
+            return {
+                isValid: false,
+                message: 'Required format is YYMMDD-XXXX or YYMMDDXXXX'
+            };
+        }
+        // Combine the matched groups to get the full 10-digit number
+        const cleanPNR = match[1] + match[2];
+        // Extract date components
+        const year = parseInt(cleanPNR.substring(0, 2));
+        const month = parseInt(cleanPNR.substring(2, 4));
+        const day = parseInt(cleanPNR.substring(4, 6));
+        // Validate year (should be between 00-99, but we'll be more lenient)
+        if (year < 0 || year > 99) {
+            return {
+                isValid: false,
+                message: 'Invalid year in Personal identification number'
+            };
+        }
+        // Validate month (should be between 01-12)
+        if (month < 1 || month > 12) {
+            return {
+                isValid: false,
+                message: 'Invalid month in Personal identification number(01-12)'
+            };
+        }
+        if (day < 1 || day > 31) {
+            return {
+                isValid: false,
+                message: `Invalid day in Personal identification number(01-31)`
+            };
+        }
+        return {
+            isValid: true,
+            message: 'Personal identification number is valid'
+        };
+    }
+    function luhn10(num) {
+        let sum = 0;
+        for (let i = 0; i < num.length; i++) {
+            let digit = parseInt(num[i], 10);
+            if (i % 2 === 0) { // double even index (0-based) per Swedish PNR on 10-digit string
+                digit *= 2;
+                if (digit > 9) digit -= 9;
+            }
+            sum += digit;
+        }
+        return sum % 10 === 0;
+    }
+    $(document).ready(function() {
+        if (document.getElementById('ssn')) {
+            bindSsnBehavior();
+        }
+    })
+    if (document.getElementById('ssn')) {
+        bindSsnBehavior();
+    }
 </script>
 <script>
     var candidate = <?php echo json_encode($candidate); ?>;
     var customer = <?php echo json_encode($customer); ?>;
     var staff = <?php echo json_encode($staff); ?>;
-
     function check_field() {
         var city = $('#city_report').val()
         if (city != '') {
@@ -1722,8 +1751,6 @@ $staff = $stmt->fetch();
             $('#city_text_msg').show()
         }
     }
-
-
     function editCity(evt, cityName) {
         if (cityName == 'update-status') {
             var statusVariable = $('#change-status').find("option:selected").data("status-variable")
@@ -1750,7 +1777,6 @@ $staff = $stmt->fetch();
     }
     document.getElementById("defaultOpen2").click();
     check_combine_bk_and_security();
-
     // Full page loader functions
     function showPageLoader(msg) {
         var msg = msg ? msg : 'Transferring Candidate to Security Interview.';
@@ -1779,18 +1805,15 @@ $staff = $stmt->fetch();
                 </div>
             `);
         }
-        
         $('#page-loader').show();
     }
-
     function hidePageLoader() {
         $('#page-loader').hide();
     }
-    function showpopup(message){
+    function showpopup(message) {
         flash("errorMsg", message)
     }
 </script>
-
 <script id="report-template" type="text/template">
     <div id="report-section">
         <div class="row">
@@ -1798,39 +1821,32 @@ $staff = $stmt->fetch();
                 <label class="form-label">Reason</label>
                 <textarea id="reason" name="reason_denied" placeholder="Reason for denied" rows="3" class="w-100 sign-textarea form-control"></textarea>
             </div>
-
             <div class="col-lg-12 mb-3">
                 <label class="form-label">Where did the interview take place?</label>
                 <input type="text" name="city" id="city_report" placeholder="Where did the interview take place?" maxlength="15" oninput="check_field()" class="w-100 sign-input form-control" value="<?= $candidate->BIR_interview_place ?>">
             </div>
         </div>
-
         <div class="row">
                         <div class="col-md-12" id="city_text_msg" style="display:none">
                 <p class="text-danger">Please Fill the Interview Place Filed First !!</p>
             </div>
-
             <div class="col-lg-6 mb-3">
                 <button type="button" id="preview" onclick="check_field()" data-bs-toggle="modal" data-bs-target="#securityReportModal" class="btn-fill w-100 mt-4 mx-0 report-btn2 btn-primary bg-primary"><a>Preview Report</a></button>
             </div>
-
             <div class="col-lg-6 mb-3">
                 <button type="button" id="generate" onclick="check_field()" class="btn-fill w-100 mt-4 mx-0 report-btn2 btn-primary bg-primary"><a>Generate Report</a></button>
             </div>
-
             <!--        <div class="col-lg-4 ">-->
             <!--            <button type="button" id="submit" class="btn-fill w-100 mt-4 mx-0 report-btn"><a>Submit Report</a></button>-->
             <!--        </div>-->
         </div>
-
         <div class="col-lg-12 mt-4">
             <p id="report-msg"></p>
         </div>
     </div>
 </script>
-
 <script>
-    $('#interview').on('change', function () {
+    $('#interview').on('change', function() {
         if ($(this).val() == 2 || $(this).val() == 4 || $(this).val() == 26) {
             $('#place').removeClass('d-none')
             $("select[name='place']").prop("disabled", false)
@@ -1838,7 +1854,6 @@ $staff = $stmt->fetch();
             $('#place').addClass('d-none')
             $("select[name='place']").prop("disabled", true)
         }
-
         if ($(this).val() == 10 || $(this).val() == 12 || $(this).val() == 13) {
             $('#country').removeClass('d-none')
             $("select[name='country']").prop("disabled", false)
@@ -1847,7 +1862,6 @@ $staff = $stmt->fetch();
             $("select[name='country']").prop("disabled", true)
         }
     })
-
     // $('#exampleModal2').on('show.bs.modal', function (e) {
     //     $("#content-modal").modal('hide')
     // });
@@ -1861,8 +1875,7 @@ $staff = $stmt->fetch();
     var candidate = <?php echo json_encode($candidate); ?>;
     var customer = <?php echo json_encode($customer); ?>;
     var staff = <?php echo json_encode($staff); ?>;
-
-    $("#change-status").on("change", function () {
+    $("#change-status").on("change", function() {
         var statusVariable = $(this).find("option:selected").data("status-variable")
         $("#report-section").remove()
         if ((statusVariable === "approved" || statusVariable === "denied" || statusVariable == "Approved_followup" || statusVariable == "Denied_followup") && customer.send_security_report == 1) {
@@ -1873,13 +1886,11 @@ $staff = $stmt->fetch();
             check_field()
         }
     })
-
     // Remove Interview Report Section
     // $("#content-modal").on('hide.bs.modal', function () {
     //     $("#report-section").remove()
     //     $("body").off("click", ".report-btn2");
     // })
-
     // $("#send-report-status").on("change", function () {
     //     var statusVariable = $("#change-status").find("option:selected").data("status-variable")
     //     $("#report-section").remove()
@@ -1890,36 +1901,30 @@ $staff = $stmt->fetch();
     //         }
     //     }
     // })
-
     window.jsPDF = window.jspdf.jsPDF;
-
     // $(window).on('load', function() {
     //     $("#preview").click()
     // })
-
-    $("body").on("click", ".report-btn2", async function (e) {
+    $("body").on("click", ".report-btn2", async function(e) {
         e.preventDefault();
         if ($(this).attr("id") !== "preview" && $(this).attr("id") !== "generate") {
-        const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "Have you selected the correct status? If unsure, please check the intranet before proceeding.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Yes, I am sure",
-            cancelButtonText: "No, I need to check it",
-        });
-        if (!result.isConfirmed) {
-            return;
+            const result = await Swal.fire({
+                title: "Are you sure?",
+                text: "Have you selected the correct status? If unsure, please check the intranet before proceeding.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, I am sure",
+                cancelButtonText: "No, I need to check it",
+            });
+            if (!result.isConfirmed) {
+                return;
+            }
         }
-    }
-        
-
         if ($(this).attr("id") !== "preview" && $(this).attr("id") !== "generate") {
             $(this).attr("disabled", true)
             $("#update_status_msg").html($("#spinner").html())
         }
         var that = $(this)
-
         // Create new jsPdf instance
         const doc = new jsPDF()
         var x = 10;
@@ -1927,7 +1932,6 @@ $staff = $stmt->fetch();
         var leftMargin = 10;
         var rightMargin = 10;
         var statusVariable = $("#change-status").find("option:selected").data("status-variable")
-
         if ($(this).hasClass("report-btn-update")) {
             if ((statusVariable !== "approved" && statusVariable !== "denied") || customer.send_security_report == 0) {
                 // $("#status-form").submit()
@@ -1935,15 +1939,13 @@ $staff = $stmt->fetch();
                 return;
             }
         }
-
         // Define header function
-        const addHeader = function () {
+        const addHeader = function() {
             y = 5
             doc.addImage("../assets/images/vattenfall.png", 'PNG', (doc.internal.pageSize.width / 2) - 25, y, 50, 8)
         }
-
         // Define footer function
-        const addFooter = function () {
+        const addFooter = function() {
             doc.setTextColor("#9298A0")
             doc.setFontSize(8)
             const date = new Date();
@@ -1954,25 +1956,21 @@ $staff = $stmt->fetch();
             };
             const formattedDate = date.toLocaleDateString('en-US', options);
             doc.text(formattedDate, leftMargin, doc.internal.pageSize.height - 5)
-
             doc.text("Confidentiality class: C3 - Restricted", doc.internal.pageSize.width - 56, doc.internal.pageSize.height - 10)
             doc.text("(after completion of the form)", doc.internal.pageSize.width - 56, doc.internal.pageSize.height - 5)
         }
-
-        const addTable = function (caption, table) {
+        const addTable = function(caption, table) {
             doc.setFontSize(12);
             doc.setFont("Helvetica", "Bold");
             doc.text(caption, leftMargin, y)
-
             y += 3
             var data = [];
-            table.forEach(function (row) {
+            table.forEach(function(row) {
                 data.push({
                     key: row[0],
                     value: row[1]
                 })
             })
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -1995,12 +1993,9 @@ $staff = $stmt->fetch();
                         fillColor: '#DBE5F1'
                     },
                 },
-                didParseCell: function (data) {
-
-                }
+                didParseCell: function(data) {}
             })
         }
-
         // Function to draw a checkmark symbol
         function drawCheckmark(doc, x, y) {
             var tickSize = 2; // Size of the tick lines
@@ -2009,18 +2004,16 @@ $staff = $stmt->fetch();
             doc.line(x, y, x + tickSize, y + tickSize); // Draw the first tick line
             doc.line(x - 0.2 + tickSize, y - 0.2 + tickSize, x + tickSize * 2, y - tickSize); // Draw the second tick line
         }
-
-        const addTable2 = function (table) {
+        const addTable2 = function(table) {
             y += 3;
             var data = [];
-            table.forEach(function (row, index) {
+            table.forEach(function(row, index) {
                 const rowData = {
                     key: row[0],
                     col1: row[1],
                     col2: row[2],
                     col3: row[3]
                 };
-
                 if (index > 2) {
                     rowData.key = {
                         content: rowData.key,
@@ -2028,10 +2021,8 @@ $staff = $stmt->fetch();
                     };
                     delete rowData.col1;
                 }
-
                 data.push(rowData);
             });
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -2059,38 +2050,34 @@ $staff = $stmt->fetch();
                         textColor: '#000000'
                     }
                 },
-                didParseCell: function (data) {
+                didParseCell: function(data) {
                     if (data.row.index > 2 && data.column.index === 1) {
                         data.cell.colSpan = 2;
                     }
                 },
-                didDrawCell: function (data) {
+                didDrawCell: function(data) {
                     if (data.cell.section === "body" && data.column.index === 2 && data.row.index > 2) {
                         var cellWidth = data.cell.width;
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
                 }
             });
         }
-
-        const addTable3 = function (table, status) {
+        const addTable3 = function(table, status) {
             y += 3
             var data = [];
-            table.forEach(function (row) {
+            table.forEach(function(row) {
                 data.push({
                     key: row[0],
                     value: row[1]
                 })
             })
-
             doc.autoTable({
                 startY: y,
                 margin: {
@@ -2114,56 +2101,46 @@ $staff = $stmt->fetch();
                         fillColor: '#DBE5F1'
                     },
                 },
-                didDrawCell: function (data) {
+                didDrawCell: function(data) {
                     if (data.cell.section === "body" && data.column.index === 2 && status === "denied") {
                         var cellWidth = data.cell.width;
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
-
                     if (data.cell.section === "body" && data.column.index === 1 && status === "approved") {
                         var cellWidth = data.cell.width;
                         var cellHeight = data.cell.height;
                         var cellX = data.cell.x;
                         var cellY = data.cell.y;
-
                         var tickX = cellX + (cellWidth / 2) - 2.5; // Calculate the position of the tick symbol
                         var tickY = cellY + (cellHeight / 2) - 2.5;
                         tickY += 2.5
-
                         drawCheckmark(doc, tickX, tickY); // Draw the checkmark symbol
                     }
                 }
             })
         }
-
         function getTextWidth(text, fontSize) {
             // Text width in mm
             return (doc.getStringUnitWidth(text) * fontSize) / (72 / 25.6)
         }
-
         function pxToMm(px) {
             return px * 25.4 / 72;
         }
-
         // Add first page with header
         addHeader()
         addFooter()
-
         // Report Data
         y += 20;
         doc.setFontSize(14)
         doc.setTextColor("#000000")
         doc.setFont("Helvetica", 'Bold')
         doc.text("Result of the basic investigation", leftMargin, y)
-
         y += 10;
         doc.setFontSize(12)
         doc.setFont("Helvetica", '')
@@ -2173,7 +2150,6 @@ $staff = $stmt->fetch();
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         y += 33;
         para = `This form must be used when reporting back after a basic investigation has been completed.
         With basic investigation according to ch. 3 Section 3 of the Swedish Protective Security Act (2018:585) refers to an investigation into personal circumstances of importance for the security vetting. The investigation shall include grades, certificates, references and information provided by the person to whom the examination applies, as well as other information to the extent that it is relevant to the examination. The detailed requirements can be found in Vattenfall's requirements specification for Security Vetting.`;
@@ -2181,7 +2157,6 @@ $staff = $stmt->fetch();
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         // Generate Table
         y += 35
         const table = [];
@@ -2190,7 +2165,6 @@ $staff = $stmt->fetch();
         table.push(["E-post / E-mail", customer.email])
         table.push(["Företag / Company", customer.company])
         addTable(caption, table)
-
         y += 28
         table.length = 0
         caption = "Bakgrundskontroll genomförd av / Basic investigation conducted by"
@@ -2199,7 +2173,6 @@ $staff = $stmt->fetch();
         table.push(["E-post / E-mail", "info@recway.se"])
         table.push(["Företag / Company", "Recway AB"])
         addTable(caption, table)
-
         y += 37
         table.length = 0
         caption = "Intervjuarens uppgifter / Information about the interviewer"
@@ -2208,7 +2181,6 @@ $staff = $stmt->fetch();
         table.push(["E-post / E-mail", staff.email])
         table.push(["Företag / Company", "Recway AB"])
         addTable(caption, table)
-
         y += 37
         table.length = 0
         console.log(candidate)
@@ -2217,7 +2189,6 @@ $staff = $stmt->fetch();
         table.push(["Personnummer (ååmmdd-xxxx) Birth date (yymmdd-xxxx)", candidate.security])
         table.push(["VASC-ID", candidate.vasc_id])
         addTable(caption, table)
-
         y += 35
         doc.setDrawColor(0, 0, 0)
         // doc.setFillColor(0,0,0)
@@ -2232,17 +2203,14 @@ The form sends by e-mail to: securityvetting@vattenfall.com`;
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         doc.addPage()
         addHeader()
         addFooter()
-
         y += 20;
         doc.setFontSize(14)
         doc.setTextColor("#000000")
         doc.setFont("Helvetica", 'Bold')
         doc.text("Result of the basic investigation", leftMargin, y)
-
         y += 7;
         doc.setFontSize(12)
         doc.setFont("Helvetica", '')
@@ -2253,7 +2221,6 @@ Select which of the background screening activities that have been performed. De
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
             align: 'left'
         })
-
         y += 26
         doc.setFontSize(8)
         doc.text("Not Applicable*", doc.internal.pageSize.width / 2, y)
@@ -2261,7 +2228,6 @@ Select which of the background screening activities that have been performed. De
         doc.text("Ja/Yes", (doc.internal.pageSize.width / 2) + 31, y)
         doc.setFontSize(8)
         doc.text("Nej/No", (doc.internal.pageSize.width / 2) + 61, y)
-
         table.length = 0
         table.push([`Kontroll av CV (Curriculum Vitae)*
 Verification of Resumé/CV`, "", "", ""])
@@ -2284,7 +2250,6 @@ Verification of corporate and associated activities`, "", "", ""])
         table.push([`Kontroll av rättsliga processer och historiska/pågående domar
 Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         addTable2(table)
-
         y = doc.lastAutoTable.finalY + 5;
         doc.setFontSize(10)
         doc.setFont("Helvetica", "Bold")
@@ -2292,7 +2257,6 @@ Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text("(markera med ett X)", leftMargin + 75, y)
-
         y += 5
         doc.setFontSize(10)
         doc.setFont("Helvetica", "Bold")
@@ -2300,13 +2264,11 @@ Verification of legal processes and historical/ongoing judgements`, "", "", ""])
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text("(mark with an X) ", leftMargin + 55, y)
-
         y += 2
         doc.setFontSize(8)
         doc.text("Ja/Yes", (doc.internal.pageSize.width / 2) + 30, y)
         doc.setFontSize(8)
         doc.text("Nej/No", (doc.internal.pageSize.width / 2) + 60, y)
-
         table.length = 0
         table.push([`Det finns en god personlig kännedom om den prövade
 There is a god knowledge about the vetted person`, "", ""])
@@ -2315,7 +2277,6 @@ The individual can be assumed to be loyal to the interests to be protected by th
         table.push([`Individen kan i övrigt anses pålitlig från säkerhetssynpunkt.
 The individual can otherwise be considered reliable from a security point of view.`, "", ""])
         addTable3(table, statusVariable)
-
         y = doc.lastAutoTable.finalY + 2;
         doc.rect(leftMargin, y, doc.internal.pageSize.width - (leftMargin * 2), 15)
         para = $("#reason").val()
@@ -2324,7 +2285,6 @@ The individual can otherwise be considered reliable from a security point of vie
         doc.text(para ? para : "", leftMargin + 2, y + 8, {
             maxWidth: doc.internal.pageSize.width - (leftMargin * 2)
         })
-
         y += 19
         doc.text(`Datum för bakgrundskontroll /
 Date for the background check`, leftMargin, y)
@@ -2338,7 +2298,6 @@ Date for the background check`, leftMargin, y)
         var formattedDate = date.toLocaleDateString('en-US', options);
         doc.setFont("Helvetica", "Bold")
         doc.text(bcd ? formattedDate : "N/A", leftMargin, y + 6)
-
         y += 10
         doc.setFont("Helvetica", "")
         var interview_date = candidate.booked
@@ -2352,7 +2311,6 @@ Date for the background check`, leftMargin, y)
         doc.text(`Datum för intervjun / Date for the interview`, leftMargin, y)
         doc.setFont("Helvetica", "Bold")
         doc.text(interview_date ? formattedDate : "N/A", leftMargin, y + 3)
-
         y -= 10
         doc.text(`Vidimering av genomförd grundutredning`, doc.internal.pageSize.width - 65, y)
         doc.setFont("Helvetica", "")
@@ -2360,7 +2318,6 @@ Date for the background check`, leftMargin, y)
         doc.setFont("Helvetica", "Bold")
         var city = $("#city_report").val()
         doc.text(city ? city : "", doc.internal.pageSize.width - 51, y + 3)
-
         y += 3
         doc.setFont("Helvetica", "")
         var dateVal = $("#date").val()
@@ -2374,20 +2331,17 @@ Date for the background check`, leftMargin, y)
         doc.text(`Datum / Date : `, doc.internal.pageSize.width - 65, y + 3)
         doc.setFont("Helvetica", "Bold")
         doc.text(formattedDate, doc.internal.pageSize.width - 45, y + 3)
-
         y += 3
         doc.setFont("Helvetica", "")
         doc.text(`Signatur/ansvarig för genomförd
 grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         doc.setFont("Helvetica", "Bold")
         doc.text(staff.name ? staff.name : "", doc.internal.pageSize.width - 43, y + 6.5)
-
         y += 12
         doc.setFontSize(8)
         doc.setFont("Helvetica", "")
         doc.text(`* Dessa kontroller utförs av Vattenfall i fall av nyrekryteringar. Vid konsult/entreprenörsuppdrag utförs de av leverantören själv.
    These controls are carried out by Vattenfall, in cases of recruitments. For consultants, they are carried out by the supplier itself.`, leftMargin, y)
-
         var blobPDF = new Blob([doc.output('blob')], {
             type: "application/pdf"
         })
@@ -2399,10 +2353,8 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         } else {
             $("#report-msg").removeClass()
             $("#report-msg").empty()
-
             $("#report-msg").addClass("text-danger text-center")
             $("#report-msg").html(`<div class="lds-ring"><div></div><div></div><div></div><div></div></div>` + "Please wait while the report is being submitted...")
-
             // Convert the PDF blob to FormData object
             var formData = new FormData();
             formData.append('file', blobPDF, 'filename.pdf');
@@ -2418,7 +2370,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     return
                 }
             }
-
             // Send the form data to the PHP script using AJAX
             $.ajax({
                 url: '../security-report-upload.php',
@@ -2426,11 +2377,10 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function (response) {
+                success: function(response) {
                     console.log(response)
                     $("#report-msg").removeClass()
                     $("#report-msg").empty()
-
                     if (response.includes("Error")) {
                         $("#report-msg").addClass("text-error text-center")
                     } else {
@@ -2442,19 +2392,16 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     that.prop("disabled", false);
                     $("#update_status_msg").html("")
                 },
-                error: function (xhr, status, error) {
+                error: function(xhr, status, error) {
                     console.log('Error uploading file: ' + error);
                 }
             });
-
         }
     })
 </script>
-
 <script type="text/template" id="spinner">
     <div class="spinner-border text-secondary" role="status"></div>
 </script>
-
 <script type="text/template" id="timeline">
     <li>
         <div class="time">{date}</div>
@@ -2463,7 +2410,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         {comment_li}
     </li>
 </script>
-
 <script type="text/template" id="commentTemplate">
     <div class="mt-2 bg-light p-2 comment">
         <div class="d-flex justify-content-between align-items-center">
@@ -2478,15 +2424,12 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         </p>
     </div>
 </script>
-
 <script type="text/template" id="docs">
     <p style="overflow: hidden;white-space: nowrap; text-overflow: ellipsis" class="mb-0 w-100 f-18 p-0 pt-1"><a target="_blank" href="../uploads/{document}" style="cursor: pointer" class="text-success">{document}</a></p>
 </script>
-
 <!--AJAX-->
 <script>
     var id = <?php echo $_GET['id']; ?>;
-
     // Fetch Order History
     function fetchHistory() {
         $.ajax({
@@ -2497,7 +2440,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 id
             },
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     $(".sessions").empty()
                     for (const h of response.history) {
@@ -2516,12 +2459,11 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     alert("Error fetching data")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
     }
-
     // Fetch Comments
     function fetchComments() {
         $.ajax({
@@ -2532,7 +2474,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 id
             },
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     $("#comments-inner").empty()
                     for (const comment of response.comments) {
@@ -2548,12 +2490,11 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     alert("Error fetching data")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
     }
-
     // Fetch Candidate
     function fetchCandidate() {
         $.ajax({
@@ -2564,7 +2505,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 id
             },
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     $("#updated_candidate").val(response.candidate.combine_interview_id);
                     $(".up_ssn").text(response.candidate.security)
@@ -2589,23 +2530,19 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     alert("Error fetching data")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
     }
-
     // Update Staff
-    $("#update_staff_btn").on("click", function (e) {
+    $("#update_staff_btn").on("click", function(e) {
         e.preventDefault()
-
         $(this).prop("disabled", true);
         $("#update_staff_msg").html($("#spinner").html())
-
         var formData = new FormData($(this).closest("form")[0]);
         formData.append('type', 'update_staff');
         formData.append('id', id);
-
         // Send the data to the server
         var that = $(this)
         $.ajax({
@@ -2615,7 +2552,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             contentType: false,
             processData: false,
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     flash("successMsg", "Staff updated successfully!")
                     that.prop("disabled", false);
@@ -2627,23 +2564,19 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     flash("errorMsg", "Error saving data!")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
     })
-
     // Add Comment
-    $("#add_comment_btn").on("click", function (e) {
+    $("#add_comment_btn").on("click", function(e) {
         e.preventDefault()
-
         $(this).prop("disabled", true);
         $("#add_comment_msg").html($("#spinner").html())
-
         var formData = new FormData($(this).closest("form")[0]);
         formData.append('type', 'add_comment');
         formData.append('id', id);
-
         // Send the data to the server
         var that = $(this)
         $.ajax({
@@ -2653,7 +2586,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             contentType: false,
             processData: false,
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     flash("successMsg", "Comment added successfully!")
                     that.prop("disabled", false);
@@ -2664,7 +2597,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     flash("errorMsg", "Error saving data!")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
@@ -2673,9 +2606,13 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         window.location.href = url;
     }
     // Update Candidate
-    $("#update_candidate_btn").on("click", function (e) {
+    $("#update_candidate_btn").on("click", function(e) {
         e.preventDefault()
-
+        if ($('#ssn').val() == '' || $('#ssn').hasClass('is-invalid')) {
+            $('#ssn').focus();
+            validateSecurityField();
+            return;
+        }
         $(this).prop("disabled", true);
         $("#update_candidate_msg").html($("#spinner").html())
         var formData = new FormData($(this).closest("form")[0]);
@@ -2691,20 +2628,18 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             contentType: false,
             processData: false,
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
-                    console.log(response.candidate.interview_id.toString(),current_interview_id,response.candidate);
-                    if(response.candidate.interview_id.toString()!=current_interview_id){
+                    console.log(response.candidate.interview_id.toString(), current_interview_id, response.candidate);
+                    if (response.candidate.interview_id.toString() != current_interview_id) {
                         showPageLoader('Please wait while changing Candidate Service Type');
-                                        
                         // Small delay to show the loader, then reload
                         // window.location.reload();
-                        redirect("invoice.php?id="+id);
+                        redirect("invoice.php?id=" + id);
                     }
                     flash("successMsg", "Candidate updated successfully!")
                     that.prop("disabled", false);
                     $("#update_candidate_msg").html("")
-
                     candidate = response.candidate;
                     $('a[data-id="' + id + '"]').text(candidate.name + ' ' + candidate.surname)
                     $('a[data-id="' + id + '"]').closest('tr').find('.interview_date_show').text(candidate.booked)
@@ -2713,13 +2648,12 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     flash("errorMsg", "Error saving data!")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 console.log(e.responseText)
                 alert("AJAX request failed!");
             }
         });
     })
-
     // Update Status
     function updateStatus(that) {
         if ($('#date').val() == '') {
@@ -2730,7 +2664,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             $("#report-msg").empty()
             return;
         }
-
         if ($('#bir_interview_place').is(':visible') && $('#bir_interview_place').val() == '') {
             alert('Please fill interview place field');
             that.prop("disabled", false);
@@ -2739,7 +2672,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             $("#report-msg").empty()
             return;
         }
-
         // if (!$('#travelling_cost').is(':hidden') && $('#travelling_cost').val() == '') {
         //     alert("Please Add Travelling Cost First");
         //     that.prop("disabled", false);
@@ -2748,14 +2680,13 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         //     $("#report-msg").empty();
         //     return;
         // }
-
         var formData = new FormData($("#status-form")[0]);
         formData.append('type', 'update_status');
         formData.append('id', id);
-
         var candidate_present_status = $("#updated_status").val();
         var combine_bk_and_security = $("#updated_customer").val().split(',');
         var combine_interview_id = $("#updated_candidate").val();
+        var combine_interview_id_cus = $("#updated_customer_combine").val();
         var interview_id = $("#current_interview_id").val();
         var status = formData.get('status');
         var combine_status_array = $("#updated_combine_statuses").val().split(',');
@@ -2763,8 +2694,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         // console.log(combine_bk_and_security,'helllo combine_bk_and_security');
         // console.log(combine_interview_id,'helllo combine_interview_id');
         // console.log(status,'helllo status');
-
-        
         // Show loader when starting the request
         // showPageLoader();
         // console.log('-___________________________-');
@@ -2773,17 +2702,15 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         // console.log(combine_bk_and_security.includes(interview_id.toString()),'helllo combine_bk_and_security.includes(interview_id.toString())');
         // console.log(combine_bk_and_security.includes(interview_id),'helllo combine_bk_and_security.includes(interview_id)');
         // console.log(combine_status_array.includes(status),'helllo combine_status_array.includes(status)');
-
-        if ( combine_status_array.includes(status) && (combine_bk_and_security.includes(interview_id.toString()) || combine_bk_and_security.includes(interview_id)) ){
-            if (combine_interview_id =='0' || combine_interview_id == 0){
+        if (combine_status_array.includes(status) && (combine_bk_and_security.includes(interview_id.toString()) || combine_bk_and_security.includes(interview_id))) {
+            if ((combine_interview_id == '0' || combine_interview_id == 0) && (combine_interview_id_cus == '0' || combine_interview_id_cus == 0)) {
                 // console.log(combine_interview_id,'helllo combine_interview_id');
                 // console.log(combine_interview_id == '0','helllo combine_interview_id == 0');
                 // console.log(combine_interview_id == 0,'helllo combine_interview_id == 0');
                 showpopup('Please select a security interview first');
-                            that.prop("disabled", false);
-
-                            $("#update_status_msg").html("")
-                            return;
+                that.prop("disabled", false);
+                $("#update_status_msg").html("")
+                return;
             }
         }
         if ($('#report-section').length > 0) {
@@ -2792,7 +2719,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 return;
             }
         }
-
         // Send the data to the server
         $.ajax({
             type: "POST",
@@ -2801,81 +2727,225 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             contentType: false,
             processData: false,
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     var combine_bk_and_security_array = response.customer.combine_bk_and_security.split(',');
                     var combine_status_array = response.customer.combine_status.split(',');
-                    console.log(combine_bk_and_security_array,'combine_bk_and_security_array');
-                    console.log(combine_status_array,'combine_status_array');
+                    console.log(combine_bk_and_security_array, 'combine_bk_and_security_array');
+                    console.log(combine_status_array, 'combine_status_array');
                     // Check if this is status 22 and needs special handling
-                    console.log(combine_status_array.includes(response.status.id),'combine_status_array.includes(response.status.id)');
+                    console.log(combine_status_array.includes(response.status.id), 'combine_status_array.includes(response.status.id)');
                     if (response.status && response.status.id && combine_status_array.includes(response.status.id.toString())) {
                         // console.log('Status 22 detected - updating to combine interview flow');
                         // console.log('Customer combine_bk_and_security:', response.customer.combine_bk_and_security);
                         // console.log('Candidate combine_interview_id:', response.candidate.combine_interview_id);
-                        
                         // // Check if customer has combine_bk_and_security enabled and candidate has combine_interview_id
-                        console.log('Checking conditions:',combine_bk_and_security_array.includes(response.candidate.interview_id.toString()));
-                        console.log('Checking conditions:',combine_bk_and_security_array,response.candidate.interview_id);
+                        console.log('Checking conditions:', combine_bk_and_security_array.includes(response.candidate.interview_id.toString()));
+                        console.log('Checking conditions:', combine_bk_and_security_array, response.candidate.interview_id);
                         // console.log('- Customer exists:', !!response.customer);
                         // console.log('- Customer combine_bk_and_security == 1:', response.customer && response.customer.combine_bk_and_security == 1);
                         // console.log('- Candidate exists:', !!response.candidate);
                         // console.log('- Candidate combine_interview_id > 0:', response.candidate && response.candidate.combine_interview_id > 0);
-                        
-                        if (response.customer  && 
-                            response.candidate && combine_bk_and_security_array.includes(response.candidate.interview_id.toString()) ) {
-                            
-                            console.log('Status 22 detected - updating to combine interview flow');
-                            
-                            // Create new form data for the recursive update
-                            formData.set('interviewID', response.candidate.combine_interview_id); // Set interview_id to combine_interview_id
-                            formData.set('status', 1); // Set status to 1
-                            formData.set('comment', "Background check is transferred to Security check interview.");
-                            // Recursively call the same function
-                            $.ajax({
-                                type: "POST",
-                                url: "../includes/pages.php",
-                                data: formData,
-                                contentType: false,
-                                processData: false,
-                                dataType: "json",
-                                success: function (recursiveResponse) {
-                                    console.log('Recursive update response:', recursiveResponse);
-                                    if (recursiveResponse.success) {
-                                        flash("successMsg", "Status updated for combined interview  successfully!")
-                                        that.prop("disabled", false);
+                        if (response.combine_interview_place == 1) {
+                            if (response.customer &&
+                                response.candidate && combine_bk_and_security_array.includes(response.candidate.interview_id.toString())) {
+                                console.log('Status 22 detected - updating to combine interview flow');
+                                var combine_id = response.candidate.combine_interview_id == '0' || response.candidate.combine_interview_id == 0 ? response.candidate.combine_interview_id : response.customer.combine_interview_id
+                                // Store formData and other variables for later use
+                                var storedFormData = new FormData();
+                                // Copy all entries from original formData
+                                for (var pair of formData.entries()) {
+                                    storedFormData.append(pair[0], pair[1]);
+                                }
+                                var storedThat = that;
+                                // Populate place dropdown from existing select on page
+                                var placeOptions = '<option value="">Please select a place</option>';
+                                $('select[name="place"] option').each(function() {
+                                    if ($(this).val()) {
+                                        placeOptions += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+                                    }
+                                });
+                                // If no places found in select, try to fetch via AJAX
+                                if (placeOptions === '<option value="">Please select a place</option>') {
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "../includes/pages.php",
+                                        data: {
+                                            get_places_list: 1
+                                        },
+                                        dataType: "json",
+                                        success: function(placesResponse) {
+                                            if (placesResponse && placesResponse.success && placesResponse.places) {
+                                                placesResponse.places.forEach(function(place) {
+                                                    placeOptions += '<option value="' + place.id + '">' + place.name + '</option>';
+                                                });
+                                                $('#placeSelectModal').find('select[name="selected_place"]').html(placeOptions);
+                                                // Ensure modal appears on top by setting z-index
+                                                $('#placeSelectModal').css('z-index', '1060');
+                                                $('#placeSelectModal').modal('show');
+                                                // After modal is shown, ensure it's on top
+                                                setTimeout(function() {
+                                                    $('#placeSelectModal').css('z-index', '1060');
+                                                    $('.modal-backdrop:last').css('z-index', '1000');
+                                                }, 100);
+                                            } else if (placesResponse && Array.isArray(placesResponse)) {
+                                                placesResponse.forEach(function(place) {
+                                                    placeOptions += '<option value="' + place.id + '">' + place.name + '</option>';
+                                                });
+                                                $('#placeSelectModal').find('select[name="selected_place"]').html(placeOptions);
+                                                // Ensure modal appears on top by setting z-index
+                                                $('#placeSelectModal').css('z-index', '1060');
+                                                $('#placeSelectModal').modal('show');
+                                                // After modal is shown, ensure it's on top
+                                                setTimeout(function() {
+                                                    $('#placeSelectModal').css('z-index', '1060');
+                                                    $('.modal-backdrop:last').css('z-index', '1059');
+                                                }, 100);
+                                            } else {
+                                                alert('Unable to load places. Please try again.');
+                                                storedThat.prop("disabled", false);
+                                                $("#update_status_msg").html("")
+                                            }
+                                        },
+                                        error: function() {
+                                            alert('Unable to load places. Please try again.');
+                                            storedThat.prop("disabled", false);
+                                            $("#update_status_msg").html("")
+                                        }
+                                    });
+                                } else {
+                                    // Show modal with places
+                                    $('#placeSelectModal').find('select[name="selected_place"]').html(placeOptions);
+                                    // Ensure modal appears on top by setting z-index
+                                    $('#placeSelectModal').css('z-index', '1060');
+                                    $('#placeSelectModal').modal('show');
+                                    // After modal is shown, ensure it's on top
+                                    setTimeout(function() {
+                                        $('#placeSelectModal').css('z-index', '1060');
+                                        $('.modal-backdrop:last').css('z-index', '1059');
+                                    }, 100);
+                                }
+                                // Ensure modal appears on top when shown
+                                $('#placeSelectModal').off('shown.bs.modal').on('shown.bs.modal', function() {
+                                    $(this).css('z-index', '1060');
+                                    $('.modal-backdrop:last').css('z-index', '1059');
+                                });
+                                // Handle modal close/cancel - re-enable button
+                                $('#placeSelectModal').off('hidden.bs.modal').on('hidden.bs.modal', function() {
+                                    // Only re-enable if modal was closed without submitting
+                                    if (!$('#placeSelectModal').data('submitted')) {
+                                        storedThat.prop("disabled", false);
                                         $("#update_status_msg").html("")
-                                        $(".up_status").text(recursiveResponse.status.status)
-                                        $(".up_status").css('background-color', recursiveResponse.status.color)
-                                        // fetchHistory()
-                                        
-                                        // Show full page loader before reload
-                                        showPageLoader('Transferring Candidate to Security Interview.');
-                                        
-                                        // Small delay to show the loader, then reload
-                                        // window.location.reload();
-                                        redirect("invoice.php?id="+id);
-                                    } else {
+                                    }
+                                    $('#placeSelectModal').removeData('submitted');
+                                });
+                                // Handle place selection submission
+                                $('#submitPlaceSelection').off('click').on('click', function() {
+                                    var selectedPlace = $('#placeSelectModal').find('select[name="selected_place"]').val();
+                                    if (!selectedPlace || selectedPlace === '') {
+                                        alert('Please select a place');
+                                        return;
+                                    }
+                                    // Mark as submitted before closing
+                                    $('#placeSelectModal').data('submitted', true);
+                                    // Close modal
+                                    $('#placeSelectModal').modal('hide');
+                                    // Add place to formData and proceed with AJAX request
+                                    storedFormData.set('interviewID', combine_id);
+                                    storedFormData.set('status', 1);
+                                    storedFormData.set('comment', "Background check is transferred to Security check interview.");
+                                    storedFormData.set('place', selectedPlace);
+                                    // Recursively call the same function
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "../includes/pages.php",
+                                        data: storedFormData,
+                                        contentType: false,
+                                        processData: false,
+                                        dataType: "json",
+                                        success: function(recursiveResponse) {
+                                            console.log('Recursive update response:', recursiveResponse);
+                                            if (recursiveResponse.success) {
+                                                flash("successMsg", "Status updated for combined interview  successfully!")
+                                                storedThat.prop("disabled", false);
+                                                $("#update_status_msg").html("")
+                                                $(".up_status").text(recursiveResponse.status.status)
+                                                $(".up_status").css('background-color', recursiveResponse.status.color)
+                                                // fetchHistory()
+                                                // Show full page loader before reload
+                                                showPageLoader('Transferring Candidate to Security Interview.');
+                                                // Small delay to show the loader, then reload
+                                                // window.location.reload();
+                                                redirect("invoice.php?id=" + id);
+                                            } else {
+                                                flash("errorMsg", "Error updating to combine interview flow!")
+                                                storedThat.prop("disabled", false);
+                                                $("#update_status_msg").html("")
+                                            }
+                                        },
+                                        error: function(e) {
+                                            console.error("Recursive AJAX request failed:", e);
+                                            flash("errorMsg", "Error updating to combine interview flow!")
+                                            storedThat.prop("disabled", false);
+                                            $("#update_status_msg").html("")
+                                        }
+                                    });
+                                });
+                                return; // Exit to prevent duplicate processing
+                            }
+                        } else {
+                            if (response.customer &&
+                                response.candidate && combine_bk_and_security_array.includes(response.candidate.interview_id.toString())) {
+                                console.log('Status 22 detected - updating to combine interview flow');
+                                var combine_id = response.candidate.combine_interview_id == '0' || response.candidate.combine_interview_id == 0 ? response.candidate.combine_interview_id : response.customer.combine_interview_id
+                                // console.log(response.candidate.combine_interview_id =='0' , response.candidate.combine_interview_id == 0 , response.candidate.combine_interview_id , response.customer.combine_interview_id)
+                                // // Create new form data for the recursive update
+                                // console.log(combine_id,'fffffffffff')
+                                formData.set('interviewID', combine_id); // Set interview_id to combine_interview_id
+                                formData.set('status', 1); // Set status to 1
+                                formData.set('comment', "Background check is transferred to Security check interview.");
+                                // Recursively call the same function
+                                $.ajax({
+                                    type: "POST",
+                                    url: "../includes/pages.php",
+                                    data: formData,
+                                    contentType: false,
+                                    processData: false,
+                                    dataType: "json",
+                                    success: function(recursiveResponse) {
+                                        console.log('Recursive update response:', recursiveResponse);
+                                        if (recursiveResponse.success) {
+                                            flash("successMsg", "Status updated for combined interview  successfully!")
+                                            that.prop("disabled", false);
+                                            $("#update_status_msg").html("")
+                                            $(".up_status").text(recursiveResponse.status.status)
+                                            $(".up_status").css('background-color', recursiveResponse.status.color)
+                                            // fetchHistory()
+                                            // Show full page loader before reload
+                                            showPageLoader('Transferring Candidate to Security Interview.');
+                                            // Small delay to show the loader, then reload
+                                            // window.location.reload();
+                                            redirect("invoice.php?id=" + id);
+                                        } else {
+                                            flash("errorMsg", "Error updating to combine interview flow!")
+                                        }
+                                    },
+                                    error: function(e) {
+                                        console.error("Recursive AJAX request failed:", e);
                                         flash("errorMsg", "Error updating to combine interview flow!")
                                     }
-                                },
-                                error: function (e) {
-                                    console.error("Recursive AJAX request failed:", e);
-                                    flash("errorMsg", "Error updating to combine interview flow!")
-                                }
-                            });
-                            
-                            return; // Exit to prevent duplicate processing
+                                });
+                                return; // Exit to prevent duplicate processing
+                            }
                         }
                     }
-                    
                     // Normal success flow
                     flash("successMsg", "Status updated successfully!")
                     that.prop("disabled", false);
                     $("#update_status_msg").html("")
                     $(".up_status").text(response.status.status)
                     $(".up_status").css('background-color', response.status.color)
-                    $(($('#dataTable').find('tbody').find('a'))).each(function () {
+                    $(($('#dataTable').find('tbody').find('a'))).each(function() {
                         if ($(this).attr('data-id') == id) {
                             $(this).closest('tr').find('.status_show').find('div').text(response.status.status)
                             $(this).closest('tr').find('.status_show').find('div').css('background-color', response.status.color)
@@ -2888,26 +2958,22 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     flash("errorMsg", "Error saving data!")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 // Hide loader on AJAX error
                 hidePageLoader();
                 alert("AJAX request failed!");
             }
         });
     }
-
     // Resend Email
-    $(".resend_btn").on("click", function (e) {
+    $(".resend_btn").on("click", function(e) {
         e.preventDefault()
-
         $(this).prop("disabled", true);
         $("#resend_msg").html($("#spinner").html())
-
         var formData = new FormData($(this).closest("form")[0]);
         formData.append('type', 'resend_mail');
         formData.append('id', id);
         formData.append('resend', $(this).val());
-
         // Send the data to the server
         var that = $(this)
         $.ajax({
@@ -2917,7 +2983,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             contentType: false,
             processData: false,
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response.success) {
                     flash("successMsg", "Email resent successfully!")
                     that.prop("disabled", false);
@@ -2926,20 +2992,18 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     flash("errorMsg", "Error saving data!")
                 }
             },
-            error: function (e) {
+            error: function(e) {
                 alert("AJAX request failed!");
             }
         });
     })
-
     // Delete Comment
-    $("body").off("click", ".delete_comment_btn").on("click", ".delete_comment_btn", function (e) {
+    $("body").off("click", ".delete_comment_btn").on("click", ".delete_comment_btn", function(e) {
         e.preventDefault()
         if (confirm("Are you sure you want to delete this internal comment?")) {
             var formData = new FormData();
             formData.append('type', 'delete_comment');
             formData.append('id', $(this).data("id"));
-
             // Send the data to the server
             var that = $(this)
             $.ajax({
@@ -2949,26 +3013,25 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 contentType: false,
                 processData: false,
                 dataType: "json",
-                success: function (response) {
+                success: function(response) {
                     if (response.success) {
                         that.closest(".comment").remove()
                     } else {
                         flash("errorMsg", "Error deleting comment!")
                     }
                 },
-                error: function (e) {
+                error: function(e) {
                     console.log(e.responseText)
                     alert("AJAX request failed!");
                 }
             });
         }
     })
-    $(document).ready(function () {
-        $("#uploadpdf").on('submit', function (e) {
+    $(document).ready(function() {
+        $("#uploadpdf").on('submit', function(e) {
             e.preventDefault();
             var type = $('#sel_for_type').find('option:selected').text()
             const fileInput = $('#uploadpdf').parent().find('input[type="file"]').val();
-
             if (fileInput) {
                 // Create a FormData object to send the file
                 var formData = new FormData(this);
@@ -2979,7 +3042,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     data: formData,
                     processData: false,
                     contentType: false,
-                    success: function (response) {
+                    success: function(response) {
                         response = JSON.parse(response)
                         if (response != '') {
                             html = `<tr>
@@ -3005,7 +3068,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 alert('Please select a file to upload.');
             }
         });
-        $("#uploadcv").on('submit', function (e) {
+        $("#uploadcv").on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
             formData.append('upload_cv', 1);
@@ -3015,26 +3078,21 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function (response) {
+                success: function(response) {
                     response = JSON.parse(response);
-
                     if (response && response.files && response.files.length > 0) {
                         var cvTable = $("#cv_table");
                         var cvTableBody = cvTable.find("tbody");
                         var noCvText = $("#no_cv_text");
-
                         if (noCvText.length) noCvText.addClass("d-none");
                         cvTable.removeClass("d-none");
-
                         var currentCount = cvTableBody.find("tr").length;
                         var currentHeaderCount = cvTable.find("thead").length;
                         if (currentHeaderCount === 0) {
                             cvTable.append('<thead><tr><th>#</th><th>File Name</th><th>Actions</th></tr></thead>');
                         }
-                        
-                        response.files.forEach(function (file, index) {
+                        response.files.forEach(function(file, index) {
                             var rowNumber = currentCount + index + 1;
-
                             var newRow = `
                 <tr>
                     <td>${rowNumber}</td>
@@ -3061,17 +3119,15 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     </td>
                 </tr>
             `;
-
                             cvTableBody.append(newRow);
                         });
-
                         $('#cv_div').closest('.row').find('input[type="file"]').val('');
                         Swal.fire("Uploaded Successfully", response.files.length + " file(s) have been added.", "success");
                     }
                 }
             });
         });
-        $("#uploadinterview_template").on('submit', function (e) {
+        $("#uploadinterview_template").on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
             formData.append('upload_int', 1);
@@ -3081,7 +3137,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function (response) {
+                success: function(response) {
                     response = JSON.parse(response)
                     if (response != '') {
                         html = `<p style="overflow: hidden;white-space: nowrap; text-overflow: ellipsis" class="mb-0 w-100 f-14 pt-1"><a target="_blank" href="../uploads/` + response.file + `" style="cursor: pointer" class="text-success">` + response.file + `</a></p>`
@@ -3098,10 +3154,9 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             });
         });
     });
-    $(document).ready(function () {
+    $(document).ready(function() {
         fetchCandidate();
     })
-
     function check_reported_by(obj) {
         var can_id = $(obj).data('rid');
         var reported = null
@@ -3109,10 +3164,8 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         if ($(obj).is(':checked')) {
             reported = 1
             var d = new Date();
-
             var month = d.getMonth() + 1;
             var day = d.getDate();
-
             var rep_date = d.getFullYear() + '/' +
                 (month < 10 ? '0' : '') + month + '/' +
                 (day < 10 ? '0' : '') + day;
@@ -3127,14 +3180,12 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 'can_id': can_id,
                 'reported': reported
             },
-            success: function (response) {
+            success: function(response) {
                 fetchHistory()
                 $('#rep_date_time').html(rep_date)
             }
         });
-
     }
-
     function change_in_table(obj) {
         var checkbox_id = $(obj).data('rid')
         if ($(obj).is(':checked')) {
@@ -3143,21 +3194,19 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             $('#reported-' + checkbox_id).prop('checked', false)
         }
     }
-
     $('.filter-select').select2({
         dropdownParent: $('#content-modal .modal-content')
     });
-
     function colorOfBk() {
         var color = ''
         var success = 0
         var danger = 0
-        $('#update-records').find('.economy-radio').each(function (i, k) {
+        $('#update-records').find('.economy-radio').each(function(i, k) {
             if ($(this).is(':checked')) {
                 danger += 1
             }
         })
-        $('#update-records').find('.economy2-radio').each(function (i, k) {
+        $('#update-records').find('.economy2-radio').each(function(i, k) {
             if ($(this).is(':checked')) {
                 success += 1
             }
@@ -3174,7 +3223,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         $('.bk_text').removeClass('text-danger')
         $('.bk_text').addClass(color)
     }
-
     function delete_file(obj) {
         var btn = $(obj);
         var id = btn.closest('td').find('.file_name').val();
@@ -3187,20 +3235,19 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                         'delete_file': 1,
                         'id': id
                     },
-                    success: function (response) {
+                    success: function(response) {
                         if (response) {
                             flash("successMsg", "Deleted successfully!")
                             $(btn).closest('tr').remove();
                         }
                     },
-                    error: function (e) {
+                    error: function(e) {
                         flash("errorMsg", "Error saving data!")
                     }
                 });
             }
         }
     }
-
     function triggerFileInput() {
         document.getElementById('fileInput').click();
     }
@@ -3210,36 +3257,31 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
     function triggerFileTimraInput() {
         document.getElementById('fileInputTimra').click();
     }
-
-
     function uploadFile() {
         const file = $('#fileInput')[0].files[0];
         if (!file) {
             flash("errorMsg", "Please select a file to upload.");
             return;
         }
-
         const formData = new FormData();
         formData.append('interview_report', file);
         formData.append('type', 'spi');
         formData.append('can_id', "<?= $_GET['id'] ?>");
         formData.append('interview_report_upload', 1);
-
         $.ajax({
             type: "POST",
             url: "./includes/table_ajax.php",
             data: formData,
             contentType: false,
             processData: false,
-            success: function (response) {
+            success: function(response) {
                 flash("successMsg", "File uploaded successfully!");
                 fetchHistory()
             },
-            error: function () {
+            error: function() {
                 flash("errorMsg", "Error uploading file.");
             }
         });
-
     }
     function uploadEllevioFile() {
         const file = $('#fileInput2')[0].files[0];
@@ -3247,13 +3289,11 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             flash("errorMsg", "Please select a file to upload.");
             return;
         }
-
         const formData = new FormData();
         formData.append('type', 'ellevio');
         formData.append('interview_report', file);
         formData.append('can_id', "<?= $_GET['id'] ?>");
         formData.append('interview_report_upload', 1);
-
         if (confirm("Are you sure you want to upload the file as Ellevio interview report?")) {
             $.ajax({
                 type: "POST",
@@ -3261,15 +3301,14 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 data: formData,
                 contentType: false,
                 processData: false,
-                success: function (response) {
+                success: function(response) {
                     flash("successMsg", "File uploaded successfully!");
                     fetchHistory()
                 },
-                error: function () {
+                error: function() {
                     flash("errorMsg", "Error uploading file.");
                 }
             });
-
         }
     }
     function uploadTimraFile() {
@@ -3278,13 +3317,11 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             flash("errorMsg", "Please select a file to upload.");
             return;
         }
-
         const formData = new FormData();
         formData.append('type', 'timra');
         formData.append('interview_report', file);
         formData.append('can_id', "<?= $_GET['id'] ?>");
         formData.append('interview_report_upload', 1);
-
         if (confirm("Are you sure you want to upload the file as Timrå interview report?")) {
             $.ajax({
                 type: "POST",
@@ -3292,20 +3329,111 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 data: formData,
                 contentType: false,
                 processData: false,
-                success: function (response) {
+                success: function(response) {
                     flash("successMsg", "File uploaded successfully!");
                     fetchHistory()
                 },
-                error: function () {
+                error: function() {
                     flash("errorMsg", "Error uploading file.");
                 }
             });
-
         }
     }
-
-
     function pdf_gene(obj) {
+        // Show confirmation popup before generating template
+        Swal.fire({
+            title: 'Bekräftelse',
+            html: 'Har du läst och tagit del av instruktionen för denna kund innan du genererar rapporten?<br><br>Instruktionen finns tillgänglig i Pulshub.<br><br>Rapporten kan endast genereras efter att du har bekräftat att instruktionen är genomläst.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ja',
+            cancelButtonText: 'Nej',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User clicked "Ja" - create history and then generate template
+                $.ajax({
+                    type: "POST",
+                    url: "../includes/pages.php",
+                    data: {
+                        'action': 'create_spi_history',
+                        'candidate_id': obj
+                    },
+                    dataType: "json",
+                    success: function(historyResponse) {
+                        if (historyResponse.success) {
+                            // History created successfully, now generate the template
+                            generateTemplate(obj);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Fel',
+                                text: 'Kunde inte skapa historik. Försök igen.'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Fel',
+                            text: 'Ett fel uppstod vid skapande av historik.'
+                        });
+                    }
+                });
+            }
+            // If user clicked "Nej" or closed the popup, do nothing (just close popup)
+        });
+    }
+    function pdf_gene_ellevio(obj) {
+        // Show confirmation popup before generating template
+        Swal.fire({
+            title: 'Bekräftelse',
+            html: 'Har du läst och tagit del av instruktionen för denna kund innan du genererar rapporten?<br><br>Instruktionen finns tillgänglig i Pulshub.<br><br>Rapporten kan endast genereras efter att du har bekräftat att instruktionen är genomläst.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ja',
+            cancelButtonText: 'Nej',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User clicked "Ja" - create history and then generate template
+                $.ajax({
+                    type: "POST",
+                    url: "../includes/pages.php",
+                    data: {
+                        'action': 'create_ellevio_history',
+                        'candidate_id': obj
+                    },
+                    dataType: "json",
+                    success: function(historyResponse) {
+                        if (historyResponse.success) {
+                            // History created successfully, now generate the template
+                            fillStaffNameInPDF(obj);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Fel',
+                                text: 'Kunde inte skapa historik. Försök igen.'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Fel',
+                            text: 'Ett fel uppstod vid skapande av historik.'
+                        });
+                    }
+                });
+            }
+            // If user clicked "Nej" or closed the popup, do nothing (just close popup)
+        });
+    }
+    function generateTemplate(obj) {
         $.ajax({
             type: "POST",
             url: "../includes/pages.php",
@@ -3313,7 +3441,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 'get_inte_data': obj,
             },
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response != '') {
                     var order_id = response.order_id;
                     var name = response.name.replace(/\s+/g, '').substring(0, 1) + response.surname.replace(/\s+/g, '').substring(0, 1);
@@ -3343,33 +3471,26 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     hours = (hours < 10 ? '0' : '') + hours;
                     minutes = (minutes < 10 ? '0' : '') + minutes;
                     seconds = (seconds < 10 ? '0' : '') + seconds;
-
                     var currentTime = hours + ':' + minutes + ':' + seconds;
-
                     var day = now.getDate();
                     var month = now.getMonth() + 1;
                     var year = now.getFullYear();
-
                     day = (day < 10 ? '0' : '') + day;
                     month = (month < 10 ? '0' : '') + month;
-
                     var currentDate = year + '-' + month + '-' + day;
                     var srs = "N/A"; // Default value
                     var report_id = "N/A";
                     var apply_position = "N/A";
                     var e_or_c = "N/A";
-
                     if (response.meta_data) {
                         var data;
-
                         try {
                             data = JSON.parse(response.meta_data); // Decode JSON
                         } catch (e) {
                             data = null; // If parsing fails, set data to null
                         }
-
                         if (data) {
-                            Object.keys(data).forEach(function (key) {
+                            Object.keys(data).forEach(function(key) {
                                 if (key.trim() == "Is currently applying for the position of and If this is a consultant transition please specify") {
                                     if (data[key] && data[key] !== "-" && data[key] !== "NA") {
                                         apply_position = data[key];
@@ -3393,11 +3514,9 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                             });
                         }
                     }
-
                     const checkboxString = "☐";
                     const checkedCheckboxString = "☒";
                     const def_check = "Ja ☐	Nej ☐";
-
                     if (eco_check == 1) {
                         eco_check = "Ja ☒	Nej ☐";
                     } else if (eco_check == 0) {
@@ -3405,7 +3524,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     } else {
                         eco_check = "Ja ☐	Nej ☐";
                     }
-
                     if (soc_check == 1) {
                         soc_check = "Ja ☒	Nej ☐";
                     } else if (soc_check == 0) {
@@ -3413,7 +3531,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     } else {
                         soc_check = "Ja ☐	Nej ☐";
                     }
-
                     if (cri_check == 1) {
                         cri_check = "Ja ☒	Nej ☐";
                     } else if (cri_check == 0) {
@@ -3444,7 +3561,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     }
                     loadFile(
                         temp,
-                        function (error, content) {
+                        function(error, content) {
                             if (error) {
                                 throw error;
                             }
@@ -3474,11 +3591,9 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                                 rapport_id: report_id,
                                 current_date: currentDate,
                             });
-
                             const blob = doc.getZip().generate({
                                 type: "blob",
-                                mimeType:
-                                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                                 compression: "DEFLATE",
                             });
                             var vasc = '';
@@ -3488,11 +3603,60 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                             saveAs(blob, order_id + "_" + vasc + name_ini + "_" + interview_date + ".docx");
                         }
                     );
+                    //load history fetch
+                    fetchHistory();
                 }
             }
         });
     }
     function pdf_gene_timra(obj) {
+        // Show confirmation popup before generating template
+        Swal.fire({
+            title: 'Bekräftelse',
+            html: 'Har du läst och tagit del av instruktionen för denna kund innan du genererar rapporten?<br><br>Instruktionen finns tillgänglig i Pulshub.<br><br>Rapporten kan endast genereras efter att du har bekräftat att instruktionen är genomläst.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ja',
+            cancelButtonText: 'Nej',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User clicked "Ja" - create history and then generate template
+                $.ajax({
+                    type: "POST",
+                    url: "../includes/pages.php",
+                    data: {
+                        'action': 'create_timra_history',
+                        'candidate_id': obj
+                    },
+                    dataType: "json",
+                    success: function(historyResponse) {
+                        if (historyResponse.success) {
+                            // History created successfully, now generate the template
+                            generateTimraTemplate(obj);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Fel',
+                                text: 'Kunde inte skapa historik. Försök igen.'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Fel',
+                            text: 'Ett fel uppstod vid skapande av historik.'
+                        });
+                    }
+                });
+            }
+            // If user clicked "Nej" or closed the popup, do nothing (just close popup)
+        });
+    }
+    function generateTimraTemplate(obj) {
         $.ajax({
             type: "POST",
             url: "../includes/pages.php",
@@ -3500,7 +3664,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 'get_inte_data': obj,
             },
             dataType: "json",
-            success: function (response) {
+            success: function(response) {
                 if (response != '') {
                     var order_id = response.order_id;
                     var name = response.name.replace(/\s+/g, '').substring(0, 1) + response.surname.replace(/\s+/g, '').substring(0, 1);
@@ -3520,55 +3684,40 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     var hours = now.getHours();
                     var minutes = now.getMinutes();
                     var seconds = now.getSeconds();
-                    
                     place_inter_date = interview_date
                     // }
                     hours = (hours < 10 ? '0' : '') + hours;
                     minutes = (minutes < 10 ? '0' : '') + minutes;
                     seconds = (seconds < 10 ? '0' : '') + seconds;
-
                     var currentTime = hours + ':' + minutes + ':' + seconds;
-
                     var day = now.getDate();
                     var month = now.getMonth() + 1;
                     var year = now.getFullYear();
-
                     day = (day < 10 ? '0' : '') + day;
                     month = (month < 10 ? '0' : '') + month;
-
                     var currentDate = year + '-' + month + '-' + day;
                     var srs = "N/A"; // Default value
                     var report_id = "N/A";
                     var apply_position = "N/A";
                     var e_or_c = "N/A";
-                    
-
                     const fullText = String(place);
                     if (response.meta_data) {
                         var data;
-
                         try {
                             data = JSON.parse(response.meta_data); // Decode JSON
                         } catch (e) {
                             data = null; // If parsing fails, set data to null
                         }
-
-                        
                     }
-
-                    
                     var temp = null
                     var name_ini = name
-                    
                     temp = "./../assets/docx/Timrå-Referenstagning-grundutredning.docx";
-                    
-
                     function loadFile(url, callback) {
                         PizZipUtils.getBinaryContent(url, callback);
                     }
                     loadFile(
                         temp,
-                        function (error, content) {
+                        function(error, content) {
                             if (error) {
                                 throw error;
                             }
@@ -3577,7 +3726,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                                 paragraphLoop: true,
                                 linebreaks: true,
                             });
-                            
                             doc.render({
                                 inter_date: currentDate,
                                 place: place ? place : 'N/A',
@@ -3600,11 +3748,9 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                                 rapport_id: report_id,
                                 current_date: currentDate,
                             });
-
                             const blob = doc.getZip().generate({
                                 type: "blob",
-                                mimeType:
-                                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                                 compression: "DEFLATE",
                             });
                             var vasc = '';
@@ -3618,18 +3764,17 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                         }
                     );
                 }
+                //load history fetch
+                fetchHistory();
             }
         });
     }
-
-    function check_combine_bk_and_security(){
+    function check_combine_bk_and_security() {
         var selectedCustomer = $('#updated_customer');
         var selectedCandidate = $('#updated_candidate');
         var interview = $('#interview').val();
-        
         // Get the selected option from the main interview dropdown
         var selectedInterviewOption = $('#interview option:selected');
-        
         var combine_bk_and_security_array = selectedCustomer.length > 0 ? selectedCustomer.val().split(',') : null;
         var service_cat_id = selectedInterviewOption.length > 0 ? selectedInterviewOption.data('interview-service-cat-id') : null;
         var combine_interview_id = selectedCandidate.length > 0 ? selectedCandidate.val() : 0;
@@ -3640,7 +3785,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
         // console.log('Selected interview option:', selectedInterviewOption);
         // console.log('Selected interview option:', selectedInterviewOption.val());
         // console.log(combine_bk_and_security_array.includes(selectedInterviewOption.val()) ,service_cat_id);
-        if(combine_bk_and_security_array && combine_bk_and_security_array.includes(selectedInterviewOption.val()) && service_cat_id == 3){
+        if (combine_bk_and_security_array && combine_bk_and_security_array.includes(selectedInterviewOption.val()) && service_cat_id == 3) {
             console.log('Showing security interview service type div');
             $('#security_interview_service_type_div').removeClass('d-none');
             // Initialize place field state when security interview service type div is shown
@@ -3652,13 +3797,12 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 $('div[id="place"]').addClass('d-none');
                 $('select[name="place"]').prop("disabled", true);
             }
-        }else{
+        } else {
             console.log('Hiding security interview service type div');
             $('#security_interview_service_type_div').addClass('d-none');
             $('#security_interview_service_type').val('0');
         }
     }
-
 </script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -3667,7 +3811,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
     async function fillStaffNameInPDF(obj) {
         const existingPdfBytes = await fetch("./../assets/docx/Eliviio.pdf").then(res => res.arrayBuffer());
         const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
-
         const form = pdfDoc.getForm();
         $.ajax({
             type: "POST",
@@ -3676,7 +3819,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                 'get_inte_data': obj,
             },
             dataType: "json",
-            success: async function (response) {
+            success: async function(response) {
                 if (response != '') {
                     var order_id = response.order_id;
                     var name = response.name.replace(/\s+/g, '').substring(0, 1) + response.surname.replace(/\s+/g, '').substring(0, 1);
@@ -3707,33 +3850,26 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     hours = (hours < 10 ? '0' : '') + hours;
                     minutes = (minutes < 10 ? '0' : '') + minutes;
                     seconds = (seconds < 10 ? '0' : '') + seconds;
-
                     var currentTime = hours + ':' + minutes + ':' + seconds;
-
                     var day = now.getDate();
                     var month = now.getMonth() + 1;
                     var year = now.getFullYear();
-
                     day = (day < 10 ? '0' : '') + day;
                     month = (month < 10 ? '0' : '') + month;
-
                     var currentDate = year + '-' + month + '-' + day;
                     var srs = "N/A"; // Default value
                     var report_id = "N/A"; // Default value
                     var apply_position = "N/A";
                     var department = "N/A";
-
                     if (response.meta_data) {
                         var data;
-
                         try {
                             data = JSON.parse(response.meta_data); // Decode JSON
                         } catch (e) {
                             data = null; // If parsing fails, set data to null
                         }
-
                         if (data) {
-                            Object.keys(data).forEach(function (key) {
+                            Object.keys(data).forEach(function(key) {
                                 if (key === "Avdelning/Enhet") {
                                     if (data[key] && data[key] !== "-" && data[key] !== "NA") {
                                         apply_position = data[key];
@@ -3747,8 +3883,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                             });
                         }
                     }
-
-
                     var temp = null
                     var name_ini = name
                     can_name = response.name + " " + response.surname;
@@ -3769,18 +3903,15 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     form.getTextField("Efternamn och alla förnamn tilltalsnamn med VERSALERRow1_2").setText(name);
                     form.getTextField("PersonnummerRow1").setText(ssn);
                     form.getTextField("PersonnummerRow1_2").setText(ssn);
-
                     const firstPage = pdfDoc.getPages()[0];
                     const thirdPage = pdfDoc.getPages()[2]; // zero-indexed, page 3 is index 2
                     const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-
                     if (place) {
                         place = place
                     }
-                                        const textField = form.createTextField('place_name_field');
+                    const textField = form.createTextField('place_name_field');
                     const textField2 = form.createTextField('place_name_field2');
                     // textField.setText(''); // Optional default text
-
                     // Set position and size
                     textField.addToPage(firstPage, {
                         x: 97,
@@ -3798,33 +3929,30 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     if (!place) {
                         place = "";
                     }
-
                     if (!interview_date) {
                         interview_date = "";
                     }
-
                     const fullText = String(place);
-                                        form.getTextField("place_name_field").setText(fullText);
+                    form.getTextField("place_name_field").setText(fullText);
                     form.getTextField("place_name_field2").setText(fullText);
-                    firstPage.drawText(interview_date, { x: 180, y: 132, size: 11, font });
+                    firstPage.drawText(interview_date, {
+                        x: 180,
+                        y: 132,
+                        size: 11,
+                        font
+                    });
                     // firstPage.drawText(can_name, { x: 350, y: 132, size: 11, font });
                     pdfDoc.registerFontkit(fontkit);
-
                     const fontBytes2 = await fetch('./../assets/fonts/quick_signature/QuickSignaturePersonalUse.otf').then(res => res.arrayBuffer());
                     const signatureFont = await pdfDoc.embedFont(fontBytes2);
-
                     firstPage.drawText(can_name, {
                         x: 280,
                         y: 132,
                         size: 55,
                         font: signatureFont,
                     });
-
-
-
                     // Register fontkit
                     pdfDoc.registerFontkit(fontkit);
-
                     const secondPage = pdfDoc.getPages()[1];
                     // Fetch a font that supports Unicode characters
                     const fontUrl = 'https://pdf-lib.js.org/assets/ubuntu/Ubuntu-R.ttf';
@@ -3832,8 +3960,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     const customFont = await pdfDoc.embedFont(fontBytes);
                     const check = await fetch('./../assets/docx/checkmark.png').then(res => res.arrayBuffer());
                     const checkImage = await pdfDoc.embedPng(check);
-
-
                     if (cri_check == 1) {
                         secondPage.drawImage(checkImage, {
                             x: 493,
@@ -3849,19 +3975,41 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                             height: 15,
                         });
                     }
-                    thirdPage.drawText(interview_date, { x: 195, y: 155, size: 11, font });
-                    thirdPage.drawText(staff, { x: 400, y: 155, size: 11, font });
-                    thirdPage.drawText(staff, { x: 100, y: 115, size: 45, font:signatureFont });
-                    thirdPage.drawText('Recway AB', { x: 400, y: 120, size: 11, font });
+                    thirdPage.drawText(interview_date, {
+                        x: 195,
+                        y: 155,
+                        size: 11,
+                        font
+                    });
+                    thirdPage.drawText(staff, {
+                        x: 400,
+                        y: 155,
+                        size: 11,
+                        font
+                    });
+                    thirdPage.drawText(staff, {
+                        x: 100,
+                        y: 115,
+                        size: 45,
+                        font: signatureFont
+                    });
+                    thirdPage.drawText('Recway AB', {
+                        x: 400,
+                        y: 120,
+                        size: 11,
+                        font
+                    });
                     const pdfBytes = await pdfDoc.save();
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const blob = new Blob([pdfBytes], {
+                        type: 'application/pdf'
+                    });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
                     link.download = `Ellevio_${order_id}_${vasc_id ?? ''}_${name_ini.toUpperCase()}_${interview_date}.pdf`;
-
                     link.click();
-
                 }
+                //call history fetch
+                fetchHistory();
             }
         });
     }
@@ -3874,7 +4022,6 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             cancelButtonText: "Close",
             showConfirmButton: false,
         });
-
         if (!result.isConfirmed) {
             return;
         }
@@ -3898,7 +4045,7 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
                     delete_cv: fileName,
                     can_id: $("input[name='can_id']").val()
                 },
-                success: function (response) {
+                success: function(response) {
                     response = JSON.parse(response);
                     if (response && response.deleted) {
                         var row = btn.closest("tr");
@@ -3911,41 +4058,35 @@ grundutredning : `, doc.internal.pageSize.width - 65, y + 3)
             });
         }
     }
-
-
-        var fileInput = document.getElementById("file_1");
-        var cvTable = document.getElementById("cv_table");
-        var cvTableBody = cvTable ? cvTable.querySelector("tbody") : null;
-        var noCvText = document.getElementById("no_cv_text");
-        var selectedFiles = [];
-
-        fileInput.addEventListener("change", function () {
-            if (noCvText) noCvText.classList.add("d-none");
-            cvTable.classList.remove("d-none");
+    var fileInput = document.getElementById("file_1");
+    var cvTable = document.getElementById("cv_table");
+    var cvTableBody = cvTable ? cvTable.querySelector("tbody") : null;
+    var noCvText = document.getElementById("no_cv_text");
+    var selectedFiles = [];
+    fileInput.addEventListener("change", function() {
+        if (noCvText) noCvText.classList.add("d-none");
+        cvTable.classList.remove("d-none");
+    });
+    function renumberRows() {
+        var rows = cvTableBody.querySelectorAll("tr");
+        var i = 0;
+        rows.forEach(function(row) {
+            i = i + 1;
+            row.cells[0].innerText = i;
         });
-
-        function renumberRows() {
-            var rows = cvTableBody.querySelectorAll("tr");
-            
-            var i = 0;
-            rows.forEach(function (row) {
-                i= i + 1;
-                row.cells[0].innerText = i;
-            });
-            if(i == 0){
-                if (noCvText) noCvText.classList.remove("d-none");
-                cvTable.querySelector("thead").remove();
-            }
+        if (i == 0) {
+            if (noCvText) noCvText.classList.remove("d-none");
+            cvTable.querySelector("thead").remove();
         }
-        $("#file_1").on("change", function () {
-            var cvTableBody = $("#cv_table").find("tbody");
-            var existingCount = cvTableBody.find("tr").length;
-            var newFiles = this.files;
-
-            if (existingCount + newFiles.length > 5) {
-                Swal.fire("Limit Exceeded", "You can only have a maximum of 5 files total. You already have " + existingCount + ".", "warning");
-                this.value = ""; // reset file selection
-                return false;
-            }
-        });
+    }
+    $("#file_1").on("change", function() {
+        var cvTableBody = $("#cv_table").find("tbody");
+        var existingCount = cvTableBody.find("tr").length;
+        var newFiles = this.files;
+        if (existingCount + newFiles.length > 5) {
+            Swal.fire("Limit Exceeded", "You can only have a maximum of 5 files total. You already have " + existingCount + ".", "warning");
+            this.value = ""; // reset file selection
+            return false;
+        }
+    });
 </script>

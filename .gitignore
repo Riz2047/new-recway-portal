@@ -28,3 +28,6 @@ public/images/.DS_Store
 
 # Exclude release builds
 /releases
+
+# Ignore full legacy app folder
+/recway-old/

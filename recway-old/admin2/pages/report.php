@@ -1,16 +1,12 @@
 <?php
 
-
-
 $activeLink = "candidates";
-
-
 
 include_once('../../includes/functions.php');
 
 $idArray = null;
 
-if (!empty($_GET['id'])) {
+if (! empty($_GET['id'])) {
 
     if (strpos($_GET['id'], ',') !== false) {
 
@@ -24,7 +20,7 @@ $service = 0;
 $for_customer = 0;
 $cus_id = null;
 $service_id = null;
-if (isset($idArray[0]) && !empty($idArray[0]) && $idArray[0] == 'service_id') {
+if (isset($idArray[0]) && ! empty($idArray[0]) && $idArray[0] == 'service_id') {
     $for_customer = 1;
     $cus_id = $idArray[2];
     $service_id = $idArray[3];
@@ -33,23 +29,23 @@ if (isset($idArray[0]) && !empty($idArray[0]) && $idArray[0] == 'service_id') {
         $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$service_id} AND `customer` = 0 AND `lang` = 'en'");
     }
 } else {
-if (isset($idArray[1]) && !empty($idArray[1]) && $idArray[1] == 'service') {
+    if (isset($idArray[1]) && ! empty($idArray[1]) && $idArray[1] == 'service') {
 
-    $service = 1;
+        $service = 1;
 
-}
+    }
 
-$ser_repo = 0;
+    $ser_repo = 0;
 
-if (isset($service) && !empty($service)) {
+    if (isset($service) && ! empty($service)) {
 
-    $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$idArray[0]} AND `customer` = 0 AND `lang` = 'en'");
+        $report_html = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$idArray[0]} AND `customer` = 0 AND `lang` = 'en'");
 
-    $ser_repo = 1;
+        $ser_repo = 1;
 
-} else {
+    } else {
 
-    $candidate = findByQuery("SELECT candidates.*, staff.name AS staffName, interviews.title AS serviceTitle 
+        $candidate = findByQuery("SELECT candidates.*, staff.name AS staffName, interviews.title AS serviceTitle 
 
 FROM candidates 
 
@@ -59,40 +55,34 @@ INNER JOIN interviews ON candidates.interview_id = interviews.id
 
 WHERE candidates.id = {$_GET['id']}");
 
-    $customer = findByQuery("SELECT company, name FROM customers WHERE id = {$candidate->cus_id}");
+        $customer = findByQuery("SELECT company, name FROM customers WHERE id = {$candidate->cus_id}");
 
+        $default_tem = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$candidate->interview_id} AND `customer` = 0 AND `lang` = 'en'");
 
+        $saved_rep = findByQuery("SELECT * FROM reports_html WHERE candidate_id = {$_GET['id']} AND lang = 'en'");
 
-    $default_tem = findByQuery("SELECT * FROM `company_reports_html` WHERE `interview_id` = {$candidate->interview_id} AND `customer` = 0 AND `lang` = 'en'");
+        $company_report_html = findByQuery("SELECT * FROM customer_reports_html WHERE cus_id = '{$candidate->cus_id}' AND interview_id = {$candidate->interview_id} AND lang = 'en'");
 
-    $saved_rep = findByQuery("SELECT * FROM reports_html WHERE candidate_id = {$_GET['id']} AND lang = 'en'");
+        if (! empty($default_tem)) {
 
-    $company_report_html = findByQuery("SELECT * FROM customer_reports_html WHERE cus_id = '{$candidate->cus_id}' AND interview_id = {$candidate->interview_id} AND lang = 'en'");
+            $report_html = $default_tem;
 
+        }
 
+        if (! empty($company_report_html)) {
 
-    if (!empty($default_tem)) {
+            $report_html = $company_report_html;
 
-        $report_html = $default_tem;
+        }
 
-    }
+        if (! empty($saved_rep)) {
 
-    if (!empty($company_report_html)) {
+            $report_html = $saved_rep;
 
-        $report_html = $company_report_html;
-
-    }
-
-    if (!empty($saved_rep)) {
-
-        $report_html = $saved_rep;
+        }
 
     }
-
 }
-}
-
-
 
 ?>
 
@@ -144,41 +134,41 @@ WHERE candidates.id = {$_GET['id']}");
 
                             <div id="report-html">
 
-                                <?php if (!empty($report_html)) : ?>
-                                    <?php if (isset($for_customer) && !empty($for_customer)) { ?>
+                                <?php if (! empty($report_html)) : ?>
+                                    <?php if (isset($for_customer) && ! empty($for_customer)) { ?>
                                         <?php
-                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
-                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
-                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
+                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
                                             ' ' .
-                                            (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
+                                            (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
                                         ?>
                                     <?php } else { ?>
                                     <?php
 
-                                    if (isset($ser_repo) && !empty($ser_repo)) {
+                                    if (isset($ser_repo) && ! empty($ser_repo)) {
 
-                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '{cus_company}', $report_html->report_data);
 
-                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '{serviceTitle}', $report_html->report_data);
 
-                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
+                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
 
                                             ' ' .
 
-                                            (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
+                                            (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : '{can_name}'), $report_html->report_data);
 
                                     } else {
 
-                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && !empty($customer->company) ? $customer->company : '', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{cus_company}', isset($customer->company) && ! empty($customer->company) ? $customer->company : '', $report_html->report_data);
 
-                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && !empty($candidate->serviceTitle) ? $candidate->serviceTitle : '', $report_html->report_data);
+                                        $report_html->report_data = str_replace('{serviceTitle}', isset($candidate->serviceTitle) && ! empty($candidate->serviceTitle) ? $candidate->serviceTitle : '', $report_html->report_data);
 
-                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && !empty($candidate->name) ? $candidate->name : '') .
+                                        $report_html->report_data = str_replace('{can_name}', (isset($candidate->name) && ! empty($candidate->name) ? $candidate->name : '') .
 
                                             ' ' .
 
-                                            (isset($candidate->surname) && !empty($candidate->surname) ? $candidate->surname : ''), $report_html->report_data);
+                                            (isset($candidate->surname) && ! empty($candidate->surname) ? $candidate->surname : ''), $report_html->report_data);
 
                                     } ?>
 <?php } ?>
@@ -186,7 +176,7 @@ WHERE candidates.id = {$_GET['id']}");
 
                                 <?php else : ?>
 
-                                    <?php if (!empty($company_report_html)) : ?>
+                                    <?php if (! empty($company_report_html)) : ?>
 
                                         <?php echo $company_report_html->report_data ?>
 
@@ -226,7 +216,7 @@ WHERE candidates.id = {$_GET['id']}");
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> to conduct a thorough <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
+                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> to conduct a thorough <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 
@@ -274,7 +264,7 @@ WHERE candidates.id = {$_GET['id']}");
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
+                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 
@@ -2926,7 +2916,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                             </div>
 
-                            <?php if (isset($for_customer) && !empty($for_customer)) { ?>
+                            <?php if (isset($for_customer) && ! empty($for_customer)) { ?>
                                 <div class="col-lg-6 ">
                                     <button type="button" id="preview" data-bs-toggle="modal"
                                         data-bs-target="#backgroundReportModal"
@@ -2939,7 +2929,7 @@ However, it is important to note that Recway cannot identify or discover all pos
                                 </div>
                             <?php } else { ?>
 
-                            <?php if (isset($service) && !empty($service)) { ?>
+                            <?php if (isset($service) && ! empty($service)) { ?>
 
                                 <div class="col-lg-6 ">
 
@@ -2957,7 +2947,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                             <?php }  ?>
 
-                            <?php if (isset($service) && !empty($service)) { ?>
+                            <?php if (isset($service) && ! empty($service)) { ?>
 
                                 <div class="col-lg-6 ">
 
@@ -3732,7 +3722,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 <script>
 
-    <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?>
+    <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?>
 
         var candidate = {};
 
@@ -3991,14 +3981,110 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 
         function generateTable(table) {
-
-            y = tableExists ? doc.lastAutoTable.finalY + 15 : y
-
-
-
             var tableHeight = 0;
-
             var tableHasSplit = false;
+
+            // Calculate heading height
+            textFont("mainHeading")
+            let headingText = table.caption.trim().toUpperCase();
+            let maxWidth = doc.internal.pageSize.width - leftMargin - rightMargin;
+            let splitText = doc.splitTextToSize(headingText, maxWidth);
+            splitText = splitText.filter(line => line.trim() !== "");
+            let headingLineSpacing = 7; 
+            let headingHeight = splitText.length * headingLineSpacing;
+
+            // Check if there is enough space on current page for heading + some table
+            if (y + headingHeight + 20 > doc.internal.pageSize.height - footerHeight) {
+                doc.addPage()
+                addHeader()
+                addFooter()
+                y = 35
+            }
+
+            // Draw Heading
+            textFont("mainHeading")
+            doc.setTextColor("#000000")
+            for (let j = 0; j < splitText.length; j++) {
+                doc.text(splitText[j], leftMargin, y + (j * headingLineSpacing));
+            }
+            
+            let lineY = y + (splitText.length - 1) * headingLineSpacing + 2;
+            doc.setLineWidth(0.6)
+            doc.setDrawColor(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2])
+            doc.line(leftMargin, lineY, leftMargin + 10, lineY)
+            
+            toc_headings.push(table.caption)
+            toc_numbers[table.caption] = doc.getCurrentPageInfo().pageNumber + 3
+            
+            y = lineY + 10; // More space before table
+
+            var data = [];
+            table.data.forEach(function(row) {
+                if (row[0] !== "" || row[1] !== "") {
+                    data.push({
+                        key: row[0],
+                        value: row[1],
+                        result: row[2]
+                    })
+                }
+            })
+            doc.autoTable({
+                startY: y,
+                margin: {
+                    top: 30,
+                    bottom: 20
+                },
+                head: [{
+                    key: 'Key',
+                    value: 'Value',
+                    result: "Result"
+                }],
+                body: data,
+                showHead: false,
+                theme: 'plain',
+                tableLineWidth: 0.1,
+                // pageBreak: 'avoid',
+                columnStyles: {
+                    key: {
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        cellWidth: 81.5
+                    },
+                    value: {
+                        cellWidth: 80
+                    },
+                    result: {
+                        textColor: "#ffffff",
+                        cellWidth: 20
+                    }
+                },
+                didParseCell: function(data) {
+                    // Check if cell is in last column
+                    if (data.column.index === data.table.columns.length - 1) {
+                        // Set background color
+                        if (data.cell.raw !== "-") {
+                            data.cell.styles.fillColor = statusColors[data.cell.raw];
+                            data.cell.text = ""
+                        } else {
+                            data.cell.styles.textColor = [0, 0, 0];
+                            if (data.row.index % 2 === 0) {
+                                // Set background color to grey for even rows
+                                data.cell.styles.fillColor = [240, 240, 240];
+                            }
+                        }
+                    } else if (data.row.index % 2 === 0) {
+                        // Set background color to grey for even rows
+                        data.cell.styles.fillColor = [240, 240, 240];
+                    }
+                },
+                didDrawPage: function(data) {
+                    tableExists = true
+                    addHeader()
+                    addFooter()
+                },
+            })
+            y = doc.lastAutoTable.finalY + 10;
+        }
 
             // textFont("mainHeading")
 
@@ -4217,14 +4303,99 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 
         function generateTable2(table) {
-
-            y = tableExists ? doc.lastAutoTable.finalY + 15 : y
-
-
-
             var tableHeight = 0;
-
             var tableHasSplit = false;
+
+            // Calculate heading height
+            textFont("mainHeading")
+            let headingText = table.caption.trim().toUpperCase();
+            let maxWidth = doc.internal.pageSize.width - leftMargin - rightMargin;
+            let splitText = doc.splitTextToSize(headingText, maxWidth);
+            splitText = splitText.filter(line => line.trim() !== "");
+            let headingLineSpacing = 7;
+            let headingHeight = splitText.length * headingLineSpacing;
+
+            // Check if there is enough space on current page for heading + some table
+            if (y + headingHeight + 20 > doc.internal.pageSize.height - footerHeight) {
+                doc.addPage()
+                addHeader()
+                addFooter()
+                y = 35
+            }
+
+            // Draw Heading
+            textFont("mainHeading")
+            doc.setTextColor("#000000")
+            for (let j = 0; j < splitText.length; j++) {
+                doc.text(splitText[j], leftMargin, y + (j * headingLineSpacing));
+            }
+            
+            let lineY = y + (splitText.length - 1) * headingLineSpacing + 2;
+            doc.setLineWidth(0.6)
+            doc.setDrawColor(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2])
+            doc.line(leftMargin, lineY, leftMargin + 10, lineY)
+            
+            toc_headings.push(table.caption)
+            toc_numbers[table.caption] = doc.getCurrentPageInfo().pageNumber + 3
+            
+            y = lineY + 10; // More space before table
+
+            var data = [];
+            table.data.forEach(function(row) {
+                data.push({
+                    col1: row[0],
+                    col2: row[1],
+                    col3: row[2],
+                    col4: row[3],
+                    col5: row[4]
+                })
+            })
+            doc.autoTable({
+                startY: y,
+                margin: {
+                    top: 30,
+                    bottom: 20
+                },
+                head: [{
+                    col1: 'Col1',
+                    col2: 'Col2',
+                    col3: "Col3",
+                    col4: "Col4",
+                    col5: "Approval"
+                }],
+                body: data,
+                showHead: false,
+                theme: 'plain',
+                tableLineWidth: 0.1,
+                // pageBreak: 'avoid',
+                // columnStyles: {
+                //     col1: { textColor: 0, fontStyle: 'bold' }
+                // },
+                didParseCell: function(data) {
+                    // Check if cell is in last column
+                    if (data.row.index === 0) {
+                        // Set background color
+                        data.cell.styles.fillColor = primaryColorRGB;
+                        data.cell.styles.textColor = 255
+                        data.cell.styles.fontStyle = 'bold'
+                    } else if (data.column.index === data.table.columns.length - 1) {
+                        // Set background color
+                        data.cell.styles.fillColor = statusColors[data.cell.raw];
+                        data.cell.styles.textColor = 255
+                        data.cell.text = ""
+                    } else if (data.row.index % 2 === 0) {
+                        // Set background color to grey for even rows
+                        data.cell.styles.fillColor = [240, 240, 240];
+                    }
+                },
+                didDrawPage: function(data) {
+                    tableExists = true
+                    addHeader()
+                    addFooter()
+                },
+            })
+            y = doc.lastAutoTable.finalY + 10;
+        }
 
             // textFont("mainHeading")
 
@@ -4569,167 +4740,91 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 
         function addProfile() {
-
-            // doc.addPage()
-
-            // pageNumber++
-
-            // addHeader()
-
-            // addFooter()
-
-
-
             y = 35
-
             textFont("mainHeading")
-
             doc.setTextColor("#000000")
+            let profileHeading = "Personal Information".toUpperCase();
+            let profileHeadingMaxWidth = doc.internal.pageSize.width - leftMargin - rightMargin;
+            let profileHeadingSplitText = doc.splitTextToSize(profileHeading, profileHeadingMaxWidth);
+            profileHeadingSplitText = profileHeadingSplitText.filter(line => line.trim() !== "");
+            let profileHeadingLineSpacing = 7;
 
-            doc.text("Personal Information".toUpperCase(), leftMargin, y)
-
-            y = y + 2
-
-            doc.setLineWidth(0.6)
-
-            doc.setDrawColor(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2])
-
-            doc.line(leftMargin, y, leftMargin + 10, y)
-
-            toc_headings.push("Personal Information")
-
-            toc_numbers["Personal Information"] = doc.getCurrentPageInfo().pageNumber + 3
-
-            summary_items["Personal Information"] = $(".profile-summary").val()
-
-
-
-            var data = [{
-
-                    key: "Name",
-
-                    value: candidate.name + " " + candidate.surname
-
-                },
-
-                {
-
-                    key: "Email",
-
-                    value: candidate.email
-
-                },
-
-                {
-
-                    key: "Phone",
-
-                    value: candidate.phone
-
-                },
-
-                {
-
-                    key: "Customer",
-
-                    value: customer.name
-
-                },
-
-                {
-
-                    key: "Company",
-
-                    value: customer.company
-
-                },
-
-                {
-
-                    key: "Service Type",
-
-                    value: candidate.serviceTitle
-
-                },
-
-                {
-
-                    key: "SSN",
-
-                    value: candidate.security
-
-                },
-
-                {
-
-                    key: "Staff",
-
-                    value: candidate.staffName !== null ? candidate.staffName : "Not assigned"
-
-                }
-
-            ];
-
-
-
-            if (candidate.vasc_id !== null && candidate.vasc_id !== '') {
-
-                data.push({
-
-                    key: "VASC ID",
-
-                    value: candidate.vasc_id
-
-                });
-
+            for (let j = 0; j < profileHeadingSplitText.length; j++) {
+                doc.text(profileHeadingSplitText[j], leftMargin, y + (j * profileHeadingLineSpacing));
             }
 
+            y = y + (profileHeadingSplitText.length - 1) * profileHeadingLineSpacing + 2;
+            doc.setLineWidth(0.6)
+            doc.setDrawColor(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2])
+            doc.line(leftMargin, y, leftMargin + 10, y)
+            toc_headings.push("Personal Information")
+            toc_numbers["Personal Information"] = doc.getCurrentPageInfo().pageNumber + 3
+            summary_items["Personal Information"] = $(".profile-summary").val()
 
-
-            y = y + 5
-
-            doc.autoTable({
-
-                startY: y,
-
-                head: [{
-
-                    key: 'Key',
-
-                    value: 'Value'
-
-                }],
-
-                body: data,
-
-                showHead: false,
-
-                theme: 'grid',
-
-                columnStyles: {
-
-                    key: {
-
-                        textColor: 0,
-
-                        fontStyle: 'bold'
-
-                    },
-
+            var data = [{
+                    key: "Name",
+                    value: candidate.name + " " + candidate.surname
                 },
-
-                didParseCell: function(data) {
-
-                    if (data.row.index % 2 === 0) { // Check if odd row
-
-                        data.cell.styles.fillColor = [240, 240, 240] // Set background color to grey
-
-                    }
-
+                {
+                    key: "Email",
+                    value: candidate.email
+                },
+                {
+                    key: "Phone",
+                    value: candidate.phone
+                },
+                {
+                    key: "Customer",
+                    value: customer.name
+                },
+                {
+                    key: "Company",
+                    value: customer.company
+                },
+                {
+                    key: "Service Type",
+                    value: candidate.serviceTitle
+                },
+                {
+                    key: "SSN",
+                    value: candidate.security
+                },
+                {
+                    key: "Staff",
+                    value: candidate.staffName !== null ? candidate.staffName : "Not assigned"
                 }
+            ];
 
+            if (candidate.vasc_id !== null && candidate.vasc_id !== '') {
+                data.push({
+                    key: "VASC ID",
+                    value: candidate.vasc_id
+                });
+            }
+
+            y = y + 10
+            doc.autoTable({
+                startY: y,
+                head: [{
+                    key: 'Key',
+                    value: 'Value'
+                }],
+                body: data,
+                showHead: false,
+                theme: 'grid',
+                columnStyles: {
+                    key: {
+                        textColor: 0,
+                        fontStyle: 'bold'
+                    },
+                },
+                didParseCell: function(data) {
+                    if (data.row.index % 2 === 0) { // Check if odd row
+                        data.cell.styles.fillColor = [240, 240, 240] // Set background color to grey
+                    }
+                }
             })
-
+            y = doc.lastAutoTable.finalY + 10
         }
 
 
@@ -4761,6 +4856,8 @@ However, it is important to note that Recway cannot identify or discover all pos
                 addHeader()
 
                 addFooter()
+
+                y = 35
 
             } else if ($(this).hasClass("tableIncome")) {
 
@@ -4865,44 +4962,29 @@ However, it is important to note that Recway cannot identify or discover all pos
 
 
                 // Add Heading
-
                 textFont("mainHeading")
-
                 doc.setTextColor("#000000")
-
-                doc.text(heading.toUpperCase(), leftMargin, y)
-
-                y = y + 2
-
+                let headingLines = doc.splitTextToSize(heading.toUpperCase(), doc.internal.pageSize.width - leftMargin - rightMargin);
+                let headingLineSpacing = 7;
+                for (let j = 0; j < headingLines.length; j++) {
+                    doc.text(headingLines[j], leftMargin, y + (j * headingLineSpacing));
+                }
+                y = y + (headingLines.length - 1) * headingLineSpacing + 2;
                 doc.setLineWidth(0.6)
-
                 doc.setDrawColor(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2])
-
                 doc.line(leftMargin, y, leftMargin + 10, y)
-
                 toc_headings.push(heading)
-
                 toc_numbers[heading] = doc.getCurrentPageInfo().pageNumber + 3
-
                 summary_items[heading] = $(this).find(".summary-select").val()
 
-
-
                 // Add Description
-
-                y += 7
-
+                y += 10
                 textFont("normalText")
-
                 doc.text(description, leftMargin, y, {
-
-                    maxWidth: doc.internal.pageSize.width - (leftMargin * 2),
-
+                    maxWidth: doc.internal.pageSize.width - (leftMargin + rightMargin),
                     align
-
                 })
-
-                y += height - 5
+                y += height + (headingLines.length > 1 ? (headingLines.length - 1) * headingLineSpacing : 0)
 
             } else if ($(this).hasClass("tables")) {
 
@@ -5500,9 +5582,9 @@ However, it is important to note that Recway cannot identify or discover all pos
 
         var interview_id = $.trim(<?php if (isset($idArray[0])) {
 
-                                        echo $idArray[0];
+            echo $idArray[0];
 
-                                    } ?>);
+        } ?>);
 
         $("#report-msg").removeClass()
 
@@ -5612,7 +5694,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> to conduct a thorough <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
+                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?> <?php echo $customer->company ?> <?php } ?> to conduct a thorough <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?><?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 
@@ -5660,7 +5742,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
+                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?> <?php echo $candidate->name . " " . $candidate->surname ?><?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 
@@ -7660,7 +7742,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Introduction</p>
 
-                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {cus_company} <?php } else { ?>  <?php echo $customer->company ?><?php } ?> to conduct a thorough <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?> <?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
+                                                    <textarea name="intro" id="" required placeholder="Introduction" rows="3" class="w-100 sign-textarea mb-3">We at Recway AB are pleased to have been assigned by <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {cus_company} <?php } else { ?>  <?php echo $customer->company ?><?php } ?> to conduct a thorough <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {serviceTitle} <?php } else { ?> <?php echo $candidate->serviceTitle ?> <?php } ?>. This is an important process to ensure that the potential candidate is suitable and reliable for the position in question. By examining the individual's criminal history, education, employment history, and financial status, we can identify any warning signs and reduce the risk of misconduct. We are a company that places a great emphasis on integrity and security, and we will carry out this critical process with the utmost care and professionalism.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 
@@ -7708,7 +7790,7 @@ However, it is important to note that Recway cannot identify or discover all pos
 
                                                     <p class="f-16 mb-0 pb-0 w-600">Background Text</p>
 
-                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && !empty($service)) || (isset($for_customer) && !empty($for_customer))) { ?> {can_name} <?php } else { ?><?php echo $candidate->name . " " . $candidate->surname ?> <?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
+                                                    <textarea name="background" id="" required placeholder="Background" rows="3" class="w-100 sign-textarea mb-3">Recway conducted a background check on <?php if ((isset($service) && ! empty($service)) || (isset($for_customer) && ! empty($for_customer))) { ?> {can_name} <?php } else { ?><?php echo $candidate->name . " " . $candidate->surname ?> <?php } ?>. This report contains a description of the assignment, a summary of our analysis and a summary of the information collected.</textarea>
 
                                                     <select id="" class="form-select mb-3">
 

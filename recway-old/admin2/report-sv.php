@@ -1,10 +1,13 @@
 <?php
-
+echo "<pre>";
+print_r($_GET);
+echo "</pre>";
+exit;
 $activeLink = "candidates";
 
-include_once ('includes/header.php');
+include_once('includes/header.php');
 
-if(!isset($_GET['id'])){
+if (! isset($_GET['id'])) {
     redirect('index.php');
 }
 
@@ -33,7 +36,7 @@ $customer = findByQuery("SELECT company FROM customers WHERE id = {$candidate->c
                                 <form action="process.php" method="post" class="update-form">
                                     <div class="row">
                                         <div id="report-html">
-                                            <?php if(!empty($report_html)): ?>
+                                            <?php if (! empty($report_html)): ?>
                                                 <?php echo $report_html->report_data ?>
                                             <?php else: ?>
                                                 <div class="elements">
@@ -1375,13 +1378,31 @@ källor vi hämtar uppgifter från. </textarea>
                                                         </div>
                                                         <div class="col-lg-12">
                                                             <p class="f-16 mb-0 pb-0 w-600">Text Description</p>
-                                                            <textarea name="comment_description[]" id="" required="" placeholder="Text description" rows="3" class="w-100 sign-textarea mb-3 comment_descriptions" spellcheck="true">Recway genomför bakgrundskontroller genom en strukturell inhämtning av offentliga uppgifter från myndighetsregister för att verifiera och komplettera uppgifter som kandidaten har lämnat om sig själv, exempelvis i CV. För att verifiera CV-meriter kontrollerar Recway hos svenska universitet, högskolor och tidigare arbetsgivare.
+                                                            <textarea id="" name="comment_description[]" required placeholder="Text description" rows="3" class="w-100 sign-textarea mb-3 comment_descriptions" spellcheck="true">
+Recway genomför bakgrundskontroller genom en strukturerad och dokumenterad process. Informationsinhämtning sker, i den utsträckning det är lagligen tillåtet och relevant för uppdraget, från offentliga register och myndighetskällor, kommersiella databaser samt öppna källor.
 
-Efter att informationen har samlats in, analyserar Recway materialet för att identifiera eventuella samband och avvikelser. Recway  använder en färgkodning där rött betyder anmärkningsvärda avvikelser, gult betyder noterbara avvikelser, och grönt betyder att inga avvikelser har påträffats. Det är viktigt att poängtera att avvikelse bedömningen inte görs efter någon förutbestämd standard eller mall, utan varje fall bedöms individuellt.
+Kontroller genomförs i enlighet med vald kontrollnivå och uppdragets riskprofil. Verifiering av utbildning eller tidigare anställning sker när detta ingår i beställd kontroll.
 
-En röd- eller gulmarkering innebär att en eller flera faktorer är av ovanlig eller anmärkningsvärd karaktär. Det fungerar som en signal om att något avviker från det normala och kan behöva undersökas närmare. Exempel på anmärkningsvärda avvikelser kan vara flera återkommande skulder hos Kronofogdemyndigheten eller flera konkurser.
+Efter genomförd informationsinhämtning analyseras samtliga uppgifter manuellt av behörig säkerhetshandläggare. Bedömningen sker utifrån:
 
-Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka alla möjliga uppgifter om kandidaten. Bakgrundskontrollerna ger en grundlig bedömning baserat på tillgänglig information, men det finns ingen garanti för att all relevant information kan inhämtas.</textarea>
+• Relevans i förhållande till uppdraget  
+• Aktualitet  
+• Identifierade riskindikatorer  
+• Proportionalitet  
+
+Varje ärende bedöms individuellt inom ramen för Recways fastställda metodik.
+
+Rapporten är strukturerad per kontrollområde och innehåller:
+
+• Kontrollens omfattning  
+• Redovisning av relevanta uppgifter  
+• Eventuella observationer  
+• Sammanfattande bedömning  
+
+I den sammanfattande bedömningen används vid behov färgkodning (grön, gul eller röd) som ett överskådligt stöd för den samlade risknivån. Färgkodningen utgör ett beslutsstöd och är inte kopplad till en enskild uppgift isolerat.
+
+Bakgrundskontrollen baseras på vid kontrolltillfället tillgänglig information från lagligen åtkomliga källor. Rapporten utgör beslutsunderlag och innebär inte ett anställnings- eller affärsbeslut.
+</textarea>
                                                             <select id="" class="form-select mb-3">
                                                                 <option value="left">Left</option>
                                                                 <option value="justify">Justify</option>
@@ -1478,7 +1499,7 @@ Det är dock viktigt att notera att Recway inte kan identifiera eller upptäcka 
 
 <?php
 
-include_once ('includes/footer.php');
+include_once('includes/footer.php');
 
 ?>
 

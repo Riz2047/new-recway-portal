@@ -22,7 +22,7 @@
 @endphp
 
 <div class="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-    <nav class="flex space-x-4 min-w-max">
+    <nav class="flex space-x-4 flex-wrap bg-white rounded-t-lg p-4">
         @foreach($tabs as $key => $tab)
             <button
                 type="button"
@@ -33,7 +33,7 @@
 											}
 									"
                 :class="activeTab === '{{ $key }}'
-                    ? 'px-4 py-3 text-sm font-medium border-b-2 border-primary text-primary'
+                    ? 'px-4 py-3 text-sm font-medium border-t-2 border-primary text-primary rounded-t-lg'
                     : 'px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-primary'"
             >
                 {{ $tab['label'] }}

@@ -4,7 +4,6 @@ $activeLink = "customer-language";
 
 include_once('includes/header.php');
 
-
 // Language data will be loaded via AJAX (DataTables server-side)
 $languages = [];
 
@@ -24,9 +23,9 @@ $languages = [];
                             <div class="view view-cascade gradient-card-header blue-gradient narrower py-2 mx-4 d-flex justify-content-between align-items-center">
                                 <a href="#" class="white-text mx-3">Customer Language</a>
                                 <div>
-                                <button type="button" class="btn btn-outline-white btn-rounded btn-sm px-2" onclick="showAddLanguageModal()" data-toggle="tooltip" data-placement="top" aria-label="Add Language String" data-bs-original-title="Add Language String">
-                                    <span><i class="bi bi-plus-square"></i></span>
-                                </button>
+                                     <button type="button" class="btn btn-outline-white btn-rounded btn-sm px-2" onclick="showAddLanguageModal()" data-toggle="tooltip" data-placement="top" aria-label="Add Language String" data-bs-original-title="Add Language String">
+                                        <span><i class="bi bi-plus-square"></i></span>
+                                    </button>
                                 </div>
                             </div>
                             <!-- Update Language Section -->
@@ -60,7 +59,6 @@ $languages = [];
                                     </div>
                                 </div>
                             </div>
-                            
                             <!-- Add Language Modal -->
                             <div class="col-md-12 mt-3" id="add_language_card" style="display: none;">
                                 <div class="card mb-4">
@@ -95,7 +93,7 @@ $languages = [];
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <table id="dataTable" data-table="customer-language" class="display Table mt-3" style="width: 100%">
                                 <thead>
                                 <tr>
@@ -119,7 +117,7 @@ $languages = [];
 </div>
 
 <script>
-    var statuses = <?php echo json_encode($statuses ?? []) ?>
+   var statuses = <?php echo json_encode($statuses ?? []) ?>
 </script>
 <?php
 
@@ -133,7 +131,7 @@ include_once('includes/footer.php');
         e.stopPropagation(); // Prevents the dropdown from closing when clicking an item
         alert(1);
     });
-    // Function to show add language modal
+ // Function to show add language modal
     function showAddLanguageModal() {
         $('#add_language_card').show();
         $('#add_language_key').val('');
@@ -191,8 +189,8 @@ include_once('includes/footer.php');
     function update_s(element) {
         let row = $(element).closest('tr'); // Get the closest <tr>
         let id = row.find('input[type="hidden"]').val() || "Not Found"; // Get hidden input value
-        let en = row.find('td:eq(1)').text().trim(); // 2nd column (0-based index)
-        let swg = row.find('td:eq(2)').text().trim(); // 3rd column
+        let en = row.find('td:eq(1)').text().trim(); // 3rd column (0-based index)
+        let swg = row.find('td:eq(2)').text().trim(); // 4th column
 
         console.log("Extracted Values -> ID:", id, "English:", en, "Swedish:", swg); // Debugging
 
@@ -203,10 +201,14 @@ include_once('includes/footer.php');
 
         $('#update_language_card').show();
     }
+
+
     // Function to close the update section
     function close_update_section() {
         $('#update_language_card').hide();
     }
+    // Prevent dropdown from closing when clicking inside
+
 
     // Function to update language details
     function update_language() {
@@ -219,29 +221,18 @@ include_once('includes/footer.php');
             return;
         }
         $.ajax({
-            url: 'update-language-customer.php',
+            url: 'update-language-customer.php', // Your backend update script
             type: 'POST',
             data: {id: id, en: en, swg: swg},
             success: function (response) {
-                try {
-                    let result = JSON.parse(response);
-                    if (result.status === 'success') {
-                        alert('Language updated successfully!');
-                        $('#update_language_card').hide();
-                        // Reload the DataTable
-                        if (typeof table !== 'undefined') {
-                            table.ajax.reload();
-                        }
-                    } else {
-                        alert('Error: ' + result.message);
-                    }
-                } catch (e) {
-                    alert('Language updated successfully!');
-                    $('#update_language_card').hide();
-                    if (typeof table !== 'undefined') {
-                        table.ajax.reload();
-                    }
-                }
+                let row = $('input[value="' + id + '"]').closest('tr');
+                row.find('td:eq(1)').text(en);  // English column update
+                row.find('td:eq(2)').text(swg); // Swedish column update
+
+                // ✅ Update section hide karein
+                $('#update_language_card').hide();
+                alert('Language updated successfully!');
+                // location.reload();
             },
             error: function () {
                 alert('Error updating language!');

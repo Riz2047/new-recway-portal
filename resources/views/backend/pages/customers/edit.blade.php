@@ -23,9 +23,20 @@
 			</div>
 
 			<div x-show="activeTab === 'messages'" x-cloak>
-				<livewire:customer.tabs.messages :customerId="$customer->id" />
+					<livewire:customer.tabs.messages :customerId="$customer->id" />
 			</div>
 
+			<div x-show="activeTab === 'form_builder'" x-cloak>
+					<livewire:customer.tabs.form-builder :customerId="$customer->id" />
+			</div>
+
+			<div x-show="activeTab === 'reports'" x-cloak>
+					<livewire:customer.tabs.reports :customerId="$customer->id" />
+			</div>
+
+			<div x-show="activeTab === 'additional_customers'" x-cloak>
+					<livewire:customer.tabs.additional-customers :customerId="$customer->id" />
+			</div>
 			
 
 		</div>

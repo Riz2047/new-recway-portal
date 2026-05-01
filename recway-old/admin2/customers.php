@@ -1,14 +1,8 @@
 <?php
 
-
-
 $activeLink = "customers";
 
-
-
 include_once('includes/header.php');
-
-
 
 if (isset($_POST['delete'])) {
 
@@ -22,15 +16,11 @@ if (isset($_POST['delete'])) {
 
         $customer = $stmt->fetch();
 
-
-
         $query = 'DELETE FROM customers WHERE id = ?';
 
         $stmt = $conn->prepare($query);
 
         $stmt->execute([$delete]);
-
-
 
         $query = 'DELETE FROM emails WHERE email = ?';
 
@@ -42,12 +32,13 @@ if (isset($_POST['delete'])) {
 
 }
 
+$query = 'SELECT customers.*,c.name as parent_customer FROM customers LEFT JOIN customers as c ON customers.parent_id = c.id';
 
+$stmt = $conn->prepare($query);
 
-// Customers data will be loaded via AJAX (DataTables server-side)
-$customers = [];
+$stmt->execute();
 
-
+$customers = $stmt->fetchAll();
 
 if (isset($_GET['delete'])) {
 
@@ -63,8 +54,6 @@ if (isset($_GET['delete'])) {
 
 }
 
-
-
 $query = "SELECT * FROM tables_settings WHERE name = 'Customers'";
 
 $stmt = $conn->prepare($query);
@@ -75,13 +64,11 @@ $table = $stmt->fetchAll();
 
 $table_columns_data = null;
 
-if (!empty($table[0]->meta_data)) {
+if (! empty($table[0]->meta_data)) {
 
     $table_columns_data = json_decode($table[0]->meta_data, true);
 
 }
-
-
 
 ?>
 
@@ -183,7 +170,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="email" name="column[customers][email]" data-id="email_show" value="1" <?php if (isset($table_columns_data['email']) && !empty($table_columns_data['email'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="email" name="column[customers][email]" data-id="email_show" value="1" <?php if (isset($table_columns_data['email']) && ! empty($table_columns_data['email'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="email">Email</label>
 
@@ -191,7 +178,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="phone" name="column[customers][phone]" data-id="phone_show" value="1" <?php if (isset($table_columns_data['phone']) && !empty($table_columns_data['phone'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="phone" name="column[customers][phone]" data-id="phone_show" value="1" <?php if (isset($table_columns_data['phone']) && ! empty($table_columns_data['phone'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="phone">Phone</label>
 
@@ -199,7 +186,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[customers][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && !empty($table_columns_data['company'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[customers][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && ! empty($table_columns_data['company'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="company">Company</label>
 
@@ -207,7 +194,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="cost_place" name="column[customers][cost_place]" data-id="cost_place_show" value="1" <?php if (isset($table_columns_data['cost_place']) && !empty($table_columns_data['cost_place'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="cost_place" name="column[customers][cost_place]" data-id="cost_place_show" value="1" <?php if (isset($table_columns_data['cost_place']) && ! empty($table_columns_data['cost_place'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="cost_place">Organization Number</label>
 
@@ -215,7 +202,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="parent_customer" name="column[customers][parent_customer]" data-id="parent_customer_show" value="1" <?php if (isset($table_columns_data['parent_customer']) && !empty($table_columns_data['parent_customer'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="parent_customer" name="column[customers][parent_customer]" data-id="parent_customer_show" value="1" <?php if (isset($table_columns_data['parent_customer']) && ! empty($table_columns_data['parent_customer'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="parent_customer">Parent Customer</label>
 
@@ -245,11 +232,13 @@ if (!empty($table[0]->meta_data)) {
 
                                         <th class="dt-center table-head">Action</th>
 
+                                        <th class="table-head">Status</th>
+
                                         <th class="table-head">Name</th>
 
-                                        <th class="table-head email_show <?php if (!isset($table_columns_data['email']) || empty($table_columns_data['email'])) { ?> custom_hide<?php } ?>">Email</th>
+                                        <th class="table-head email_show <?php if (! isset($table_columns_data['email']) || empty($table_columns_data['email'])) { ?> custom_hide<?php } ?>">Email</th>
 
-                                        <th class="table-head phone_show <?php if (!isset($table_columns_data['phone']) || empty($table_columns_data['phone'])) { ?> custom_hide<?php } ?>">Phone</th>
+                                        <th class="table-head phone_show <?php if (! isset($table_columns_data['phone']) || empty($table_columns_data['phone'])) { ?> custom_hide<?php } ?>">Phone</th>
 
                                         <th class="table-head">
                                             <abbr title="Interview Template">In.Temp</abbr>
@@ -258,11 +247,11 @@ if (!empty($table[0]->meta_data)) {
                                             <abbr title="Interview Report Upload">In.Rep</abbr>
                                         </th>
 
-                                        <th class="table-head company_show <?php if (!isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
+                                        <th class="table-head company_show <?php if (! isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
 
-                                        <th class="table-head cost_place_show <?php if (!isset($table_columns_data['cost_place']) || empty($table_columns_data['cost_place'])) { ?> custom_hide<?php } ?>">Organization Number</th>
+                                        <th class="table-head cost_place_show <?php if (! isset($table_columns_data['cost_place']) || empty($table_columns_data['cost_place'])) { ?> custom_hide<?php } ?>">Organization Number</th>
 
-                                        <th class="table-head parent_customer_show <?php if (!isset($table_columns_data['parent_customer']) || empty($table_columns_data['parent_customer'])) { ?> custom_hide<?php } ?>">Parent Customer</th>
+                                        <th class="table-head parent_customer_show <?php if (! isset($table_columns_data['parent_customer']) || empty($table_columns_data['parent_customer'])) { ?> custom_hide<?php } ?>">Parent Customer</th>
 
                                         <th class="table-head"><abbr title="Interview Remainder Email">IRE</abbr></th>
                                         <th class="table-head"><abbr
@@ -275,7 +264,127 @@ if (!empty($table[0]->meta_data)) {
                                 </thead>
 
                                 <tbody>
-                                    <!-- Rows will be loaded via AJAX (server-side DataTables) -->
+
+
+
+                                    <?php if (! empty($customers)) : ?>
+
+                                        <?php foreach ($customers as $key => $customer) : ?>
+
+
+
+                                            <tr>
+
+                                                <td class="f-14">
+
+                                                    <input class="form-check-input d-check delete-candidate" id="checkbox-<?php echo $customer->id ?>" name="delete[]" value="<?php echo $customer->id ?>" type="checkbox">
+
+                                                    <label class="form-check-label" for="checkbox-<?php echo $customer->id ?>" class="mr-2 label-table"></label>
+
+                                                </td>
+
+                                                <td>
+
+                                                    <div class="dropdown">
+
+                                                        <button class="table-menu-btn mx-auto dropdownBtn" type="button" id="dropdownMenuButton1" aria-expanded="false">
+
+                                                            <i class="bi bi-gear"></i>
+
+                                                        </button>
+
+                                                        <ul class="dropdown-menu p-2 ps-3 table-menu-btn-list" aria-labelledby="dropdownMenuButton1">
+
+                                                            <li class="mb-1"><a href="update-customer.php?id=<?php echo $customer->id ?>" class="no-decoration f-14 w-600 text-black "><i class="bi bi-pen text-black f-14 me-2"></i>
+
+                                                                    Edit</a>
+
+                                                            </li>
+
+
+
+                                                            <li class="mb-1"><a href="customers.php?delete=<?php echo $customer->id ?>" class="no-decoration f-14 w-600 text-black "><i class="bi bi-trash text-black f-14 me-2"></i>
+
+                                                                    Delete</a>
+
+                                                            </li>
+
+                                                            <li class="mb-1">
+
+                                                                <a href="#" class="no-decoration f-14 w-600 delay_set_id text-black" data-bs-toggle="modal" data-bs-target="#delay_date"> <i class="bi bi-info  text-black f-14 me-2"></i>
+
+                                                                    Duration
+
+                                                                </a>
+
+                                                            </li>
+
+
+
+                                                        </ul>
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td class="f-14"><a class="no-decoration text-black open-customer" data-id="<?php echo $customer->id ?>" data-days="<?php echo $customer->report_delete_duration ?>" href="update-customer.php?id=<?php echo $customer->id ?>"><?php echo $customer->name ?></a></td>
+
+                                                <td class="f-14 email_show <?php if (! isset($table_columns_data['email']) || empty($table_columns_data['email'])) { ?> custom_hide<?php } ?>"><?php echo $customer->email ?></td>
+
+                                                <td class="f-14 phone_show <?php if (! isset($table_columns_data['phone']) || empty($table_columns_data['phone'])) { ?> custom_hide<?php } ?>"><?php echo $customer->phone ?></td>
+
+                                                <td class="f-14">
+
+                                                    <input class="form-check-input" id="interview_template-<?php echo $customer->id ?>" <?php echo $customer->interview_template == 1 ? 'checked' : '' ?> value="<?php echo $customer->id ?>" type="checkbox" onclick="check_interview_template(this)">
+
+                                                    <label class="form-check-label" for="interview_template-<?php echo $customer->id ?>" class="mr-2 label-table"></label>
+
+                                                </td>
+                                                                                                <td class="f-14">
+                                                    <input class="form-check-input" data-cuscheckbox="<?php echo $customer->id ?>"
+                                                        id="interview_upload_allowed-<?php echo $customer->id ?>" <?php echo $customer->interview_upload_allowed == 1 ? 'checked' : '' ?>
+                                                        value="<?php echo $customer->id ?>" type="checkbox"
+                                                        onclick="check_interview_upload_allowed(this)"
+                                                        data-parent="<?php echo $customer->parent_id ?>">
+                                                    <label class="form-check-label"
+                                                        for="interview_upload_allowed-<?php echo $customer->id ?>"
+                                                        class="mr-2 label-table"></label>
+                                                </td>
+
+                                                <td class="f-14 company_show <?php if (! isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>"><?php echo $customer->company ?></td>
+
+                                                <td class="f-14 cost_place_show <?php if (! isset($table_columns_data['cost_place']) || empty($table_columns_data['cost_place'])) { ?> custom_hide<?php } ?>"><?php echo $customer->org_no ?></td>
+
+                                                <td class="f-14 parent_customer_show <?php if (! isset($table_columns_data['parent_customer']) || empty($table_columns_data['parent_customer'])) { ?> custom_hide<?php } ?>"><?php echo $customer->parent_customer ?></td>
+
+                                                <td class="f-14">
+
+                                                    <input class="form-check-input email_remainder" id="email_remainder_template-<?php echo $customer->id ?>" <?php echo $customer->remainder_email == 1 ? 'checked' : '' ?> value="<?php echo $customer->id ?>" type="checkbox" onclick="check_remainder_email_template(this); openOrCloseEmailReminderModal(this)" data-id="<?= $customer->id ?>">
+
+                                                    <label class="form-check-label" for="email_remainder_template-<?php echo $customer->id ?>" class="mr-2 label-table"></label>
+
+                                                </td>
+                                                                                                <td class="f-14">
+                                                    <input class="form-check-input email_remainder"
+                                                        id="bk_email_remainder_template-<?php echo $customer->id ?>" <?php echo $customer->bk_remainder_email == 1 ? 'checked' : '' ?>
+                                                        value="<?php echo $customer->id ?>" type="checkbox"
+                                                        onclick="check_bk_remainder_email_template(this); openOrCloseEmailBKReminderModal(this)"
+                                                        data-id="<?= $customer->id ?>">
+                                                    <label class="form-check-label"
+                                                        for="bk_email_remainder_template-<?php echo $customer->id ?>"
+                                                        class="mr-2 label-table"></label>
+                                                </td>
+
+                                            </tr>
+
+
+
+                                        <?php endforeach; ?>
+
+                                    <?php endif; ?>
+
+
+
                                 </tbody>
 
                             </table>
@@ -417,11 +526,7 @@ if (!empty($table[0]->meta_data)) {
 
 <?php
 
-
-
 include_once('includes/footer.php');
-
-
 
 ?>
 

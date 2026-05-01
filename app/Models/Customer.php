@@ -80,6 +80,14 @@ class Customer extends Model
     }
 
     /**
+     * Orders/candidates that belong to this customer.
+     */
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Candidate::class, 'cus_id');
+    }
+
+    /**
      * Legacy relation for customer service rows.
      */
     public function services(): HasMany

@@ -1,22 +1,14 @@
 <?php
 
-
-
 $activeLink = "customers";
-
-
 
 include_once('includes/header.php');
 
-if (!isset($allowed_staff_permission['view_customer']) && empty($allowed_staff_permission['view_customer'])) {
+if (! isset($allowed_staff_permission['view_customer']) && empty($allowed_staff_permission['view_customer'])) {
 
     redirect('index.php');
 
 }
-
-
-
-
 
 if (isset($_POST['delete'])) {
 
@@ -30,15 +22,11 @@ if (isset($_POST['delete'])) {
 
         $customer = $stmt->fetch();
 
-
-
         $query = 'DELETE FROM customers WHERE id = ?';
 
         $stmt = $conn->prepare($query);
 
         $stmt->execute([$delete]);
-
-
 
         $query = 'DELETE FROM emails WHERE email = ?';
 
@@ -65,8 +53,6 @@ if (isset($_GET['delete'])) {
 
 }
 
-
-
 $query = "SELECT * FROM tables_settings WHERE name = 'Customers'";
 
 $stmt = $conn->prepare($query);
@@ -77,13 +63,11 @@ $table = $stmt->fetchAll();
 
 $table_columns_data = null;
 
-if (!empty($table[0]->meta_data)) {
+if (! empty($table[0]->meta_data)) {
 
     $table_columns_data = json_decode($table[0]->meta_data, true);
 
 }
-
-
 
 ?>
 
@@ -137,7 +121,7 @@ if (!empty($table[0]->meta_data)) {
 
                                 <div style="display:flex !important">
 
-                                    <?php if (isset($allowed_staff_permission['create_customer']) && !empty($allowed_staff_permission['create_customer'])) { ?>
+                                    <?php if (isset($allowed_staff_permission['create_customer']) && ! empty($allowed_staff_permission['create_customer'])) { ?>
 
                                         <button type="button" class="btn btn-outline-white btn-rounded btn-sm px-2" data-toggle="tooltip" data-placement="top" title="Add Customer">
 
@@ -147,7 +131,7 @@ if (!empty($table[0]->meta_data)) {
 
                                     <?php } ?>
 
-                                    <?php if (isset($allowed_staff_permission['update_customer']) && !empty($allowed_staff_permission['update_customer'])) { ?>
+                                    <?php if (isset($allowed_staff_permission['update_customer']) && ! empty($allowed_staff_permission['update_customer'])) { ?>
 
                                         <button type="button" style="display: none" class="btn btn-outline-white btn-rounded btn-sm px-2 d-parent" data-toggle="tooltip" data-placement="top" title="Parent Customer">
 
@@ -157,7 +141,7 @@ if (!empty($table[0]->meta_data)) {
 
                                     <?php } ?>
 
-                                    <?php if (isset($allowed_staff_permission['update_customer']) && !empty($allowed_staff_permission['update_customer'])) { ?>
+                                    <?php if (isset($allowed_staff_permission['update_customer']) && ! empty($allowed_staff_permission['update_customer'])) { ?>
 
                                         <button type="button" style="display: none" class="btn btn-outline-white btn-rounded btn-sm px-2 d-group" data-toggle="tooltip" data-placement="top" title="Groups">
 
@@ -193,7 +177,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="email" name="column[customers][email]" data-id="email_show" value="1" <?php if (isset($table_columns_data['email']) && !empty($table_columns_data['email'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="email" name="column[customers][email]" data-id="email_show" value="1" <?php if (isset($table_columns_data['email']) && ! empty($table_columns_data['email'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="email">Email</label>
 
@@ -201,7 +185,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="phone" name="column[customers][phone]" data-id="phone_show" value="1" <?php if (isset($table_columns_data['phone']) && !empty($table_columns_data['phone'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="phone" name="column[customers][phone]" data-id="phone_show" value="1" <?php if (isset($table_columns_data['phone']) && ! empty($table_columns_data['phone'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="phone">Phone</label>
 
@@ -209,7 +193,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[customers][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && !empty($table_columns_data['company'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="company" name="column[customers][company]" data-id="company_show" value="1" <?php if (isset($table_columns_data['company']) && ! empty($table_columns_data['company'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="company">Company</label>
 
@@ -217,7 +201,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="cost_place" name="column[customers][cost_place]" data-id="cost_place_show" value="1" <?php if (isset($table_columns_data['cost_place']) && !empty($table_columns_data['cost_place'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="cost_place" name="column[customers][cost_place]" data-id="cost_place_show" value="1" <?php if (isset($table_columns_data['cost_place']) && ! empty($table_columns_data['cost_place'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="cost_place">Cost Place</label>
 
@@ -225,7 +209,7 @@ if (!empty($table[0]->meta_data)) {
 
                                             <div class="col-md-3">
 
-                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="parent_customer" name="column[customers][parent_customer]" data-id="parent_customer_show" value="1" <?php if (isset($table_columns_data['parent_customer']) && !empty($table_columns_data['parent_customer'])) { ?> checked <?php } ?>>
+                                                <input class="form-check-input" onclick="columns_check(this)" type="checkbox" id="parent_customer" name="column[customers][parent_customer]" data-id="parent_customer_show" value="1" <?php if (isset($table_columns_data['parent_customer']) && ! empty($table_columns_data['parent_customer'])) { ?> checked <?php } ?>>
 
                                                 <label class="form-label form-check-label" for="parent_customer">Parent Customer</label>
 
@@ -255,23 +239,25 @@ if (!empty($table[0]->meta_data)) {
 
                                         <th class="dt-center table-head">Action</th>
 
+                                        <th class="table-head">Status</th>
+
                                         <th class="table-head">Name</th>
 
-                                        <th class="table-head email_show <?php if (!isset($table_columns_data['email']) || empty($table_columns_data['email'])) { ?> custom_hide<?php } ?>">Email</th>
+                                        <th class="table-head email_show <?php if (! isset($table_columns_data['email']) || empty($table_columns_data['email'])) { ?> custom_hide<?php } ?>">Email</th>
 
-                                        <th class="table-head phone_show <?php if (!isset($table_columns_data['phone']) || empty($table_columns_data['phone'])) { ?> custom_hide<?php } ?>">Phone</th>
+                                        <th class="table-head phone_show <?php if (! isset($table_columns_data['phone']) || empty($table_columns_data['phone'])) { ?> custom_hide<?php } ?>">Phone</th>
 
-                                        <?php if (isset($login_user->category) && !empty($login_user->category) && $login_user->category == 2) { ?>
+                                        <?php if (isset($login_user->category) && ! empty($login_user->category) && $login_user->category == 2) { ?>
 
                                             <th class="table-head">Interview Template</th>
 
                                         <?php } ?>
 
-                                        <th class="table-head company_show <?php if (!isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
+                                        <th class="table-head company_show <?php if (! isset($table_columns_data['company']) || empty($table_columns_data['company'])) { ?> custom_hide<?php } ?>">Company</th>
 
-                                        <th class="table-head cost_place_show <?php if (!isset($table_columns_data['cost_place']) || empty($table_columns_data['cost_place'])) { ?> custom_hide<?php } ?>">Cost Place</th>
+                                        <th class="table-head cost_place_show <?php if (! isset($table_columns_data['cost_place']) || empty($table_columns_data['cost_place'])) { ?> custom_hide<?php } ?>">Cost Place</th>
 
-                                        <th class="table-head parent_customer_show <?php if (!isset($table_columns_data['parent_customer']) || empty($table_columns_data['parent_customer'])) { ?> custom_hide<?php } ?>">Parent Customer</th>
+                                        <th class="table-head parent_customer_show <?php if (! isset($table_columns_data['parent_customer']) || empty($table_columns_data['parent_customer'])) { ?> custom_hide<?php } ?>">Parent Customer</th>
 
 
 
@@ -349,11 +335,7 @@ if (!empty($table[0]->meta_data)) {
 
 <?php
 
-
-
 include_once('includes/footer.php');
-
-
 
 ?>
 

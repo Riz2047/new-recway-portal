@@ -1,22 +1,14 @@
 <?php
 
-
-
 $activeLink = "candidates";
-
-
 
 include_once('includes/header.php');
 
-
-
-if (!isset($_GET['id'])) {
+if (! isset($_GET['id'])) {
 
     redirect('index.php');
 
 }
-
-
 
 if (isset($_POST['update'])) {
 
@@ -36,12 +28,11 @@ if (isset($_POST['update'])) {
 
     $can_info = $stmt->fetch();
 
-    if(empty($can_info->staff_id)){
-        $last_candidate = 1; 
-    }else{
-        $last_candidate = $can_info->staff_id; 
+    if (empty($can_info->staff_id)) {
+        $last_candidate = 1;
+    } else {
+        $last_candidate = $can_info->staff_id;
     }
-
 
     $query = 'SELECT * FROM staff WHERE id = ?';
 
@@ -51,17 +42,13 @@ if (isset($_POST['update'])) {
 
     $staff = $stmt->fetch();
 
-
-
     $query = 'UPDATE candidates SET staff_id = ? WHERE id = ?';
 
     $stmt = $conn->prepare($query);
 
     $res = $stmt->execute([$staff_id, $_GET['id']]);
 
-
-
-    if (!empty($res)) {
+    if (! empty($res)) {
 
         $query = 'SELECT * FROM candidates WHERE id = ?';
 
@@ -71,8 +58,6 @@ if (isset($_POST['update'])) {
 
         $candidate = $stmt->fetch();
 
-
-
         $query = 'SELECT * FROM interviews WHERE id = ?';
 
         $stmt = $conn->prepare($query);
@@ -80,8 +65,6 @@ if (isset($_POST['update'])) {
         $stmt->execute([$candidate->interview_id]);
 
         $interview = $stmt->fetch();
-
-
 
         $query = 'SELECT * FROM places WHERE id = ?';
 
@@ -94,20 +77,18 @@ if (isset($_POST['update'])) {
         if (isSwedenWorkingHours() == 1) {
             $query = "INSERT INTO history (order_id, `desc`, comment) VALUES (?,?,?)";
             $stmt = $conn->prepare($query);
-            $res = $stmt->execute([$_GET['id'], "Staff ({$staff->name}) Assigned to {$candidate->name} {$candidate->surname}", $comment]); 
-        }else{
+            $res = $stmt->execute([$_POST['id'], "Staff ({$staff->name}) Assigned to {$candidate->name} {$candidate->surname}", $comment]);
+        } else {
             $nextWorkingHour = getNextWorkingHour()->format('Y-m-d H:i:s');
             $query = "INSERT INTO history (order_id, `desc`,date_time, comment, staff_id) VALUES (?,?,?,?,?)";
             $stmt = $conn->prepare($query);
-            $res = $stmt->execute([$_GET['id'], "Staff ({$staff->name}) Assigned to {$candidate->name} {$candidate->surname}",$nextWorkingHour, $comment,$last_candidate]);
-            
+            $res = $stmt->execute([$_POST['id'], "Staff ({$staff->name}) Assigned to {$candidate->name} {$candidate->surname}",$nextWorkingHour, $comment,$last_candidate]);
+
         }
-
-
 
         $messages = getMessages($candidate->cus_id, $interview->id);
 
-        $body = replace($messages->staff_msg, $_POST['cus_name'], $can_name . " " . $can_surname, $_POST['company'], $_POST['interview'], $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, !empty($place) ? $place->name : '');
+        $body = replace($messages->staff_msg, $_POST['cus_name'], $can_name . " " . $can_surname, $_POST['company'], $_POST['interview'], $staff->name, '', '', '', '', $candidate->order_id, '', '', $comment, $candidate->vasc_id, $interview->title, ! empty($place) ? $place->name : '');
 
         //        $body .= "<br><b>Comment:</b> {$comment}<br><br>";
 
@@ -121,8 +102,6 @@ if (isset($_POST['update'])) {
 
         $dayOfWeek = date('N');
 
-
-
         if ($dayOfWeek >= 1 && $dayOfWeek <= 5 && $currentTime > '08:00:00' && $currentTime < '18:00:00') {
 
             saveEmail("Staff", $staff->name, $candidate->order_id, 'Staff Message', $body, $staff->email, 'Candidate Assigned');
@@ -135,11 +114,7 @@ if (isset($_POST['update'])) {
 
         }
 
-
-
         flash("staffAssigned", "Staff assigned successfully!");
-
-
 
         redirect("invoice.php?id={$_GET['id']}");
 
@@ -151,10 +126,6 @@ if (isset($_POST['update'])) {
 
 }
 
-
-
-
-
 $query = 'SELECT * FROM candidates WHERE id = ?';
 
 $stmt = $conn->prepare($query);
@@ -162,8 +133,6 @@ $stmt = $conn->prepare($query);
 $stmt->execute([$_GET['id']]);
 
 $candidate = $stmt->fetch();
-
-
 
 $query = 'SELECT * FROM staff';
 
@@ -173,8 +142,6 @@ $stmt->execute();
 
 $staff = $stmt->fetchAll();
 
-
-
 $query = 'SELECT * FROM customers WHERE id = ?';
 
 $stmt = $conn->prepare($query);
@@ -183,8 +150,6 @@ $stmt->execute([$candidate->cus_id]);
 
 $customer = $stmt->fetch();
 
-
-
 $query = 'SELECT * FROM interviews WHERE id = ?';
 
 $stmt = $conn->prepare($query);
@@ -192,8 +157,6 @@ $stmt = $conn->prepare($query);
 $stmt->execute([$candidate->interview_id]);
 
 $interview = $stmt->fetch();
-
-
 
 ?>
 
@@ -229,11 +192,11 @@ $interview = $stmt->fetch();
 
                             <select id="" name="staff" class="form-control">
 
-                                <?php if (!empty($staff)) : ?>
+                                <?php if (! empty($staff)) : ?>
 
                                     <?php foreach ($staff as $st) : ?>
 
-                                        <option <?php echo !empty($candidate->staff_id) && $candidate->staff_id == $st->id ? 'selected' : '' ?> value="<?php echo $st->id ?>"><?php echo $st->name ?></option>
+                                        <option <?php echo ! empty($candidate->staff_id) && $candidate->staff_id == $st->id ? 'selected' : '' ?> value="<?php echo $st->id ?>"><?php echo $st->name ?></option>
 
                                     <?php endforeach; ?>
 
@@ -293,10 +256,6 @@ $interview = $stmt->fetch();
 
 <?php
 
-
-
 include_once('includes/footer.php');
-
-
 
 ?>

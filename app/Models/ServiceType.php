@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ServiceType extends Model
 {
@@ -34,5 +35,13 @@ class ServiceType extends Model
     public function customers(): BelongsToMany
     {
         return $this->belongsToMany(Customer::class, 'service_type_user', 'service_type_id', 'cus_id')->withTimestamps();
+    }
+
+    /**
+     * Candidates/orders linked to this service type.
+     */
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Candidate::class, 'interview_id');
     }
 }

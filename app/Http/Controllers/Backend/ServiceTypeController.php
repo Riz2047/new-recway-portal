@@ -6,8 +6,7 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\ServiceType;
-use App\Models\ServiceCategory;
-use App\Models\User;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +24,7 @@ class ServiceTypeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $serviceTypes
+            'data' => $serviceTypes,
         ]);
     }
 
@@ -53,7 +52,7 @@ class ServiceTypeController extends Controller
                 'description' => $validated['description'],
             ]);
 
-            if (!empty($validated['customers'])) {
+            if (! empty($validated['customers'])) {
                 $serviceType->customers()->sync($validated['customers']);
             }
 
@@ -62,13 +61,13 @@ class ServiceTypeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => __('Service type created successfully.'),
-                'data' => $serviceType->load('customers')
+                'data' => $serviceType->load('customers'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => __('Failed to create service type.') . ' ' . $e->getMessage()
+                'message' => __('Failed to create service type.') . ' ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -76,19 +75,19 @@ class ServiceTypeController extends Controller
     public function getCustomers(): JsonResponse
     {
         // Assuming Spatie Permission is used and role names are stored in roles table
-        $customers = User::role('Customer')
-            ->select('id', 'name', 'email')
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'text' => $user->name . ' (' . $user->email . ')'
-                ];
-            });
+        $customers = Customer::join('users', 'customers.user_id', '=', 'users.id')
+        ->select('customers.id as id', 'users.name', 'users.email')
+        ->get()
+        ->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'text' => $item->name . ' (' . $item->email . ')',
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $customers
+            'data' => $customers,
         ]);
     }
 
@@ -126,13 +125,13 @@ class ServiceTypeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => __('Service type updated successfully.'),
-                'data' => $serviceType->load('customers')
+                'data' => $serviceType->load('customers'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => __('Failed to update service type.') . ' ' . $e->getMessage()
+                'message' => __('Failed to update service type.') . ' ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -148,12 +147,12 @@ class ServiceTypeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => __('Service type deleted successfully.')
+                'message' => __('Service type deleted successfully.'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => __('Failed to delete service type.')
+                'message' => __('Failed to delete service type.'),
             ], 500);
         }
     }

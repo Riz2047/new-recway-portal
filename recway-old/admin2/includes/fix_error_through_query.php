@@ -1,4 +1,5 @@
 <?php
+
 require_once "../../vendor/autoload.php";
 include_once('../../includes/functions.php');
 
@@ -9,24 +10,23 @@ include_once('../../includes/functions.php');
 //     // Prepare the insert statement once for better performance
 //     $insertQuery = "INSERT INTO allowed_emails (cus_id, status_id, allowed) VALUES (:cus_id, :status_id, 1)";
 //     $stmt = $conn->prepare($insertQuery);
-    
+
 //     foreach ($customers as $customer) {
 //         // Insert first row with status_id 65
 //         $stmt->bindValue(':cus_id', $customer->id);
 //         $stmt->bindValue(':status_id', 65);
 //         $stmt->execute();
-        
+
 //         // Insert second row with status_id 66
 //         $stmt->bindValue(':cus_id', $customer->id);
 //         $stmt->bindValue(':status_id', 66);
 //         $stmt->execute();
 //     }
-    
+
 //     echo "Successfully inserted " . (count($customers) * 2) . " records into allowed_emails table.";
 // } else {
 //     echo "No customers found.";
 // }
-
 
 // $interviews = findAllByQuery("SELECT * FROM interviews WHERE service_cat_id = 9");
 // if(!empty($interviews)){
@@ -36,7 +36,7 @@ include_once('../../includes/functions.php');
 //         $stmt1 = $conn->prepare($query1);
 //         $stmt1->bindParam(':service_id', $int->id);
 //         $stmt1->execute();
-        
+
 //         // Second insert query with status_id 66
 //         $query2 = "INSERT INTO status_services (service_id, status_id, msg_col) VALUES (:service_id, 66, 'REbook_interviews')";
 //         $stmt2 = $conn->prepare($query2);
@@ -50,7 +50,7 @@ include_once('../../includes/functions.php');
 // $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
 
 // // Single query with JOIN to get all needed data
-// $query = "SELECT c.id, c.name, c.statuses 
+// $query = "SELECT c.id, c.name, c.statuses
 //           FROM customers c
 //           JOIN customer_services cs ON c.id = cs.cus_id
 //           WHERE cs.service_id IN ($placeholders)";
@@ -66,10 +66,10 @@ include_once('../../includes/functions.php');
 // foreach ($customers as $customer) {
 //     // 1. Display customer name
 //     echo "Customer Name: " . htmlspecialchars($customer->name) . "<br>";
-    
+
 //     // 2. Update statuses
 //     $currentStatuses = explode(',', $customer->statuses);
-    
+
 //     // Add new statuses if they don't exist
 //     if (!in_array('65', $currentStatuses)) {
 //         $currentStatuses[] = '65';
@@ -77,9 +77,9 @@ include_once('../../includes/functions.php');
 //     if (!in_array('66', $currentStatuses)) {
 //         $currentStatuses[] = '66';
 //     }
-    
+
 //     $updatedStatuses = implode(',', $currentStatuses);
-    
+
 //     // Update the customer record
 //     $updateQuery = "UPDATE customers SET statuses = :statuses WHERE id = :cus_id";
 //     $updateStmt = $conn->prepare($updateQuery);
@@ -89,7 +89,6 @@ include_once('../../includes/functions.php');
 // }
 
 // echo "Status updates completed for all customers.";
-
 
 // $interviewIds = [42, 47, 50, 53, 65];
 // $idsString = implode(',', $interviewIds);
@@ -112,12 +111,12 @@ include_once('../../includes/functions.php');
 // <p><em>This e-mail is confidential and may contain legally privileged information. If you have received this email in error, please immediately notify us and delete the message from your system. As a recipient of this mail, you are responsible for deleting both mail and attachments as soon as the purpose of access to this information expires, but no longer than six months.</em></p>
 // <p><br /><br /></p>';   // Replace with your actual value
 
-// $query = "UPDATE messages 
-//           SET noans_msg = '$noansMsgValue', 
+// $query = "UPDATE messages
+//           SET noans_msg = '$noansMsgValue',
 //               REbook_interviews = '$rebookValue'
 //           WHERE interview_id IN ($idsString)";
 
-// $conn->exec($query); 
+// $conn->exec($query);
 // LIYA4A
 // MBWUH1
 // $candidate = findByQuery("SELECT * FROM candidates WHERE order_id = 'MBWUH1'");
@@ -141,7 +140,7 @@ include_once('../../includes/functions.php');
 //                 $statusID = 1;
 //             } elseif ($interview->service_cat_id == 3) {
 //                 $statusID = 13;
-//             } elseif ($interview->service_cat_id == 9) { 
+//             } elseif ($interview->service_cat_id == 9) {
 //                 $statusID = 33;
 //             }
 //             $msg = getStatusMessage($statusID, $candidate->interview_id, $candidate->cus_id);
@@ -153,8 +152,6 @@ include_once('../../includes/functions.php');
 
 //             saveEmail("Candidate", $candidate->name, $candidate->order_id, 'Candidate Message', $canBody, $candidate->email, $service_category->name);
 
-
-
 //             // // admin email msg
 //             // if (empty($messages->admin_msg)) {
 //             //     $messages->admin_msg = 'Order has been created successfully For ' . $customer->name . '(customer) and OrderID is' . $candidate->order_id;
@@ -163,9 +160,8 @@ include_once('../../includes/functions.php');
 
 //             // $query = 'SELECT * FROM admin LIMIT 1';
 //             // $stmt = $conn->prepare($query);
-//             // $stmt->execute(); 
+//             // $stmt->execute();
 //             // $admin = $stmt->fetch();
-
 
 //             // saveEmail("Admin", $admin->name, $candidate->order_id, 'Admin Message', $adminBody, $admin->email, 'Order Created');
 //         }
@@ -201,9 +197,9 @@ include_once('../../includes/functions.php');
 //         }
 
 //         // Fetch all logs from history table for this candidate
-//         $history_logs = findAllByQuery("SELECT statuses.status 
-//                                         FROM history 
-//                                         JOIN statuses ON history.desc = statuses.status_detail 
+//         $history_logs = findAllByQuery("SELECT statuses.status
+//                                         FROM history
+//                                         JOIN statuses ON history.desc = statuses.status_detail
 //                                         WHERE history.order_id = {$row->id}");
 
 //         if (!empty($history_logs)) {
@@ -221,9 +217,6 @@ include_once('../../includes/functions.php');
 //         }
 //     }
 // }
-
-
-
 
 // use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Counts;
 // use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -331,41 +324,7 @@ include_once('../../includes/functions.php');
 //     echo json_encode(['error' => $e->getMessage()]);
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//yha sy uncomment
 // use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Counts;
 // use PhpOffice\PhpSpreadsheet\Spreadsheet;
 // use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -397,7 +356,6 @@ include_once('../../includes/functions.php');
 //     'V' => ['undefined' => 'service_type'],
 //     'W' => ['undefined' => 'created_on'],
 // ];
-
 
 // $spreadsheet = new Spreadsheet();
 // $sheet = $spreadsheet->getActiveSheet();
@@ -579,13 +537,7 @@ include_once('../../includes/functions.php');
 //     echo json_encode(['error' => $e->getMessage()]);
 // }
 
-
-
-
-
-
-
-
+//yha tk
 
 // $candidates = findAllByQuery("SELECT candidates.*, staff.name as staff_name, customers.cost_place as cost_place, customers.company as customer_company, customers.name as customer_name, statuses.status as status_name, interviews.title as interview_title, places.name as place_name FROM candidates LEFT JOIN customers ON candidates.cus_id = customers.id LEFT JOIN staff ON candidates.staff_id = staff.id LEFT JOIN statuses ON candidates.status = statuses.id LEFT JOIN interviews ON candidates.interview_id = interviews.id LEFT JOIN places ON candidates.place = places.id WHERE customers.company = 'Scania' AND candidates.booked BETWEEN '2025-01-01' AND '2025-04-30'");
 

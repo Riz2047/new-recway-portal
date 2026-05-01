@@ -1,4 +1,5 @@
 <?php
+
 // Strict file gateway for uploads and report-uploads
 // Validates PHP sessions from admin2 and staff portals before streaming the file
 
@@ -8,49 +9,54 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-// Allow only authenticated users (admin2, staff, or Laravel customers)
+// echo "<pre>";
+//     print_r($_COOKIE);
+//     echo "</pre>";
+// Allow only authenticated users (admin2 or staff). Extend as needed.
 $isAuthenticated = false;
-if (isset($_SESSION['admin']) && !empty($_SESSION['admin'])) {
+if (isset($_SESSION['admin']) && ! empty($_SESSION['admin']) && isset($_SESSION['oderspi']) && $_SESSION['oderspi'] === 'check746342534634554754##546456^&390=$5904') {
     $isAuthenticated = true;
 }
-if (isset($_SESSION['staff']) && !empty($_SESSION['staff'])) {
+if (isset($_SESSION['staff']) && ! empty($_SESSION['staff']) && isset($_SESSION['oderspi']) && $_SESSION['oderspi'] === 'check746342534634554754##546456^&390=$5904') {
     $isAuthenticated = true;
+}
+if (
+    ! $isAuthenticated &&
+    (isset($_COOKIE['recwaycustomerportals_session']))
+) {
+    $cookie = $_COOKIE['recwaycustomerportals_session'];
+    // $verifyUrl = 'https://orderspi.se/new_customer/public/verify-laravel-session'; // Laravel API route
+
+    // $ch = curl_init($verifyUrl);
+    // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    // curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+    // // send the cookie like a browser would
+    // $cookieHeader = "recwaycustomerportals_session=" . $cookie;
+    // curl_setopt($ch, CURLOPT_HTTPHEADER, ["Cookie: $cookieHeader"]);
+
+    // $response = curl_exec($ch);
+
+    // curl_close($ch);
+
+    // if (trim($response) === 'valid') {
+    if (isset($_COOKIE['recwaycustomerportals_session'])) {
+        $isAuthenticated = true;
+    }
 }
 
 // Optional: you can also allow customer auth from legacy pages, if required
-if (isset($_SESSION['customer']) && !empty($_SESSION['customer'])) {
-    $isAuthenticated = true;
-}
+// if (isset($_SESSION['customer']) && !empty($_SESSION['customer'])) {
+//     $isAuthenticated = true;
+// }
 
-// Check for Laravel authentication
-if (!$isAuthenticated) {
-    // Check if Laravel session cookie exists
-    $laravelSessionCookie = null;
-    if (isset($_COOKIE['laravel_session'])) {
-        $laravelSessionCookie = $_COOKIE['laravel_session'];
-    } elseif (isset($_COOKIE['recway_session'])) {
-        $laravelSessionCookie = $_COOKIE['recway_session'];
-    }
-    
-    if ($laravelSessionCookie) {
-        // Try to validate Laravel session by checking session file
-        $sessionPath = __DIR__ . DIRECTORY_SEPARATOR . 'new_customer' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'sessions';
-        $sessionFile = $sessionPath . DIRECTORY_SEPARATOR . 'sess_' . $laravelSessionCookie;
-        
-        if (file_exists($sessionFile)) {
-            // Read session data to check if user is authenticated
-            $sessionData = file_get_contents($sessionFile);
-            if ($sessionData && (strpos($sessionData, 'login_web_') !== false || strpos($sessionData, 'auth') !== false)) {
-                $isAuthenticated = true;
-            }
-        }
-    }
-}
-
-if (!$isAuthenticated) {
+if (! $isAuthenticated) {
     http_response_code(403);
     echo 'Forbidden';
+    // echo "<pre>";
+    // print_r($_COOKIE);
+    // echo "</pre>";
+
     exit;
 }
 
@@ -75,23 +81,15 @@ $requestedPath = str_replace(['\\', '..'], ['/', ''], $requestedPath);
 // If the path starts with a leading slash, trim it
 $requestedPath = ltrim($requestedPath, '/');
 
-// Try to find the file in multiple locations
-$absolutePath = null;
-
-// First, try the main uploads directory
-$testPath = realpath(__DIR__ . DIRECTORY_SEPARATOR . $requestedPath);
-if ($testPath !== false && is_file($testPath)) {
-    $absolutePath = $testPath;
-} else {
-    // If not found, try Laravel public/uploads directory
-    $laravelPath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'new_customer' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $requestedPath);
-    if ($laravelPath !== false && is_file($laravelPath)) {
-        $absolutePath = $laravelPath;
-    }
+// Determine absolute file path
+$absolutePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . $requestedPath);
+if (! $absolutePath) {
+    $absolutePath = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'new_customer' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . $requestedPath);
 }
 
 // Validate the file is under allowed bases and exists
-function pathIsUnder(string $filePath, string $baseDir): bool {
+function pathIsUnder(string $filePath, string $baseDir): bool
+{
     if ($filePath === false) {
         return false;
     }
@@ -105,6 +103,7 @@ function pathIsUnder(string $filePath, string $baseDir): bool {
 
 $allowed = false;
 if ($absolutePath !== false && is_file($absolutePath)) {
+
     foreach ($allowedBases as $base) {
         if (pathIsUnder($absolutePath, $base)) {
             $allowed = true;
@@ -113,7 +112,7 @@ if ($absolutePath !== false && is_file($absolutePath)) {
     }
 }
 
-if (!$allowed) {
+if (! $allowed) {
     http_response_code(404);
     echo 'Not found';
     exit;
@@ -140,7 +139,14 @@ header('Expires: 0');
 // Content headers
 header('Content-Type: ' . $mimeType);
 header('Content-Length: ' . $fileSize);
-header('Content-Disposition: inline; filename="' . $fileName . '"');
+// header('Content-Disposition: inline; filename="' . $fileName . '"');
+$ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+if ($ext != 'pdf') {
+    $mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    header('Content-Disposition: attachment; filename="' . $fileName . '"');
+} else {
+    header('Content-Disposition: inline; filename="' . $fileName . '"');
+}
 
 // Stream file
 $chunkSize = 8192;
@@ -150,7 +156,7 @@ if ($fh === false) {
     echo 'Unable to open file';
     exit;
 }
-while (!feof($fh)) {
+while (! feof($fh)) {
     $buffer = fread($fh, $chunkSize);
     echo $buffer;
     if (function_exists('fastcgi_finish_request')) {
@@ -160,5 +166,3 @@ while (!feof($fh)) {
 }
 fclose($fh);
 exit;
-
-

@@ -202,13 +202,33 @@ class AdminMenuService
         ]);
 
         $this->addMenuItem([
+            'label' => __('Candidates'),
+            'icon' => 'lucide:file-user',
+            'route' => route("$prefix.candidates.index"),
+            'active' => Route::is("$prefix.candidates.*"),
+            'id' => 'candidates',
+            'priority' => 8,
+            'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
             'label' => __('Email Templates'),
             'icon' => 'lucide:mail',
             'route' => route("$prefix.email-templates.index"),
             'active' => Route::is("$prefix.email-templates.*"),
             'id' => 'email-templates',
-            'priority' => 8,
+            'priority' => 9,
             'permissions' => ['email_template.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Reports'),
+            'icon' => 'lucide:file-text',
+            'route' => route("$prefix.reports.index"),
+            'active' => Route::is("$prefix.reports.*"),
+            'id' => 'reports',
+            'priority' => 10,
+            'permissions' => ['customer.view'],
         ]);
 
         // $this->registerPostTypesInMenu(null);
