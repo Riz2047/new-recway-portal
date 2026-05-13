@@ -415,24 +415,34 @@
                             </div>
                         </div>
 
-                        <div class="mt-4" x-data="{ showBillingDetails: false }">
-                            <button 
-                                type="button" 
+                        <div class="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800" x-data="{ showBillingDetails: false }">
+                            <button
+                                type="button"
                                 @click="showBillingDetails = !showBillingDetails"
-                                :class="showBillingDetails ? 'rounded-b-none' : ''"
-                                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+                                class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                             >
-                                {{ __('Standard Billing Details') }}
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-900/30">
+                                        <iconify-icon icon="lucide:receipt" width="16" class="text-sky-600 dark:text-sky-400"></iconify-icon>
+                                    </div>
+                                    <div class="text-left">
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ __('Standard Billing Details') }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Invoice & reference info') }}</p>
+                                    </div>
+                                </div>
+                                <iconify-icon icon="lucide:chevron-down" width="16"
+                                    class="text-gray-400 transition-transform duration-200"
+                                    :class="{ 'rotate-180': showBillingDetails }"></iconify-icon>
                             </button>
-                            <div 
+                            <div
                                 x-show="showBillingDetails"
                                 x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 transform scale-95"
-                                x-transition:enter-end="opacity-100 transform scale-100"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
                                 x-transition:leave="transition ease-in duration-150"
-                                x-transition:leave-start="opacity-100 transform scale-100"
-                                x-transition:leave-end="opacity-0 transform scale-95"
-                                class="mt-0 bg-white dark:bg-gray-800 p-6 rounded-b-lg border border-gray-200 dark:border-gray-700 border-t-0 shadow-sm"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-1"
+                                class="bg-white dark:bg-gray-800 p-6 border-t border-gray-200 dark:border-gray-700"
                             >
                                 <div class="space-y-6">
                                     <div>
@@ -447,7 +457,7 @@
                                             name="pref" 
                                             id="pref" 
                                             value="{{ old('pref') }}"
-                                            class="w-full form-control border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-colors"
+                                            class="w-full form-control"
                                             placeholder="{{ __('Enter reference person') }}"
                                         >
                                         @error('pref')
@@ -464,7 +474,7 @@
                                             name="ref" 
                                             id="ref" 
                                             value="{{ old('ref') }}"
-                                            class="w-full form-control border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-colors"
+                                            class="w-full form-control"
                                             placeholder="{{ __('Enter reference') }}"
                                         >
                                         @error('ref')
@@ -480,7 +490,7 @@
                                             name="comment" 
                                             id="comment" 
                                             rows="3"
-                                            class="w-full form-control border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-colors resize-none"
+                                            class="w-full form-control resize-none"
                                             placeholder="{{ __('Enter invoice comment') }}"
                                         >{{ old('comment') }}</textarea>
                                         @error('comment')
@@ -493,166 +503,206 @@
                     </div>
                 </div>
 
-                <!-- Permissions & Services Section -->
-                <div class="border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-800 p-6 rounded">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <iconify-icon icon="lucide:shield-check" class="w-5 h-5"></iconify-icon>
-                        {{ __('Permissions & Services') }}
-                    </h3>
-                    <div class="space-y-4">
-                        <!-- Accordion Container -->
-                        <div class="space-y-2">
-                            <!-- Permissions Accordion -->
-                            @if($permissions->count() > 0)
-                                <div 
-                                    class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-                                    x-data="{ open: false }"
-                                >
-                                    <button 
-                                        type="button"
-                                        @click="open = !open"
-                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 flex items-center justify-between transition-colors"
-                                    >
-                                        <span>{{ __('Permissions') }}</span>
-                                        <iconify-icon 
-                                            icon="lucide:chevron-down" 
-                                            class="w-5 h-5 transition-transform duration-200"
-                                            :class="{ 'rotate-180': open }"
-                                        ></iconify-icon>
-                                    </button>
-                                    <div 
-                                        x-show="open"
-                                        x-transition:enter="transition ease-out duration-200"
-                                        x-transition:enter-start="opacity-0"
-                                        x-transition:enter-end="opacity-100"
-                                        x-transition:leave="transition ease-in duration-150"
-                                        x-transition:leave-start="opacity-100"
-                                        x-transition:leave-end="opacity-0"
-                                        class="bg-white dark:bg-gray-900 p-4"
-                                    >
-                                        <div class="space-y-0">
-                                            @foreach($permissions as $permission)
-                                                <div class="form-check py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                                    <input 
-                                                        class="form-check-input" 
-                                                        type="checkbox" 
-                                                        name="permissions[]" 
-                                                        value="{{ $permission->id }}"
-                                                        id="permission_{{ $permission->id }}"
-                                                        {{ $permission->user_type == 1 ? 'checked' : '' }}
-                                                        {{ old('permissions') && in_array($permission->id, old('permissions')) ? 'checked' : '' }}
-                                                    >
-                                                    <label class="form-check-label form-label" for="permission_{{ $permission->id }}">
-                                                        {{ $permission->title }}
-                                                    </label>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
+                {{-- ── Billing Details Section (matching screenshot card style) ── --}}
+                {{-- (already rendered above in the billing x-data block) --}}
 
-                            <!-- Status Required by Service Category Accordions -->
-                            @foreach($serviceCategories as $category)
-                                @if(isset($statusesByCategory[$category->id]) && $statusesByCategory[$category->id]->count() > 0)
-                                    <div 
-                                        class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-                                        x-data="{ open: false }"
-                                    >
-                                        <button 
-                                            type="button"
-                                            @click="open = !open"
-                                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 flex items-center justify-between transition-colors"
-                                        >
-                                            <span>{{ __('Status Required') }} - {{ $category->name }}</span>
-                                            <iconify-icon 
-                                                icon="lucide:chevron-down" 
-                                                class="w-5 h-5 transition-transform duration-200"
-                                                :class="{ 'rotate-180': open }"
-                                            ></iconify-icon>
-                                        </button>
-                                        <div 
-                                            x-show="open"
-                                            x-transition:enter="transition ease-out duration-200"
-                                            x-transition:enter-start="opacity-0"
-                                            x-transition:enter-end="opacity-100"
-                                            x-transition:leave="transition ease-in duration-150"
-                                            x-transition:leave-start="opacity-100"
-                                            x-transition:leave-end="opacity-0"
-                                            class="bg-white dark:bg-gray-900 p-4"
-                                        >
-                                            <div class="space-y-2 max-h-60 overflow-y-auto">
-                                                @foreach($statusesByCategory[$category->id] as $status)
-                                                    <label class="flex items-center gap-2 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            name="statuses[]" 
-                                                            value="{{ $status->id }}"
-                                                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                            checked
-                                                            {{ old('statuses') && in_array($status->id, old('statuses')) ? 'checked' : '' }}
-                                                        >
-                                                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ $status->status }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endforeach
+                <!-- ── Permissions & Services ──────────────────────────────────── -->
+                <div class="space-y-3">
 
-                            <!-- Allowed Services Accordion -->
-                            @if($services->count() > 0)
-                                <div 
-                                    class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-                                    x-data="{ open: false }"
-                                >
-                                    <button 
-                                        type="button"
-                                        @click="open = !open"
-                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 flex items-center justify-between transition-colors"
-                                    >
-                                        <span>{{ __('Allowed Services') }}</span>
-                                        <iconify-icon 
-                                            icon="lucide:chevron-down" 
-                                            class="w-5 h-5 transition-transform duration-200"
-                                            :class="{ 'rotate-180': open }"
-                                        ></iconify-icon>
-                                    </button>
-                                    <div 
-                                        x-show="open"
-                                        x-transition:enter="transition ease-out duration-200"
-                                        x-transition:enter-start="opacity-0"
-                                        x-transition:enter-end="opacity-100"
-                                        x-transition:leave="transition ease-in duration-150"
-                                        x-transition:leave-start="opacity-100"
-                                        x-transition:leave-end="opacity-0"
-                                        class="bg-white dark:bg-gray-900 p-4"
-                                    >
-                                        <div class="space-y-0">
-                                            @foreach($services as $service)
-                                                <div class="form-check py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                                    <input 
-                                                        class="form-check-input service_checkbox" 
-                                                        type="checkbox" 
-                                                        name="services[]" 
-                                                        value="{{ $service->id }}"
-                                                        id="service_{{ $service->id }}"
-                                                        {{ $service->service_category_id == 1 ? 'checked' : '' }}
-                                                        {{ old('services') && in_array($service->id, old('services')) ? 'checked' : '' }}
-                                                    >
-                                                    <label class="form-check-label form-label" for="service_{{ $service->id }}">
-                                                        {{ $service->name }}
-                                                    </label>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
+                    {{-- ── Permissions accordion ── --}}
+                    @if($permissions->count() > 0)
+                    @php
+                        $defaultPermIds = $permissions->where('user_type', 1)->pluck('id')->values()->toJson();
+                    @endphp
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800"
+                        x-data="{
+                            open: false,
+                            selectedIds: {{ $defaultPermIds }},
+                            toggle(id) {
+                                const i = this.selectedIds.indexOf(id);
+                                i > -1 ? this.selectedIds.splice(i, 1) : this.selectedIds.push(id);
+                            },
+                            get checked() { return this.selectedIds.length; }
+                        }">
+                        <button type="button" @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/30">
+                                    <iconify-icon icon="lucide:lock" width="16" class="text-purple-600 dark:text-purple-400"></iconify-icon>
                                 </div>
-                            @endif
+                                <div class="text-left">
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ __('Permissions') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Manage required permissions') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="rounded-full bg-purple-100 dark:bg-purple-900/40 px-2.5 py-0.5 text-xs font-semibold text-purple-700 dark:text-purple-300"
+                                    x-text="checked + ' {{ __('active') }}'"></span>
+                                <iconify-icon icon="lucide:chevron-down" width="16"
+                                    class="text-gray-400 transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }"></iconify-icon>
+                            </div>
+                        </button>
+                        {{-- x-for generates the actual form inputs (always in DOM, not hidden by x-show) --}}
+                        <template x-for="id in selectedIds" :key="id">
+                            <input type="hidden" name="permissions[]" :value="id">
+                        </template>
+                        <div x-show="open" x-transition class="border-t border-gray-100 dark:border-gray-700 px-4 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($permissions as $permission)
+                                <span @click="toggle({{ $permission->id }})"
+                                    :class="selectedIds.includes({{ $permission->id }})
+                                        ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
+                                        : 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-400 hover:border-purple-300'"
+                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all select-none">
+                                    <iconify-icon x-show="selectedIds.includes({{ $permission->id }})" icon="lucide:check" width="11" class="shrink-0"></iconify-icon>
+                                    {{ $permission->title }}
+                                </span>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                </div>
+                    @endif
+
+                    {{-- ── Status Required per Service Category ── --}}
+                    @php
+                        $catConfig = [
+                            ['icon' => 'lucide:search',    'bg' => 'bg-blue-50 dark:bg-blue-900/30',    'text' => 'text-blue-600 dark:text-blue-400',    'badge' => 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',    'on' => 'bg-blue-600 border-blue-600 text-white',    'off' => 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-400 hover:border-blue-300'],
+                            ['icon' => 'lucide:grid-2x2',  'bg' => 'bg-emerald-50 dark:bg-emerald-900/30','text' => 'text-emerald-600 dark:text-emerald-400','badge' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300','on' => 'bg-emerald-600 border-emerald-600 text-white','off' => 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-400 hover:border-emerald-300'],
+                            ['icon' => 'lucide:repeat-2',  'bg' => 'bg-amber-50 dark:bg-amber-900/30',  'text' => 'text-amber-600 dark:text-amber-400',  'badge' => 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',  'on' => 'bg-amber-500 border-amber-500 text-white',  'off' => 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-400 hover:border-amber-300'],
+                            ['icon' => 'lucide:layers',    'bg' => 'bg-rose-50 dark:bg-rose-900/30',    'text' => 'text-rose-600 dark:text-rose-400',    'badge' => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300',    'on' => 'bg-rose-600 border-rose-600 text-white',    'off' => 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-400 hover:border-rose-300'],
+                        ];
+                        $ci = 0;
+                    @endphp
+                    @foreach($serviceCategories as $category)
+                    @if(isset($statusesByCategory[$category->id]) && $statusesByCategory[$category->id]->count() > 0)
+                    @php
+                        $c          = $catConfig[$ci % count($catConfig)];
+                        $allIds     = $statusesByCategory[$category->id]->pluck('id')->values()->toJson();
+                        $ci++;
+                    @endphp
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800"
+                        x-data="{
+                            open: false,
+                            selectedIds: {{ $allIds }},
+                            toggle(id) {
+                                const i = this.selectedIds.indexOf(id);
+                                i > -1 ? this.selectedIds.splice(i, 1) : this.selectedIds.push(id);
+                            },
+                            get checked() { return this.selectedIds.length; }
+                        }">
+                        <button type="button" @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ $c['bg'] }}">
+                                    <iconify-icon icon="{{ $c['icon'] }}" width="16" class="{{ $c['text'] }}"></iconify-icon>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ $category->name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Manage required statuses') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $c['badge'] }}"
+                                    x-text="checked + ' {{ __('active') }}'"></span>
+                                <iconify-icon icon="lucide:chevron-down" width="16"
+                                    class="text-gray-400 transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }"></iconify-icon>
+                            </div>
+                        </button>
+                        <template x-for="id in selectedIds" :key="id">
+                            <input type="hidden" name="statuses[]" :value="id">
+                        </template>
+                        <div x-show="open" x-transition class="border-t border-gray-100 dark:border-gray-700 px-4 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($statusesByCategory[$category->id] as $status)
+                                <span @click="toggle({{ $status->id }})"
+                                    :class="selectedIds.includes({{ $status->id }})
+                                        ? '{{ $c['on'] }}'
+                                        : '{{ $c['off'] }}'"
+                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-semibold transition-all select-none shadow-sm">
+                                    <iconify-icon x-show="selectedIds.includes({{ $status->id }})" icon="lucide:check" width="11" class="shrink-0"></iconify-icon>
+                                    {{ $status->status }}
+                                </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                    @endforeach
+
+                    {{-- ── Allowed Services ── --}}
+                    @if($services->count() > 0)
+                    @php
+                        $defaultSvcIds = $services->where('service_category_id', 1)->pluck('id')->values()->toJson();
+                        $totalSvc      = $services->count();
+                    @endphp
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800"
+                        x-data="{
+                            open: false,
+                            selectedIds: {{ $defaultSvcIds }},
+                            total: {{ $totalSvc }},
+                            toggle(id) {
+                                const i = this.selectedIds.indexOf(id);
+                                i > -1 ? this.selectedIds.splice(i, 1) : this.selectedIds.push(id);
+                            },
+                            get checked() { return this.selectedIds.length; }
+                        }">
+                        <button type="button" @click="open = !open"
+                            class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
+                                    <iconify-icon icon="lucide:package" width="16" class="text-indigo-600 dark:text-indigo-400"></iconify-icon>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ __('Allowed Services') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('Physical & video interviews') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300"
+                                    x-text="checked + '/' + total"></span>
+                                <iconify-icon icon="lucide:chevron-down" width="16"
+                                    class="text-gray-400 transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }"></iconify-icon>
+                            </div>
+                        </button>
+                        <template x-for="id in selectedIds" :key="id">
+                            <input type="hidden" name="services[]" :value="id">
+                        </template>
+                        <div x-show="open" x-transition class="border-t border-gray-100 dark:border-gray-700 p-3">
+                            <div class="space-y-2">
+                                @foreach($services->groupBy('serviceCategory.name') as $catName => $catServices)
+                                @foreach($catServices as $service)
+                                <div @click="toggle({{ $service->id }})"
+                                    :class="selectedIds.includes({{ $service->id }})
+                                        ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-900/20'
+                                        : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-indigo-200 dark:hover:border-gray-600'"
+                                    class="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 transition-all select-none">
+                                    {{-- Visual checkbox square --}}
+                                    <div :class="selectedIds.includes({{ $service->id }})
+                                            ? 'bg-indigo-600 border-indigo-600'
+                                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-500'"
+                                        class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all mt-0.5">
+                                        <iconify-icon x-show="selectedIds.includes({{ $service->id }})" icon="lucide:check" width="11" class="text-white"></iconify-icon>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        @if($service->serviceCategory)
+                                        <span class="mb-0.5 inline-block rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                            {{ $service->serviceCategory->name }}
+                                        </span>
+                                        @endif
+                                        <p class="text-sm font-medium text-gray-700 dark:text-gray-200 leading-snug">{{ $service->name }}</p>
+                                    </div>
+                                </div>
+                                @endforeach
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                </div>{{-- /space-y-3 --}}
 
                 <!-- Submit Button -->
                 <div class="flex justify-end gap-4">

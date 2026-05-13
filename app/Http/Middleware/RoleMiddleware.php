@@ -14,27 +14,22 @@ class RoleMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string  $role
-     * @return mixed
+     * Accepts roles as variadic params so both formats work:
+     *   'role:Admin,Manager'          → $roles = ['Admin', 'Manager']
+     *   'role:Manager with statistics' → $roles = ['Manager with statistics']
      */
-    public function handle(Request $request, Closure $next, string $roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = Auth::user();
-        $roleList = array_map('trim', explode(',', $roles));
-        $hasAnyRole = false;
+
         if ($user) {
-            foreach ($roleList as $role) {
-                if ($user->hasRole($role)) {
-                    $hasAnyRole = true;
-                    break;
+            foreach ($roles as $role) {
+                if ($user->hasRole(trim($role))) {
+                    return $next($request);
                 }
             }
         }
-        if (!$hasAnyRole) {
-            abort(403, __('Unauthorized'));
-        }
-        return $next($request);
+
+        abort(403, __('Unauthorized'));
     }
 }

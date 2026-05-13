@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class StaffDatatable extends Datatable
@@ -185,11 +186,20 @@ class StaffDatatable extends Datatable
 
     public function renderOrdersCountColumn(User $user): string
     {
-        // Count candidates/orders related to this staff member
-        // For now, return 0 as we need to check if there's a candidates table
-        // This can be updated when the relationship is established
-        $count = 0; // TODO: Add relationship to count orders/candidates
-        return '<span class="text-sm">' . e((string) $count) . '</span>';
+        if (! Schema::hasTable('candidates')) {
+            return '<span class="text-sm text-gray-400">—</span>';
+        }
+
+        $count = \App\Models\Candidate::where('staff_id', $user->id)
+            ->where('expired', 0)
+            ->count();
+
+        if ($count === 0) {
+            return '<span class="text-sm text-gray-400">0</span>';
+        }
+
+        return '<span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">'
+            . $count . '</span>';
     }
 
     public function renderNameColumn(User $user): Renderable

@@ -37,7 +37,46 @@
 			<div x-show="activeTab === 'additional_customers'" x-cloak>
 					<livewire:customer.tabs.additional-customers :customerId="$customer->id" />
 			</div>
-			
+
+			{{-- DEPARTMENTS --}}
+			<div x-show="activeTab === 'departments'" x-cloak>
+				@include('backend.pages.customers.partials.departments')
+			</div>
+
+			{{-- DEPARTMENT USERS --}}
+			<div x-show="activeTab === 'department_users'" x-cloak>
+				@include('backend.pages.customers.partials.department-users')
+			</div>
+
+			{{-- ORDERS --}}
+			<div x-show="activeTab === 'orders'" x-cloak>
+				<livewire:customer.tabs.order :customerId="$customer->id" />
+			</div>
+
+			{{-- EMAILS --}}
+			<div x-show="activeTab === 'emails'" x-cloak>
+				<livewire:customer.tabs.emails :customerId="$customer->id" />
+			</div>
+
+			{{-- INVOICED --}}
+			<div x-show="activeTab === 'invoiced'" x-cloak>
+				<livewire:customer.tabs.invoiced :customerId="$customer->id" />
+			</div>
+
+			{{-- BACKGROUND QUESTIONS --}}
+			<div x-show="activeTab === 'background_questions'" x-cloak>
+				<livewire:customer.tabs.background-questions :customerId="$customer->id" />
+			</div>
+
+			{{-- REMINDER EMAILS --}}
+			<div x-show="activeTab === 'reminder_emails'" x-cloak>
+				<livewire:customer.tabs.reminder-emails :customerId="$customer->id" />
+			</div>
+
+			{{-- SERVICE COST --}}
+			<div x-show="activeTab === 'service_cost'" x-cloak>
+				<livewire:customer.tabs.service-cost :customerId="$customer->id" />
+			</div>
 
 		</div>
 	</div>

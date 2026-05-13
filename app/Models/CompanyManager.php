@@ -15,7 +15,7 @@ class CompanyManager extends Model
         'statuses',
         'can_view_report',
         'email_template',
-        // add your other columns here
+        'email_template_approved',
     ];
 
     protected function casts(): array

@@ -26,7 +26,8 @@ class Customer extends Model
         'send_security_report',
         'sent_email',
         'combine_bk_and_security',
-                'combine_interview_service',
+        'combine_interview_service',
+        'combine_interview_id',   // FK → service_types (authoritative customer-level default)
         'timra_report',
         'combine_status',
         'invoice_period',
@@ -35,8 +36,10 @@ class Customer extends Model
         'groups',
         'interview_upload_allowed',
         'remainder_email_template',
+        'remainder_email',
         'bk_interviewed',
         'bk_remainder_email_template',
+        'bk_remainder_email',
         'report_delete_duration',
         'last_login',
         'ellevio_report',
@@ -50,6 +53,8 @@ class Customer extends Model
         'timra_report' => 'boolean',
         'interview_upload_allowed' => 'boolean',
         'bk_interviewed' => 'boolean',
+        'remainder_email' => 'boolean',
+        'bk_remainder_email' => 'boolean',
         'send_email_question' => 'boolean',
         'last_invoice_sent' => 'date',
         'last_login' => 'datetime',
@@ -61,6 +66,14 @@ class Customer extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The default security-interview service type for the combine feature.
+     */
+    public function combineInterviewService(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\ServiceType::class, 'combine_interview_id');
     }
 
     /**

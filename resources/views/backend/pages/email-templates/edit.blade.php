@@ -8,8 +8,10 @@
         @method('PUT')
 
         @include('backend.pages.email-templates.partials.form', [
-            'template' => $template,
+            'template'    => $template,
             'routePrefix' => $routePrefix,
+            'catalogue'   => $catalogue ?? [],
+            'unknown'     => $unknown ?? [],
         ])
     </form>
 </x-layouts.backend-layout>

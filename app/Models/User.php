@@ -39,7 +39,6 @@ class User extends Authenticatable
         'email',
         'username',
         'password',
-        'phone',
         'avatar_id',
     ];
 
@@ -82,6 +81,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActionLog::class, 'action_by');
     }
+
+    // public function customer(): \Illuminate\Database\Eloquent\Relations\HasOne
+    // {
+    //     return $this->hasOne(Customer::class, 'user_id');
+    // }
 
     /**
      * Get the user's metadata.

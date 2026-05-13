@@ -23,6 +23,18 @@ trait BuildsReportTemplates
             'economy' => $this->legacyEconomySection($lang),
             'income' => $this->legacyIncomeSection($lang),
             'legal' => $this->legacyLegalSection($lang),
+            'bolagsengagemang' => $this->legacyBolagsengagemangSection($lang),
+            'historiska_bolagsengagemang' => $this->legacyHistoriskaBolagsengagemangSection($lang),
+            'korkort' => $this->legacyKorkortSection($lang),
+            'fordonskontroll' => $this->legacyFordonskontrollSection($lang),
+            'fastighetsinnehav' => $this->legacyFastighetsinnehavSection($lang),
+            'pep_sanktion' => $this->legacyPepSanktionSection($lang),
+            'cv_arbetsgivare' => $this->legacyCvArbetsgivareSection($lang),
+            'cv_utbildning' => $this->legacyCvUtbildningSection($lang),
+            'sociala_medier' => $this->legacySocialaMedierSection($lang),
+            'kallor' => $this->legacyKallorSection($lang),
+            'ansvar' => $this->legacyAnsvarSection($lang),
+            'metod' => $this->legacyMetodSection($lang),
             default => null,
         };
 
@@ -281,6 +293,235 @@ trait BuildsReportTemplates
             'columns' => $columns,
             'headers' => $headers,
             'rows' => $rows,
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // BK Level presets (load full section set, replacing current content)
+    // -------------------------------------------------------------------------
+
+    public function loadBkPreset(string $lang, int $level): void
+    {
+        if (! $this->canEditLanguage($lang)) {
+            return;
+        }
+
+        $sections = [
+            ['type' => 'text', 'id' => (string) Str::uuid(), 'heading' => 'Result', 'content' => '', 'align' => 'left', 'status_id' => null],
+            $this->legacyIntroductionSection($lang),
+            $this->legacyBackgroundSection($lang),
+            $this->legacyInformationSection($lang),
+            $this->legacySummarySection($lang),
+            ['id' => (string) Str::uuid(), 'type' => 'page_break'],
+            $this->legacyProfileSection($lang),
+            $this->legacyEconomySection($lang),
+            $this->legacyIncomeSection($lang),
+            $this->legacyLegalSection($lang),
+            $this->legacyBolagsengagemangSection($lang),
+            $this->legacyHistoriskaBolagsengagemangSection($lang),
+            $this->legacyKorkortSection($lang),
+            $this->legacyFordonskontrollSection($lang),
+            $this->legacyFastighetsinnehavSection($lang),
+            $this->legacyPepSanktionSection($lang),
+        ];
+
+        if ($level >= 2) {
+            $sections[] = $this->legacyCvArbetsgivareSection($lang);
+            $sections[] = $this->legacyCvUtbildningSection($lang);
+            $sections[] = $this->legacySocialaMedierSection($lang);
+            $sections[] = $this->legacyKallorSection($lang);
+            $sections[] = $this->legacyAnsvarSection($lang);
+            $sections[] = $this->legacyMetodSection($lang);
+        }
+
+        $this->templates[$lang]['sections'] = array_values($sections);
+    }
+
+    // -------------------------------------------------------------------------
+    // New section builders
+    // -------------------------------------------------------------------------
+
+    private function legacyBolagsengagemangSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'Bolagsengagemang' : 'Company Involvement',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            $lang === 'sv'
+                ? [
+                    ['c1' => 'Styrelseledamot & Ordforande', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Historiska bolagsengagemang', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ]
+                : [
+                    ['c1' => 'Board Member & Chairman', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Historical Company Involvement', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ],
+        );
+    }
+
+    private function legacyHistoriskaBolagsengagemangSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'Historiska bolagsengagemang' : 'Historical Company Involvement',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']],
+        );
+    }
+
+    private function legacyKorkortSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'Korkort' : 'Driving Licence',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            $lang === 'sv'
+                ? [
+                    ['c1' => 'Korkortsbehorighe', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Aterkallelse av korkort', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Antal fordon', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ]
+                : [
+                    ['c1' => 'Driving Licence Category', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Licence Revocation', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Number of Vehicles', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ],
+        );
+    }
+
+    private function legacyFordonskontrollSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'Fordonskontroll' : 'Vehicle Check',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']],
+        );
+    }
+
+    private function legacyFastighetsinnehavSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'Fastighetsinnehav' : 'Property Holdings',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']],
+        );
+    }
+
+    private function legacyPepSanktionSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'PEP/Sanktion' : 'PEP/Sanction',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            [['c1' => $lang === 'sv' ? 'PEP/Sanktion' : 'PEP/Sanction', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']],
+        );
+    }
+
+    private function legacyCvArbetsgivareSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'CV-kontroll arbetsgivare' : 'CV Check - Employer',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            $lang === 'sv'
+                ? [
+                    ['c1' => 'Arbetsgivare 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Befattning', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Anstallningstid', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Refrensperson', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ]
+                : [
+                    ['c1' => 'Employer 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Position', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Employment Period', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Reference Person', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ],
+        );
+    }
+
+    private function legacyCvUtbildningSection(string $lang): array
+    {
+        return $this->legacyTableSection(
+            $lang === 'sv' ? 'CV-kontroll hogre eftergymnasial utbildning' : 'CV Check - Higher Education',
+            3,
+            $lang === 'sv' ? ['Rubrik', 'Varde', 'Status'] : ['Head', 'Value', 'Status'],
+            $lang === 'sv'
+                ? [
+                    ['c1' => 'Institut 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Utbildning', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Examen', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ]
+                : [
+                    ['c1' => 'Institution 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Education', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                    ['c1' => 'Degree', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''],
+                ],
+        );
+    }
+
+    private function legacySocialaMedierSection(string $lang): array
+    {
+        $content = $lang === 'sv'
+            ? 'Facebook: Kandidaten har ett konto pa Facebook. Under den granskade perioden hittades inga avvikelser eller olagliga aktiviteter.'."\n".'Instagram: Kandidaten har ett konto pa Instagram. Under den granskade perioden hittades inga avvikelser.'."\n".'Linkedin: Kandidaten har ett konto pa Linkedin med professionell narvaro.'."\n".'Avvikelser: Inga avvikelser eller oregelbundenheter har hittats pa kandidatens sociala mediekonton.'
+            : 'Facebook: The candidate has a Facebook account. No deviations or illegal activities were found during the reviewed period.'."\n".'Instagram: The candidate has an Instagram account. No deviations were found.'."\n".'LinkedIn: The candidate has a LinkedIn account with professional presence.'."\n".'Deviations: No deviations or irregularities were found on the candidate\'s social media accounts.';
+
+        return [
+            'id' => (string) Str::uuid(),
+            'type' => 'text',
+            'heading' => $lang === 'sv' ? 'SOCIALA MEDIER' : 'SOCIAL MEDIA',
+            'content' => $content,
+            'align' => 'left',
+            'status_id' => null,
+        ];
+    }
+
+    private function legacyKallorSection(string $lang): array
+    {
+        $content = $lang === 'sv'
+            ? 'Recway utfor bakgrundskontroller dar antalet kallor som kontrolleras varierar beroende pa omfattningen av kontrollen. Recway hamtar offentliga uppgifter fran flera myndigheter och institutioner i Sverige, inklusive Skatteverket, Kronofogdemyndigheten, Centrala studiestodsnamnden, aktuella larosaten, Transportstyrelsen, Hogsta domstolen, Arbetsdomstolen samt samtliga Sveriges hovrattar, tings- och forvaltningsrattar. For att sakerstalla en omfattande kontroll inkluderar de ocksa information fran oppna kallor pa internet samt ett urval av de mest populara sociala medie-plattformarna. Genom att kombinera dessa kallor ger Recway en grundlig och palitlig bakgrundskontroll.'
+            : 'Recway conducts background checks where the number of sources varies depending on the scope of the check. Recway retrieves public information from multiple authorities and institutions in Sweden. To ensure a comprehensive check, open internet sources and selected social media platforms are also included. By combining these sources, Recway provides a thorough and reliable background check.';
+
+        return [
+            'id' => (string) Str::uuid(),
+            'type' => 'text',
+            'heading' => $lang === 'sv' ? 'KALLOR' : 'SOURCES',
+            'content' => $content,
+            'align' => 'left',
+            'status_id' => null,
+        ];
+    }
+
+    private function legacyAnsvarSection(string $lang): array
+    {
+        $content = $lang === 'sv'
+            ? 'Rapporten far anvandas av endast Bestallaren och far ej spridas till annan. Recway ansvarar inte gentemot annan an Bestallaren for innehallet i rapporten eller for annan anvandning av rapporten an i samband med en bakgrundskontroll. Recway ansvarar ej for eventuella fel i de kallor vi hamtar uppgifter fran.'
+            : 'The report may only be used by the Client and may not be distributed to others. Recway is not responsible to anyone other than the Client for the content of the report or for any use of the report other than in connection with a background check. Recway is not responsible for any errors in the sources from which we retrieve information.';
+
+        return [
+            'id' => (string) Str::uuid(),
+            'type' => 'text',
+            'heading' => $lang === 'sv' ? 'ANSVAR' : 'LIABILITY',
+            'content' => $content,
+            'align' => 'left',
+            'status_id' => null,
+        ];
+    }
+
+    private function legacyMetodSection(string $lang): array
+    {
+        $content = $lang === 'sv'
+            ? 'Recway genomfor bakgrundskontroller genom en strukturerad och dokumenterad process. Informationsinhamnting sker, i den utstrackning det ar lagligen tillatet och relevant for uppdraget, fran offentliga register och myndighetskallor, kommersiella databaser samt oppna kallor.'."\n\n".'Kontroller genomfors i enlighet med vald kontrollniva och uppdragets riskprofil. Verifiering av utbildning eller tidigare anstallning sker nar dettaingar i betalld kontroll.'."\n\n".'Efter genomford informationsinhamnting analyseras samtliga uppgifter manuellt av behorig sakerhetshantlaggare. Bedomningen sker utifran relevans i forhallande till uppdraget, aktualitet, identifierade riskindikatorer samt proportionalitet.'
+            : 'Recway conducts background checks through a structured and documented process. Information is gathered, to the extent legally permitted and relevant to the assignment, from public registers, official sources, commercial databases, and open sources.'."\n\n".'Checks are conducted in accordance with the selected control level and the risk profile of the assignment.'."\n\n".'After information gathering, all data is manually analyzed by an authorized security officer. The assessment is based on relevance to the assignment, timeliness, identified risk indicators, and proportionality.';
+
+        return [
+            'id' => (string) Str::uuid(),
+            'type' => 'text',
+            'heading' => $lang === 'sv' ? 'METOD' : 'METHOD',
+            'content' => $content,
+            'align' => 'justify',
+            'status_id' => null,
         ];
     }
 }

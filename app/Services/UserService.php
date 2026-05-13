@@ -98,7 +98,6 @@ class UserService
         $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
             'username' => $data['name'] ?? null,
         ];
 

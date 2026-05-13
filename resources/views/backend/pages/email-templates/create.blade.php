@@ -7,8 +7,9 @@
         @csrf
 
         @include('backend.pages.email-templates.partials.form', [
-            'template' => null,
+            'template'    => null,
             'routePrefix' => $routePrefix,
+            'catalogue'   => $catalogue ?? [],
         ])
     </form>
 </x-layouts.backend-layout>

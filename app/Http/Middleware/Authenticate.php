@@ -14,22 +14,34 @@ class Authenticate extends Middleware
      */
     protected function redirectTo($request)
     {
-        // If the request does not expect JSON, redirect to the appropriate login page.
         if (! $request->expectsJson()) {
-            // Check if the request is for an admin route
+            // Staff routes → staff login
+            if ($request->is('staff/*') || $request->is('staff')) {
+                return route('staff.login');
+            }
+
+            // Customer routes → customer login (base URL)
+            if ($request->is('customer/*') || $request->is('customer')) {
+                return route('customer.login');
+            }
+
+            // Admin routes → admin login (with optional disable flag)
             if ($request->is('admin/*') || $request->is('admin')) {
                 $disableRedirect = config('settings.disable_default_admin_redirect', '0') === '1';
 
-                // If redirect is disabled, show 403.
                 if ($disableRedirect) {
-                    return abort(403, 'Unauthorized access');
+                    abort(403, 'Unauthorized access');
                 }
 
                 return route('admin.login');
             }
 
-            // For frontend routes, redirect to frontend login.
-            return route('login');
+            // Frontend fallback
+            if (app()->routesAreCached() || \Illuminate\Support\Facades\Route::has('login')) {
+                return route('login');
+            }
+
+            return route('admin.login');
         }
 
         return null;

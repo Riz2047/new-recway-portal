@@ -32,16 +32,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Handle "/" route redirection.
-        if (
-            ! $this->app->runningInConsole() &&
-            request()->is('/') &&
-            Hook::applyFilters(AdminFilterHook::ADMIN_SITE_ONLY, true)
-        ) {
-            redirect('/admin')->send();
-            exit;
-        }
-
         // Scramable auth configuration.
         Scramble::configure()
             ->withDocumentTransformers(function (OpenApi $openApi) {

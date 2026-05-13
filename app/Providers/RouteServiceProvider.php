@@ -30,6 +30,8 @@ class RouteServiceProvider extends ServiceProvider
      */
     public const ADMIN_DASHBOARD = '/admin';
 
+    public const CUSTOMER_DASHBOARD = '/customer/dashboard';
+
     /**
      * Define your route model bindings, pattern filters, etc.
      */
@@ -50,6 +52,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapAuthRoutes();
 
         $this->mapWebRoutes();
+
+        $this->mapCustomerRoutes();
     }
 
     /**
@@ -89,6 +93,13 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @return void
      */
+    protected function mapCustomerRoutes(): void
+    {
+        Route::middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/customer.php'));
+    }
+
     protected function mapApiRoutes()
     {
         Route::prefix('api')

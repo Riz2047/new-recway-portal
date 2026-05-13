@@ -47,10 +47,8 @@ class StatusManager extends Component
             ?? Customer::query()->whereKey($this->customerId)->value('company');
 
         $this->canViewReport = (bool) ($this->companyManager?->can_view_report ?? false);
-        // $this->interviewReportTemplate = $this->companyManager?->email_template;
         $this->underInvestigationTemplate = $this->companyManager?->email_template;
-        // $this->underInvestigationTemplate = null;
-        $this->approvedTemplate = null;
+        $this->approvedTemplate = $this->companyManager?->email_template_approved;
     }
 
     public function update(): void
@@ -59,6 +57,7 @@ class StatusManager extends Component
             'selectedCompany' => ['nullable', 'string', 'max:500'],
             'canViewReport' => ['boolean'],
             'underInvestigationTemplate' => ['nullable', 'string'],
+            'approvedTemplate' => ['nullable', 'string'],
         ]);
 
         $this->companyManager = CompanyManager::query()->updateOrCreate(
@@ -67,6 +66,7 @@ class StatusManager extends Component
                 'company' => $this->selectedCompany,
                 'can_view_report' => $this->canViewReport,
                 'email_template' => $this->underInvestigationTemplate,
+                'email_template_approved' => $this->approvedTemplate,
             ]
         );
 
