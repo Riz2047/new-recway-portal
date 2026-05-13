@@ -8,16 +8,15 @@ use Illuminate\Support\Facades\Auth;
 
 class RedirectIfAuthenticated
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string|null  $guard
-     * @return mixed
-     */
     public function handle($request, Closure $next, $guard = null)
     {
         if (Auth::guard('web')->check()) {
+            // Send already-authenticated users to the correct dashboard
+            // based on which portal URL they are visiting.
+            if ($request->is('staff/*') || $request->is('staff')) {
+                return redirect()->route('staff.dashboard');
+            }
+
             return redirect(RouteServiceProvider::ADMIN_DASHBOARD);
         }
 

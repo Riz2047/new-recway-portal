@@ -233,6 +233,7 @@ return [
         App\Providers\HookServiceProvider::class,
         Barryvdh\Debugbar\ServiceProvider::class,
         App\Providers\StaffRoutingServiceProvider::class,
+        App\Providers\CustomerRoutingServiceProvider::class,
     ],
 
     /*

@@ -154,75 +154,57 @@ class ReportTemplateService
     /** @return array{version:int,sections:array<int,array<string,mixed>>} */
     public function defaultPayload(string $lang = 'sv'): array
     {
-        $isSwedish = $lang === 'sv';
+        $sv = $lang === 'sv';
+        $h3 = $this->defaultHeaders($lang, 3);
+        $h5 = $this->defaultHeaders($lang, 5);
 
         return [
             'version' => 1,
             'sections' => [
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'text',
-                    'heading' => 'Result',
-                    'content' => '',
-                    'align' => 'left',
-                    'status_id' => null,
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'text',
-                    'heading' => $isSwedish ? 'Introduktion' : 'Introduction',
-                    'content' => $this->defaultIntroduction($lang),
-                    'align' => 'justify',
-                    'status_id' => null,
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'text',
-                    'heading' => $isSwedish ? 'Bakgrund' : 'Background Heading',
-                    'content' => '',
-                    'align' => 'left',
-                    'status_id' => null,
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'text',
-                    'heading' => $isSwedish ? 'INFORMATION OCH FAKTA' : 'INFORMATION & FACTS',
-                    'content' => $this->defaultInformationFactsText($lang),
-                    'align' => 'left',
-                    'status_id' => null,
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'table',
-                    'caption' => 'Profile',
-                    'columns' => 3,
-                    'headers' => $this->defaultHeaders($lang, 3),
-                    'rows' => $this->defaultProfileRows($lang),
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'table',
-                    'caption' => $isSwedish ? 'Ekonomi' : 'Economy',
-                    'columns' => 3,
-                    'headers' => $this->defaultHeaders($lang, 3),
-                    'rows' => $this->defaultEconomyRows($lang),
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'table',
-                    'caption' => $isSwedish ? 'Inkomstuppgifter' : 'Income Information',
-                    'columns' => 5,
-                    'headers' => $this->defaultHeaders($lang, 5),
-                    'rows' => $this->defaultIncomeRows($lang),
-                ],
-                [
-                    'id' => (string) Str::uuid(),
-                    'type' => 'table',
-                    'caption' => $isSwedish ? 'Juridik' : 'Legal',
-                    'columns' => 5,
-                    'headers' => $this->defaultHeaders($lang, 5),
-                    'rows' => $this->defaultLegalRows($lang),
-                ],
+                // Result
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => 'Result', 'content' => '', 'align' => 'left', 'status_id' => null],
+                // Introduction
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'Introduktion' : 'Introduction', 'content' => $this->defaultIntroduction($lang), 'align' => 'justify', 'status_id' => null],
+                // Background
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'Bakgrund' : 'Background', 'content' => '', 'align' => 'left', 'status_id' => null],
+                // Information & Facts
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'INFORMATION OCH FAKTA' : 'INFORMATION & FACTS', 'content' => $this->defaultInformationFactsText($lang), 'align' => 'left', 'status_id' => null],
+                // Summary
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'SUMMERING' : 'SUMMARY', 'content' => '', 'align' => 'left', 'status_id' => null],
+                // Page break
+                ['id' => (string) Str::uuid(), 'type' => 'page_break'],
+                // Profile table
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => 'Profile', 'columns' => 3, 'headers' => $h3, 'rows' => $this->defaultProfileRows($lang)],
+                // Economy table
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Ekonomi' : 'Economy', 'columns' => 3, 'headers' => $h3, 'rows' => $this->defaultEconomyRows($lang)],
+                // Income table
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Inkomstuppgifter' : 'Income Information', 'columns' => 5, 'headers' => $h5, 'rows' => $this->defaultIncomeRows($lang)],
+                // Legal table
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Juridik' : 'Legal', 'columns' => 5, 'headers' => $h5, 'rows' => $this->defaultLegalRows($lang)],
+                // Bolagsengagemang
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Bolagsengagemang' : 'Company Involvement', 'columns' => 3, 'headers' => $h3, 'rows' => $sv ? [['c1' => 'Styrelseledamot & Ordforande', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Historiska bolagsengagemang', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']] : [['c1' => 'Board Member & Chairman', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Historical Company Involvement', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // Historiska bolagsengagemang
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Historiska bolagsengagemang' : 'Historical Company Involvement', 'columns' => 3, 'headers' => $h3, 'rows' => [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // Korkort
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Korkort' : 'Driving Licence', 'columns' => 3, 'headers' => $h3, 'rows' => $sv ? [['c1' => 'Korkortsbehorighe', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Aterkallelse av korkort', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Antal fordon', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']] : [['c1' => 'Licence Category', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Licence Revocation', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Number of Vehicles', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // Fordonskontroll
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Fordonskontroll' : 'Vehicle Check', 'columns' => 3, 'headers' => $h3, 'rows' => [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // Fastighetsinnehav
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'Fastighetsinnehav' : 'Property Holdings', 'columns' => 3, 'headers' => $h3, 'rows' => [['c1' => '', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // PEP/Sanktion
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'PEP/Sanktion' : 'PEP/Sanction', 'columns' => 3, 'headers' => $h3, 'rows' => [['c1' => $sv ? 'PEP/Sanktion' : 'PEP/Sanction', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // CV-kontroll arbetsgivare
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'CV-kontroll arbetsgivare' : 'CV Check - Employer', 'columns' => 3, 'headers' => $h3, 'rows' => $sv ? [['c1' => 'Arbetsgivare 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Befattning', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Anstallningstid', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Refrensperson', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']] : [['c1' => 'Employer 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Position', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Employment Period', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Reference Person', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // CV-kontroll utbildning
+                ['id' => (string) Str::uuid(), 'type' => 'table', 'caption' => $sv ? 'CV-kontroll hogre utbildning' : 'CV Check - Higher Education', 'columns' => 3, 'headers' => $h3, 'rows' => $sv ? [['c1' => 'Institut 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Utbildning', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Examen', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']] : [['c1' => 'Institution 1', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Education', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => ''], ['c1' => 'Degree', 'c2' => '', 'c3' => '', 'c4' => '', 'c5' => '']]],
+                // Sociala medier
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'SOCIALA MEDIER' : 'SOCIAL MEDIA', 'content' => '', 'align' => 'left', 'status_id' => null],
+                // Källor
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'KALLOR' : 'SOURCES', 'content' => $this->defaultKallorText($lang), 'align' => 'left', 'status_id' => null],
+                // Ansvar
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'ANSVAR' : 'LIABILITY', 'content' => $this->defaultAnsvarText($lang), 'align' => 'left', 'status_id' => null],
+                // Metod
+                ['id' => (string) Str::uuid(), 'type' => 'text', 'heading' => $sv ? 'METOD' : 'METHOD', 'content' => $this->defaultMetodText($lang), 'align' => 'justify', 'status_id' => null],
             ],
         ];
     }
@@ -328,6 +310,33 @@ class ReportTemplateService
         return [
             ['c1' => 'Category', 'c2' => 'Finding', 'c3' => 'Date', 'c4' => 'Source', 'c5' => ''],
         ];
+    }
+
+    private function defaultKallorText(string $lang): string
+    {
+        if ($lang === 'sv') {
+            return 'Recway utfor bakgrundskontroller dar antalet kallor som kontrolleras varierar beroende pa omfattningen av kontrollen. Recway hamtar offentliga uppgifter fran flera myndigheter och institutioner i Sverige, inklusive Skatteverket, Kronofogdemyndigheten, Transportstyrelsen, Hogsta domstolen, Arbetsdomstolen samt samtliga Sveriges hovrattar, tings- och forvaltningsrattar. For att sakerstalla en omfattande kontroll inkluderar de ocksa information fran oppna kallor pa internet samt ett urval av de mest populara sociala medie-plattformarna.';
+        }
+
+        return 'Recway conducts background checks where the number of sources varies depending on the scope of the check. Recway retrieves public information from multiple authorities and institutions in Sweden, including the Swedish Tax Agency, the Enforcement Authority, the Transport Agency, and all Swedish courts. To ensure a comprehensive check, open internet sources and selected social media platforms are also included.';
+    }
+
+    private function defaultAnsvarText(string $lang): string
+    {
+        if ($lang === 'sv') {
+            return 'Rapporten far anvandas av endast Bestallaren och far ej spridas till annan. Recway ansvarar inte gentemot annan an Bestallaren for innehallet i rapporten eller for annan anvandning av rapporten an i samband med en bakgrundskontroll. Recway ansvarar ej for eventuella fel i de kallor vi hamtar uppgifter fran.';
+        }
+
+        return 'The report may only be used by the Client and may not be distributed to others. Recway is not responsible to anyone other than the Client for the content of the report. Recway is not responsible for any errors in the sources from which we retrieve information.';
+    }
+
+    private function defaultMetodText(string $lang): string
+    {
+        if ($lang === 'sv') {
+            return 'Recway genomfor bakgrundskontroller genom en strukturerad och dokumenterad process. Informationsinhamnting sker, i den utstrackning det ar lagligen tillatet och relevant for uppdraget, fran offentliga register och myndighetskallor, kommersiella databaser samt oppna kallor.'."\n\n".'Kontroller genomfors i enlighet med vald kontrollniva och uppdragets riskprofil. Efter genomford informationsinhamnting analyseras samtliga uppgifter manuellt av behorig sakerhetshantlaggare. Bedomningen sker utifran relevans i forhallande till uppdraget, aktualitet, identifierade riskindikatorer samt proportionalitet.';
+        }
+
+        return 'Recway conducts background checks through a structured and documented process. Information is gathered from public registers, official sources, commercial databases, and open sources, to the extent legally permitted.'."\n\n".'After information gathering, all data is manually analyzed by an authorized security officer. The assessment is based on relevance, timeliness, identified risk indicators, and proportionality.';
     }
 
     /** @param mixed $section */

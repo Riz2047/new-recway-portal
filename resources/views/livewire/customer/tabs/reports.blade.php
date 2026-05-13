@@ -39,42 +39,51 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'introduction')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Introduction') }}
+                {{-- BK Level load buttons --}}
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button"
+                            wire:click="loadBkPreset('{{ $lang }}', 1)"
+                            wire:confirm="{{ __('This will replace all current sections with the BK Level 1 default. Continue?') }}"
+                            class="rounded bg-green-700 px-3 py-2 text-xs font-semibold text-white hover:bg-green-800">
+                        {{ __('Load BK Level 1') }}
                     </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'background')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Background') }}
+                    <button type="button"
+                            wire:click="loadBkPreset('{{ $lang }}', 2)"
+                            wire:confirm="{{ __('This will replace all current sections with the BK Level 2 default. Continue?') }}"
+                            class="rounded bg-green-700 px-3 py-2 text-xs font-semibold text-white hover:bg-green-800">
+                        {{ __('Load BK Level 2') }}
                     </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'information')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Information & Facts') }}
-                    </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'summary')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Summary') }}
-                    </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'profile')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Profile') }}
-                    </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'economy')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Economy') }}
-                    </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'income')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Income') }}
-                    </button>
-                    <button type="button" wire:click="addLegacySection('{{ $lang }}', 'legal')"
-                            class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                        {{ __('Legal') }}
+                    <button type="button" wire:click="resetLanguageToGlobal('{{ $lang }}')"
+                            class="rounded bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
+                            @disabled(!$isOverridden[$lang])>
+                        {{ __('Reset to Global') }}
                     </button>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2">
+                {{-- Text section presets --}}
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{{ __('Add Text Section') }}</p>
+                <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    @foreach(['introduction' => __('Introduction'), 'background' => __('Background'), 'information' => __('Info & Facts'), 'summary' => __('Summary'), 'sociala_medier' => __('Social Media'), 'kallor' => __('Sources'), 'ansvar' => __('Liability'), 'metod' => __('Method')] as $preset => $label)
+                        <button type="button" wire:click="addLegacySection('{{ $lang }}', '{{ $preset }}')"
+                                class="rounded bg-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+
+                {{-- Table section presets --}}
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{{ __('Add Table Section') }}</p>
+                <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    @foreach(['profile' => __('Profile'), 'economy' => __('Economy'), 'income' => __('Income'), 'legal' => __('Legal'), 'bolagsengagemang' => __('Company'), 'historiska_bolagsengagemang' => __('Historical Co.'), 'korkort' => __('Driving Licence'), 'fordonskontroll' => __('Vehicle'), 'fastighetsinnehav' => __('Property'), 'pep_sanktion' => __('PEP/Sanction'), 'cv_arbetsgivare' => __('CV Employer'), 'cv_utbildning' => __('CV Education')] as $preset => $label)
+                        <button type="button" wire:click="addLegacySection('{{ $lang }}', '{{ $preset }}')"
+                                class="rounded bg-slate-600 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+
+                {{-- Custom add controls --}}
+                <div class="grid grid-cols-3 gap-2">
                     <button type="button" wire:click="addTableSection('{{ $lang }}')"
                             class="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
                         {{ __('Add Table') }}
@@ -86,11 +95,6 @@
                     <button type="button" wire:click="addTextSection('{{ $lang }}')"
                             class="rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
                         {{ __('Add Text') }}
-                    </button>
-                    <button type="button" wire:click="resetLanguageToGlobal('{{ $lang }}')"
-                            class="rounded bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
-                            @disabled(!$isOverridden[$lang])>
-                        {{ __('Reset Global') }}
                     </button>
                 </div>
 

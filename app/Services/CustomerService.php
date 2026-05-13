@@ -181,6 +181,10 @@ class CustomerService
             'combine_bk_and_security' => $this->prepareCombineServices($data['combine_bk_and_security'] ?? []),
             'combine_status' => $this->prepareCombineStatuses($data['combine_status'] ?? []),
             'combine_interview_service' => $this->prepareCombineInterviewService($data['combine_interview_service'] ?? null),
+            // FK version — kept in sync with the legacy string field.
+            'combine_interview_id' => ! empty($data['combine_interview_service']) && (int) $data['combine_interview_service'] > 0
+                ? (int) $data['combine_interview_service']
+                : null,
             'timra_report' => ! empty($data['timra_report']),
             'ellevio_report' => ! empty($data['ellevio_report']),
             'invoice_period' => $data['invoice_period'] ?? 'month',
@@ -208,11 +212,14 @@ class CustomerService
             }
         }
 
+        // Keep null for columns that must be explicitly cleared (combine_interview_id can be null).
+        $nullableKeys = ['combine_interview_service', 'combine_interview_id'];
+
         return array_filter(
             $customerData,
             static fn (mixed $value, string|int $key): bool => $value !== null
                 || is_bool($value)
-                || $key === 'combine_interview_service',
+                || in_array($key, $nullableKeys, true),
             ARRAY_FILTER_USE_BOTH
         );
     }

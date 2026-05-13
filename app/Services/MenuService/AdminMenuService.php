@@ -231,6 +231,26 @@ class AdminMenuService
             'permissions' => ['customer.view'],
         ]);
 
+        $this->addMenuItem([
+            'label' => __('Statistics'),
+            'icon' => 'lucide:bar-chart-2',
+            'route' => route("$prefix.analytics.index"),
+            'active' => Route::is("$prefix.analytics.*"),
+            'id' => 'statistics',
+            'priority' => 11,
+            'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
+            'label' => __('Messages'),
+            'icon' => 'lucide:message-square',
+            'route' => route("$prefix.message-templates.index"),
+            'active' => Route::is("$prefix.message-templates.*"),
+            'id' => 'messages',
+            'priority' => 12,
+            'permissions' => ['customer.view'],
+        ]);
+
         // $this->registerPostTypesInMenu(null);
 
         $this->addMenuItem([

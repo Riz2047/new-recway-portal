@@ -69,5 +69,7 @@ class Kernel extends HttpKernel
         'check.upload.limits' => \App\Http\Middleware\CheckPhpUploadLimits::class,
         'recaptcha' => \App\Http\Middleware\VerifyRecaptcha::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class,
+        'otp.verified'   => \App\Http\Middleware\RequireOtpVerification::class,
+        'customer.auth'  => \App\Http\Middleware\CustomerAuthenticate::class,
     ];
 }

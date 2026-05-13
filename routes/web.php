@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 /**
  * Admin routes.
  */
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:Admin']], function () {
+Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'otp.verified', 'role:Admin']], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('roles', RoleController::class);
     Route::delete('roles/delete/bulk-delete', [RoleController::class, 'bulkDelete'])->name('roles.bulk-delete');
@@ -83,9 +83,24 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
 
     // Customer Routes.
     Route::resource('customers', App\Http\Controllers\Backend\CustomerController::class);
-    Route::resource('candidates', CandidateController::class)->only(['index', 'create', 'store']);
+    Route::resource('candidates', CandidateController::class)->except(['show']);
+    Route::delete('candidates/delete/bulk-delete', [CandidateController::class, 'bulkDelete'])->name('candidates.bulk-delete');
     Route::get('candidates/services', [CandidateController::class, 'services'])->name('candidates.services');
     Route::get('candidates/form', [CandidateController::class, 'form'])->name('candidates.form');
+    Route::get('candidates/{candidate}/history-preview', [CandidateController::class, 'historyPreview'])->name('candidates.history-preview');
+    Route::get('candidates/{candidate}/history', [CandidateController::class, 'history'])->name('candidates.history');
+    Route::post('candidates/{candidate}/history', [CandidateController::class, 'storeHistory'])->name('candidates.history.store');
+    Route::delete('candidates/{candidate}/history/{entry}', [CandidateController::class, 'deleteHistory'])->name('candidates.history.destroy');
+    Route::get('candidates/{candidate}/emails', [CandidateController::class, 'emails'])->name('candidates.emails');
+    Route::post('candidates/{candidate}/emails/{email}/resend', [CandidateController::class, 'resendEmail'])->name('candidates.emails.resend');
+    // Interview / security report — secure download (private storage)
+    Route::get('candidates/{candidate}/report/{type}/download', [App\Http\Controllers\Backend\CandidateReportController::class, 'download'])->name('candidates.report.download');
+    Route::delete('candidates/{candidate}/report/{type}', [App\Http\Controllers\Backend\CandidateReportController::class, 'destroy'])->name('candidates.report.destroy');
+    // BK Report editor
+    Route::get('candidates/{candidate}/bk-report', [App\Http\Controllers\Backend\BkReportController::class, 'edit'])->name('candidates.bk-report.edit');
+    Route::get('candidates/{candidate}/bk-report/{lang}/preview', [App\Http\Controllers\Backend\BkReportController::class, 'preview'])->name('candidates.bk-report.preview');
+    Route::get('candidates/{candidate}/bk-report/{lang}/pdf', [App\Http\Controllers\Backend\BkReportController::class, 'pdf'])->name('candidates.bk-report.pdf');
+    Route::post('candidates/{candidate}/bk-report/upload', [App\Http\Controllers\Backend\BkReportController::class, 'upload'])->name('candidates.bk-report.upload');
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
     Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');
@@ -118,7 +133,44 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::delete('place/delete/bulk-delete', [PlaceController::class, 'bulkDelete'])->name('place.bulk-delete');
 
     Route::resource('email-templates', EmailTemplateController::class)->except(['show']);
+    Route::post('email-templates/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+    Route::get('email-templates/catalogue', [EmailTemplateController::class, 'catalogue'])->name('email-templates.catalogue');
     Route::view('reports', 'backend.pages.reports.index')->name('reports.index');
+
+    // Message Templates Routes (per-customer × per-service email bodies).
+    Route::prefix('message-templates')->name('message-templates.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\MessageTemplateController::class, 'index'])->name('index');
+        Route::get('/load', [App\Http\Controllers\Backend\MessageTemplateController::class, 'load'])->name('load');
+        Route::post('/save', [App\Http\Controllers\Backend\MessageTemplateController::class, 'save'])->name('save');
+        Route::post('/save-all', [App\Http\Controllers\Backend\MessageTemplateController::class, 'saveAll'])->name('save-all');
+        Route::post('/copy', [App\Http\Controllers\Backend\MessageTemplateController::class, 'copy'])->name('copy');
+        Route::post('/preview', [App\Http\Controllers\Backend\MessageTemplateController::class, 'preview'])->name('preview');
+    });
+
+    // Invoice Routes.
+    Route::prefix('invoices')->name('invoices.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\InvoiceController::class, 'index'])->name('index');
+        Route::get('/pending', [App\Http\Controllers\Backend\InvoiceController::class, 'pendingCandidates'])->name('pending');
+        Route::post('/bulk-mark-sent', [App\Http\Controllers\Backend\InvoiceController::class, 'bulkMarkSent'])->name('bulk-mark-sent');
+        Route::post('/generate', [App\Http\Controllers\Backend\InvoiceController::class, 'generateForCustomer'])->name('generate');
+        Route::get('/{invoice}', [App\Http\Controllers\Backend\InvoiceController::class, 'show'])->name('show');
+        Route::post('/{invoice}/mark-sent', [App\Http\Controllers\Backend\InvoiceController::class, 'markSent'])->name('mark-sent');
+        Route::post('/{invoice}/mark-pending', [App\Http\Controllers\Backend\InvoiceController::class, 'markPending'])->name('mark-pending');
+    });
+
+    // Cron Status Routes (admin only).
+    Route::prefix('cron')->name('cron.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\CronStatusController::class, 'index'])->name('index');
+        Route::post('/run', [App\Http\Controllers\Backend\CronStatusController::class, 'runJob'])->name('run');
+        Route::get('/log/{file}', [App\Http\Controllers\Backend\CronStatusController::class, 'showLog'])->name('log');
+    });
+
+    // Analytics Routes.
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\AnalyticsController::class, 'index'])->name('index');
+        Route::get('/data', [App\Http\Controllers\Backend\AnalyticsController::class, 'data'])->name('data');
+        Route::post('/mark-invoice-sent', [App\Http\Controllers\Backend\AnalyticsController::class, 'markInvoiceSent'])->name('mark-invoice-sent');
+    });
 
     // Action Log Routes.
     Route::get('/action-log', [ActionLogController::class, 'index'])->name('actionlog.index');
@@ -165,7 +217,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
 /**
  * Staff routes (share controllers/views with admin).
  */
-Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'role:Manager,User,Moderator,Manager with statistics']], function () {
+Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'otp.verified', 'role:Admin,Manager,User,Moderator,Manager with statistics']], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('roles', RoleController::class);
     Route::delete('roles/delete/bulk-delete', [RoleController::class, 'bulkDelete'])->name('roles.bulk-delete');
@@ -187,9 +239,23 @@ Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'r
     Route::resource('staff-category', App\Http\Controllers\Backend\StaffCategoryController::class);
     Route::delete('staff-category/delete/bulk-delete', [App\Http\Controllers\Backend\StaffCategoryController::class, 'bulkDelete'])->name('staff-category.bulk-delete');
     Route::resource('customers', App\Http\Controllers\Backend\CustomerController::class);
-    Route::resource('candidates', CandidateController::class)->only(['index', 'create', 'store']);
+    Route::resource('candidates', CandidateController::class)->except(['show']);
+    Route::delete('candidates/delete/bulk-delete', [CandidateController::class, 'bulkDelete'])->name('candidates.bulk-delete');
     Route::get('candidates/services', [CandidateController::class, 'services'])->name('candidates.services');
     Route::get('candidates/form', [CandidateController::class, 'form'])->name('candidates.form');
+    Route::get('candidates/{candidate}/history-preview', [CandidateController::class, 'historyPreview'])->name('candidates.history-preview');
+    Route::get('candidates/{candidate}/history', [CandidateController::class, 'history'])->name('candidates.history');
+    Route::post('candidates/{candidate}/history', [CandidateController::class, 'storeHistory'])->name('candidates.history.store');
+    Route::delete('candidates/{candidate}/history/{entry}', [CandidateController::class, 'deleteHistory'])->name('candidates.history.destroy');
+    Route::get('candidates/{candidate}/emails', [CandidateController::class, 'emails'])->name('candidates.emails');
+    Route::post('candidates/{candidate}/emails/{email}/resend', [CandidateController::class, 'resendEmail'])->name('candidates.emails.resend');
+    Route::get('candidates/{candidate}/report/{type}/download', [App\Http\Controllers\Backend\CandidateReportController::class, 'download'])->name('candidates.report.download');
+    Route::delete('candidates/{candidate}/report/{type}', [App\Http\Controllers\Backend\CandidateReportController::class, 'destroy'])->name('candidates.report.destroy');
+    // BK Report editor
+    Route::get('candidates/{candidate}/bk-report', [App\Http\Controllers\Backend\BkReportController::class, 'edit'])->name('candidates.bk-report.edit');
+    Route::get('candidates/{candidate}/bk-report/{lang}/preview', [App\Http\Controllers\Backend\BkReportController::class, 'preview'])->name('candidates.bk-report.preview');
+    Route::get('candidates/{candidate}/bk-report/{lang}/pdf', [App\Http\Controllers\Backend\BkReportController::class, 'pdf'])->name('candidates.bk-report.pdf');
+    Route::post('candidates/{candidate}/bk-report/upload', [App\Http\Controllers\Backend\BkReportController::class, 'upload'])->name('candidates.bk-report.upload');
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
     Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');
@@ -214,7 +280,36 @@ Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'r
     Route::delete('place/delete/bulk-delete', [PlaceController::class, 'bulkDelete'])->name('place.bulk-delete');
 
     Route::resource('email-templates', EmailTemplateController::class)->except(['show']);
+    Route::post('email-templates/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+    Route::get('email-templates/catalogue', [EmailTemplateController::class, 'catalogue'])->name('email-templates.catalogue');
     Route::view('reports', 'backend.pages.reports.index')->name('reports.index');
+
+    // Message Templates Routes (staff).
+    Route::prefix('message-templates')->name('message-templates.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\MessageTemplateController::class, 'index'])->name('index');
+        Route::get('/load', [App\Http\Controllers\Backend\MessageTemplateController::class, 'load'])->name('load');
+        Route::post('/save', [App\Http\Controllers\Backend\MessageTemplateController::class, 'save'])->name('save');
+        Route::post('/save-all', [App\Http\Controllers\Backend\MessageTemplateController::class, 'saveAll'])->name('save-all');
+        Route::post('/copy', [App\Http\Controllers\Backend\MessageTemplateController::class, 'copy'])->name('copy');
+        Route::post('/preview', [App\Http\Controllers\Backend\MessageTemplateController::class, 'preview'])->name('preview');
+    });
+
+    // Invoice Routes (staff — read + mark-sent only, no generation).
+    Route::prefix('invoices')->name('invoices.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\InvoiceController::class, 'index'])->name('index');
+        Route::get('/pending', [App\Http\Controllers\Backend\InvoiceController::class, 'pendingCandidates'])->name('pending');
+        Route::post('/bulk-mark-sent', [App\Http\Controllers\Backend\InvoiceController::class, 'bulkMarkSent'])->name('bulk-mark-sent');
+        Route::get('/{invoice}', [App\Http\Controllers\Backend\InvoiceController::class, 'show'])->name('show');
+        Route::post('/{invoice}/mark-sent', [App\Http\Controllers\Backend\InvoiceController::class, 'markSent'])->name('mark-sent');
+        Route::post('/{invoice}/mark-pending', [App\Http\Controllers\Backend\InvoiceController::class, 'markPending'])->name('mark-pending');
+    });
+
+    // Analytics Routes (staff).
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Backend\AnalyticsController::class, 'index'])->name('index');
+        Route::get('/data', [App\Http\Controllers\Backend\AnalyticsController::class, 'data'])->name('data');
+        Route::post('/mark-invoice-sent', [App\Http\Controllers\Backend\AnalyticsController::class, 'markInvoiceSent'])->name('mark-invoice-sent');
+    });
 
     Route::get('/action-log', [ActionLogController::class, 'index'])->name('actionlog.index');
     Route::prefix('media')->name('media.')->group(function () {
