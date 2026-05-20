@@ -335,16 +335,63 @@
                 const label = String(field.label || name);
                 const placeholder = String(field.placeholder || '');
                 const required = Boolean(field.required);
-                const oldValue = oldInput[name] ?? '';
+
+                // Known direct DB columns — these always submit with their column name.
+                const directColumns = [
+                    'security', 'name', 'surname', 'email', 'phone', 'vasc_id',
+                    'referensperson', 'reference', 'comment', 'note', 'place', 'country',
+                ];
+
+                // Strip trailing required-marker (*) from label to get a clean storage key.
+                const cleanLabel = label.replace(/\s*\*\s*$/, '').trim();
+
+                let inputName;
+                if (field.section === 'billing') {
+                    // ── Billing section ───────────────────────────────────────────────
+                    // Known billing fields use their canonical column name (matched by
+                    // name after PHP remap OR by label keyword).
+                    const ll = label.toLowerCase();
+                    if (name === 'referensperson' || name === 'pref' ||
+                        ll.includes('invoice recipient') || ll.includes('ansvarig chef') || ll.includes('hiring manager')) {
+                        inputName = 'referensperson';
+                    } else if (name === 'reference' || name === 'ref' ||
+                               (ll.includes('do') && ll.includes('siffror'))) {
+                        inputName = 'reference';
+                    } else if (name === 'comment' || name === 'note') {
+                        inputName = name;
+                    } else {
+                        // Custom billing field → form_builder[cleanLabel] → meta_data
+                        inputName = `form_builder[${cleanLabel}]`;
+                    }
+                } else {
+                    // ── Personal section ──────────────────────────────────────────────
+                    // Direct DB columns submit with their column name; everything else
+                    // (custom questions like "Apply for the position", "Have you informed…")
+                    // submits as form_builder[cleanLabel] so it lands in meta_data.
+                    if (directColumns.includes(name)) {
+                        inputName = name;
+                    } else {
+                        inputName = `form_builder[${cleanLabel}]`;
+                    }
+                }
+
+                // Restore old value after validation failure
+                const oldValue = (() => {
+                    if (inputName.startsWith('form_builder[')) {
+                        const key = inputName.slice(13, -1); // strip "form_builder[" and "]"
+                        return (oldInput.form_builder ?? {})[key] ?? '';
+                    }
+                    return oldInput[inputName] ?? '';
+                })();
 
                 const fieldId = name === 'security' ? 'security' : `field_${name}`;
                 const labelId = name === 'security' ? 'security-label' : '';
                 let html = `<label ${labelId ? `id="${labelId}"` : ''} for="${escapeHtml(fieldId)}" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">${escapeHtml(label)}</label>`;
 
                 if (type === 'textarea') {
-                    html += `<textarea id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" rows="4" class="form-control" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}">${escapeHtml(oldValue)}</textarea>`;
+                    html += `<textarea id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" rows="4" class="form-control" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}">${escapeHtml(oldValue)}</textarea>`;
                 } else if (type === 'select') {
-                    html += `<select id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" class="form-control" ${required ? 'required' : ''}>`;
+                    html += `<select id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" class="form-control" ${required ? 'required' : ''}>`;
 
                     if (placeholder) {
                         html += `<option value="">${escapeHtml(placeholder)}</option>`;
@@ -361,7 +408,7 @@
                         ? (hasPersonalId ? 'text' : 'date')
                         : normalizeInputType(type);
 
-                    html += `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" />`;
+                    html += `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" />`;
                 }
 
                 if (name === 'security') {

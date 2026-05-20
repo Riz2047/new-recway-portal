@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Pivot between statuses and service_types (interviews).
- * Stores the `msg_col` name — the column in `messages` that holds the email template
- * for this status + service combination.
+ * msg_col is the key used in messages.templates JSON for this status+service combination.
+ * e.g. msg_col = 'approved_msg' → templates['approved_msg'] = '<html>…</html>'
  */
 class StatusServiceLink extends Model
 {

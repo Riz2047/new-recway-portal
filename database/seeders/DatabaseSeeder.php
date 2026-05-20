@@ -18,7 +18,14 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SettingsSeeder::class,
             // ContentSeeder::class,
+
+            // Reference data — must run in this order (FKs: categories → types/statuses → services)
             ServiceCategorySeeder::class,
+            ServiceTypeSeeder::class,
+            StatusSeeder::class,
+            StatusServiceSeeder::class,
+            DefaultMessageTemplateSeeder::class,
+
             EmailTemplateSeeder::class,
         ]);
     }

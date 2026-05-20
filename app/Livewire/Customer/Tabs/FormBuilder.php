@@ -4,6 +4,7 @@ namespace App\Livewire\Customer\Tabs;
 
 use App\Models\Customer;
 use App\Models\ServiceType;
+use App\Services\CustomerPropagationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -107,6 +108,15 @@ class FormBuilder extends Component
                 'required' => '',
                 'value' => 'Enter Candidate VASC ID',
             ],
+            'social_security_number' => [
+                'section' => 'personal_info',
+                'type' => 'text',
+                'label' => 'Social Security Number',
+                'name' => 'social_security_number',
+                'placeholder' => 'YYMMDD-XXXX or Date of Birth',
+                'required' => 'required',
+                'value' => '',
+            ],
             default => null,
         };
 
@@ -206,18 +216,27 @@ class FormBuilder extends Component
             return;
         }
 
+        $formJson = json_encode([
+            'form_builder' => $this->serializeSections(),
+        ], JSON_UNESCAPED_UNICODE);
+
         DB::table('form_builders')->updateOrInsert(
             [
                 'cus_id' => $this->customerId,
                 'servicetype_id' => $this->selectedService,
             ],
             [
-                'form' => json_encode([
-                    'form_builder' => $this->serializeSections(),
-                ], JSON_UNESCAPED_UNICODE),
+                'form' => $formJson,
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
+        );
+
+        // Propagate the form to child customers that share the same service type.
+        app(CustomerPropagationService::class)->propagateForms(
+            $this->customerId,
+            $this->selectedService,
+            $formJson
         );
 
         $this->dispatch('notify', [

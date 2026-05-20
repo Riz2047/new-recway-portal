@@ -78,7 +78,7 @@ class StatusDatatable extends Datatable
                         ->orWhere('status_sv', 'like', "%{$this->search}%")
                         ->orWhere('variable', 'like', "%{$this->search}%");
                 });
-            });
+            })->orderBy('status', 'ASC');
 
         return $this->sortQuery($query);
     }

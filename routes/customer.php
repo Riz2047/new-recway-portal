@@ -40,8 +40,9 @@ Route::group([
     Route::get('/orders/{id}',                    [OrderController::class, 'show'])->name('orders.show');
     Route::get('/orders/{id}/edit',               [OrderController::class, 'edit'])->name('orders.edit');
     Route::put('/orders/{id}',                    [OrderController::class, 'update'])->name('orders.update');
-    Route::delete('/orders/{id}/cancel',          [OrderController::class, 'cancel'])->name('orders.cancel');
-    Route::post('/orders/{id}/change-status',     [OrderController::class, 'changeStatus'])->name('orders.change-status');
+    Route::delete('/orders/{id}/cancel',                 [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{id}/change-status',            [OrderController::class, 'changeStatus'])->name('orders.change-status');
+    Route::post('/orders/{id}/upload-security-report',   [OrderController::class, 'uploadSecurityReport'])->name('orders.upload-security-report');
 
     // Phase 6 — Statistics
     Route::get('/statistics',        [StatisticsController::class, 'index'])->name('statistics');

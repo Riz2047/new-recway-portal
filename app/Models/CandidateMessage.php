@@ -8,8 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Represents a row from the `messages` table (per customer + service type).
- * Each column (booked_msg, approved_msg, etc.) is an HTML email body template.
+ * Represents a row from the `messages` table (one row per customer + service type).
+ *
+ * Email template bodies are stored in the `templates` JSON column.
+ * Key convention: the key is the msg_col value from status_services
+ * (e.g. 'approved_msg', 'pending_msg') or a fixed special key
+ * ('cus_msg', 'admin_msg', 'staff_msg').
  */
 class CandidateMessage extends Model
 {
@@ -18,6 +22,13 @@ class CandidateMessage extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'templates' => 'array',
+        ];
+    }
 
     public function customer(): BelongsTo
     {
@@ -30,17 +41,29 @@ class CandidateMessage extends Model
     }
 
     /**
-     * Get the message body for a given column name (e.g. 'booked_msg').
-     * Returns null if the column does not exist or is empty.
+     * Get the email template body for a given key.
+     *
+     * Key is the msg_col value (e.g. 'approved_msg') or a special key
+     * ('cus_msg', 'admin_msg', 'staff_msg').
+     * Returns null when the key does not exist or the body is empty.
      */
-    public function getBodyForColumn(string $column): ?string
+    public function getBodyForKey(string $key): ?string
     {
-        if (! in_array($column, $this->getConnection()->getSchemaBuilder()->getColumnListing($this->table), true)) {
-            return null;
-        }
+        $body = ($this->templates ?? [])[$key] ?? null;
 
-        $value = $this->getAttribute($column);
+        return ($body !== null && $body !== '') ? (string) $body : null;
+    }
 
-        return ! empty($value) ? (string) $value : null;
+    /**
+     * Write (or clear) a single template entry and persist immediately.
+     * Merges into the existing JSON rather than overwriting the whole column.
+     */
+    public function setTemplate(string $key, ?string $body): void
+    {
+        $templates = $this->templates ?? [];
+        $templates[$key] = ($body !== null && $body !== '') ? $body : null;
+
+        $this->templates = $templates;
+        $this->save();
     }
 }

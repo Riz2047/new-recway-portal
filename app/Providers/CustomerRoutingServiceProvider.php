@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Controllers\Customer\Auth\ForgotPasswordController;
+use App\Http\Controllers\Customer\Auth\LockedAccountController;
 use App\Http\Controllers\Customer\Auth\LoginController;
 use App\Http\Controllers\Customer\Auth\OtpVerificationController;
 use App\Http\Controllers\Customer\Auth\ResetPasswordController;
@@ -55,5 +56,15 @@ class CustomerRoutingServiceProvider extends ServiceProvider
         Route::middleware('web')
             ->post('/customer/logout', [LoginController::class, 'logout'])
             ->name('customer.logout');
+
+        // Locked-account MFA recovery flow (all public — user cannot authenticate while locked).
+        Route::middleware('web')->prefix('customer/locked-account')->name('customer.locked.')->group(function () {
+            Route::get('/',             [LockedAccountController::class, 'showReset'])->name('reset');
+            Route::post('/send-mfa',    [LockedAccountController::class, 'sendMfa'])->name('send-mfa')->middleware('throttle:5,1');
+            Route::get('/verify-mfa',   [LockedAccountController::class, 'showMfaVerify'])->name('verify-mfa');
+            Route::post('/verify-mfa',  [LockedAccountController::class, 'verifyMfa'])->name('verify-mfa.submit')->middleware('throttle:10,1');
+            Route::get('/new-password', [LockedAccountController::class, 'showForcedReset'])->name('new-password');
+            Route::post('/new-password',[LockedAccountController::class, 'processForcedReset'])->name('new-password.submit')->middleware('throttle:5,1');
+        });
     }
 }

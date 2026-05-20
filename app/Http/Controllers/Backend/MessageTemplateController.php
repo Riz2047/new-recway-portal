@@ -8,24 +8,35 @@ use App\Http\Controllers\Controller;
 use App\Models\CandidateMessage;
 use App\Models\Customer;
 use App\Models\ServiceType;
+use App\Services\CustomerPropagationService;
 use App\Services\EmailTemplateRenderer;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * Manages per-customer × per-service email templates (the `messages` table).
  *
- * Mirrors the old system's admin2/messages.php page.
- * Each row in `messages` stores all status-specific email bodies for
- * one customer + one service type combination.
+ * Templates are stored as a JSON object in messages.templates.
+ * Key convention: the key is the msg_col value from status_services
+ * (e.g. 'approved_msg', 'pending_msg') or a fixed special key
+ * ('cus_msg', 'admin_msg', 'staff_msg').
  */
 class MessageTemplateController extends Controller
 {
-    /**
-     * Index: customer + service type selector, template editor.
-     */
+    public function __construct(private readonly CustomerPropagationService $propagation)
+    {
+    }
+
+    /** Fixed templates referenced directly by name in PHP code — always shown. */
+    private const SPECIAL_KEYS = [
+        'cus_msg' => ['label' => 'Customer — New Order',         'group' => 'Customer'],
+        'admin_msg' => ['label' => 'Admin — New Order',             'group' => 'Admin'],
+        'staff_msg' => ['label' => 'Staff — Assigned Notification', 'group' => 'Staff'],
+    ];
+
     public function index(Request $request): Renderable
     {
         $this->authorize('viewAny', Customer::class);
@@ -44,21 +55,20 @@ class MessageTemplateController extends Controller
 
         $catalogue = EmailTemplateRenderer::catalogue();
 
-        // Determine which message columns exist in the messages table.
-        $messageCols = $this->getMessageColumns();
+        [$messageCols, $colLabels] = $this->buildTemplateMetadata();
 
         return $this->renderViewWithBreadcrumbs('backend.pages.message-templates.index', compact(
             'prefix',
             'customers',
             'serviceTypes',
             'catalogue',
-            'messageCols'
+            'messageCols',
+            'colLabels',
         ));
     }
 
     /**
-     * AJAX: Load the messages row for a given customer + service type.
-     * Returns all column values as JSON.
+     * AJAX: Load the templates JSON for a given customer + service type.
      */
     public function load(Request $request): JsonResponse
     {
@@ -78,24 +88,24 @@ class MessageTemplateController extends Controller
             ->first();
 
         return response()->json([
-            'messages' => $row ? $row->toArray() : [],
+            'messages' => $row?->templates ?? [],
             'exists' => $row !== null,
         ]);
     }
 
     /**
-     * AJAX: Save (upsert) a single column value for a customer + service.
+     * AJAX: Save (upsert) a single template key for a customer + service.
      */
     public function save(Request $request): JsonResponse
     {
         $this->authorize('update', Customer::class);
 
-        $allowedCols = $this->getMessageColumns();
+        $allowedKeys = $this->getAllowedKeys();
 
         $validated = $request->validate([
             'cus_id' => ['required', 'integer', 'exists:customers,id'],
             'interview_id' => ['required', 'integer', 'exists:service_types,id'],
-            'column' => ['required', 'string', 'in:' . implode(',', $allowedCols)],
+            'column' => ['required', 'string', 'in:' . implode(',', $allowedKeys)],
             'value' => ['nullable', 'string'],
         ]);
 
@@ -103,21 +113,25 @@ class MessageTemplateController extends Controller
             return response()->json(['success' => false, 'message' => 'messages table not available'], 422);
         }
 
-        CandidateMessage::updateOrCreate(
-            [
-                'cus_id' => $validated['cus_id'],
-                'interview_id' => $validated['interview_id'],
-            ],
-            [
-                $validated['column'] => $validated['value'] ?: null,
-            ]
+        $row = CandidateMessage::firstOrNew([
+            'cus_id' => $validated['cus_id'],
+            'interview_id' => $validated['interview_id'],
+        ]);
+
+        $row->setTemplate($validated['column'], $validated['value'] ?: null);
+
+        // Push the full updated templates to child customers for the same service.
+        $this->propagation->propagateMessages(
+            $validated['cus_id'],
+            $validated['interview_id'],
+            $row->fresh()->templates ?? []
         );
 
         return response()->json(['success' => true, 'message' => __('Template saved.')]);
     }
 
     /**
-     * AJAX: Bulk-save all columns for a customer + service at once.
+     * AJAX: Bulk-save all template keys for a customer + service at once.
      */
     public function saveAll(Request $request): JsonResponse
     {
@@ -133,12 +147,12 @@ class MessageTemplateController extends Controller
             return response()->json(['success' => false, 'message' => 'messages table not available'], 422);
         }
 
-        $allowedCols = $this->getMessageColumns();
-        $update = [];
+        $allowedKeys = array_flip($this->getAllowedKeys());
+        $templates = [];
 
-        foreach ($validated['columns'] as $col => $val) {
-            if (in_array($col, $allowedCols, true)) {
-                $update[$col] = $val ?: null;
+        foreach ($validated['columns'] as $key => $val) {
+            if (isset($allowedKeys[$key])) {
+                $templates[$key] = ($val !== null && $val !== '') ? $val : null;
             }
         }
 
@@ -147,7 +161,14 @@ class MessageTemplateController extends Controller
                 'cus_id' => $validated['cus_id'],
                 'interview_id' => $validated['interview_id'],
             ],
-            $update
+            ['templates' => $templates]
+        );
+
+        // Push the saved templates to child customers for the same service.
+        $this->propagation->propagateMessages(
+            $validated['cus_id'],
+            $validated['interview_id'],
+            $templates
         );
 
         return response()->json(['success' => true, 'message' => __('All templates saved.')]);
@@ -179,18 +200,21 @@ class MessageTemplateController extends Controller
             return response()->json(['success' => false, 'message' => __('Source template not found.')], 404);
         }
 
-        $allowedCols = $this->getMessageColumns();
-        $data = [];
-        foreach ($allowedCols as $col) {
-            $data[$col] = $source->getAttribute($col);
-        }
+        $copiedTemplates = $source->templates ?? [];
 
         CandidateMessage::updateOrCreate(
             [
                 'cus_id' => $validated['to_cus_id'],
                 'interview_id' => $validated['to_interview_id'],
             ],
-            $data
+            ['templates' => $copiedTemplates]
+        );
+
+        // Propagate the copied templates to children of the target customer.
+        $this->propagation->propagateMessages(
+            $validated['to_cus_id'],
+            $validated['to_interview_id'],
+            $copiedTemplates
         );
 
         return response()->json(['success' => true, 'message' => __('Templates copied successfully.')]);
@@ -213,24 +237,66 @@ class MessageTemplateController extends Controller
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the list of all valid message column names that exist in the
-     * `messages` table (so we never write to unknown columns).
+     * Build the full list of template keys and their display metadata.
      *
-     * @return string[]
+     * Keys are msg_col values (e.g. 'approved_msg') or special keys ('cus_msg', …).
+     * Sourced from status_services.msg_col across all statuses.
+     *
+     * Returns [$messageCols, $colLabels]:
+     *   $messageCols — flat ordered array of all keys
+     *   $colLabels   — key => ['label' => '…', 'group' => '…', 'code' => '…']
      */
-    private function getMessageColumns(): array
+    private function buildTemplateMetadata(): array
     {
-        if (! Schema::hasTable('messages')) {
-            return [];
+        $messageCols = [];
+        $colLabels = [];
+
+        // Special fixed keys always shown first.
+        foreach (self::SPECIAL_KEYS as $key => $meta) {
+            $messageCols[] = $key;
+            $colLabels[$key] = array_merge($meta, ['code' => $key]);
         }
 
-        $excluded = ['id', 'cus_id', 'interview_id', 'created_at', 'updated_at'];
+        // Dynamic keys: all distinct msg_col values from status_services,
+        // joined with statuses to get the human-readable label and group.
+        if (Schema::hasTable('status_services') && Schema::hasTable('statuses')) {
+            DB::table('status_services')
+                ->join('statuses', 'statuses.id', '=', 'status_services.status_id')
+                ->leftJoin('service_categories', 'service_categories.id', '=', 'statuses.status_type')
+                ->whereNotNull('status_services.msg_col')
+                ->where('status_services.msg_col', '!=', '')
+                ->select(
+                    'status_services.msg_col',
+                    'statuses.status as status_name',
+                    'statuses.variable',
+                    'service_categories.name as category_name'
+                )
+                ->orderBy('service_categories.name')
+                ->orderBy('statuses.status')
+                ->get()
+                ->unique('msg_col')   // each msg_col shown once even if shared by services
+                ->each(function ($row) use (&$messageCols, &$colLabels): void {
+                    $key = $row->msg_col;
+                    if (isset($colLabels[$key])) {
+                        return; // already added (special key or duplicate msg_col)
+                    }
+                    $messageCols[] = $key;
+                    $colLabels[$key] = [
+                        'label' => $row->status_name,
+                        'group' => $row->category_name ?? 'Status',
+                        'code' => $row->variable,
+                    ];
+                });
+        }
 
-        return array_values(
-            array_diff(
-                Schema::getColumnListing('messages'),
-                $excluded
-            )
-        );
+        return [$messageCols, $colLabels];
+    }
+
+    /** @return string[] */
+    private function getAllowedKeys(): array
+    {
+        [$keys] = $this->buildTemplateMetadata();
+
+        return $keys;
     }
 }

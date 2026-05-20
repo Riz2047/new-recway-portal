@@ -8,7 +8,9 @@ use App\Enums\Hooks\AdminFilterHook;
 use App\Models\ServiceCategory;
 use App\Services\Content\ContentService;
 use App\Support\Facades\Hook;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AdminMenuService
@@ -212,12 +214,22 @@ class AdminMenuService
         ]);
 
         $this->addMenuItem([
+            'label' => __('Invoices'),
+            'icon' => 'lucide:receipt',
+            'route' => route("$prefix.invoices.index"),
+            'active' => Route::is("$prefix.invoices.*"),
+            'id' => 'invoices',
+            'priority' => 9,
+            'permissions' => ['customer.view'],
+        ]);
+
+        $this->addMenuItem([
             'label' => __('Email Templates'),
             'icon' => 'lucide:mail',
             'route' => route("$prefix.email-templates.index"),
             'active' => Route::is("$prefix.email-templates.*"),
             'id' => 'email-templates',
-            'priority' => 9,
+            'priority' => 10,
             'permissions' => ['email_template.view'],
         ]);
 
@@ -272,30 +284,53 @@ class AdminMenuService
         //     'permissions' => ['module.view'],
         // ], __('More'));
 
+        // Count failed queue jobs once for the badge (admin only — cron route doesn't exist on staff).
+        $failedJobsCount = ($prefix === 'admin' && Schema::hasTable('failed_jobs'))
+            ? DB::table('failed_jobs')->count()
+            : 0;
+
+        $failedBadge = $failedJobsCount > 0
+            ? ' <span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:9999px;font-size:10px;font-weight:700;line-height:1;background:#ef4444;color:#fff;margin-left:6px;">'
+              . $failedJobsCount . '</span>'
+            : '';
+
+        $cronChildren = [
+            [
+                'label' => __('Action Logs'),
+                'route' => route("$prefix.actionlog.index"),
+                'active' => Route::is("$prefix.actionlog.index"),
+                'priority' => 10,
+                'permissions' => ['actionlog.view'],
+            ],
+            [
+                'label' => __('Laravel Pulse'),
+                'route' => route('pulse'),
+                'active' => false,
+                'target' => '_blank',
+                'priority' => 20,
+                'permissions' => ['pulse.view'],
+            ],
+        ];
+
+        // Cron + Failed Jobs link — admin only (route not registered on staff prefix).
+        if ($prefix === 'admin') {
+            $cronChildren[] = [
+                'label' => __('Cron & Failed Jobs') . $failedBadge,
+                'route' => route('admin.cron.index'),
+                'active' => Route::is('admin.cron.*'),
+                'priority' => 30,
+                'permissions' => ['actionlog.view'],
+            ];
+        }
+
         $this->addMenuItem([
             'label' => __('Monitoring'),
             'icon' => 'lucide:monitor',
             'id' => 'monitoring-submenu',
-            'active' => Route::is("$prefix.actionlog.*"),
+            'active' => Route::is("$prefix.actionlog.*") || Route::is('admin.cron.*'),
             'priority' => 50,
             'permissions' => ['pulse.view', 'actionlog.view'],
-            'children' => [
-                [
-                    'label' => __('Action Logs'),
-                    'route' => route("$prefix.actionlog.index"),
-                    'active' => Route::is("$prefix.actionlog.index"),
-                    'priority' => 10,
-                    'permissions' => ['actionlog.view'],
-                ],
-                [
-                    'label' => __('Laravel Pulse'),
-                    'route' => route('pulse'),
-                    'active' => false,
-                    'target' => '_blank',
-                    'priority' => 20,
-                    'permissions' => ['pulse.view'],
-                ],
-            ],
+            'children' => $cronChildren,
         ], __('More'));
 
         $this->addMenuItem(

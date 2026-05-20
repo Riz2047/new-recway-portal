@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Customer\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\LoginAttempt;
 use App\Models\User;
 use App\Services\Auth\OtpService;
 use Illuminate\Http\RedirectResponse;
@@ -48,12 +49,28 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = $this->resolveUser($request->input('email'));
+        $email = $request->input('email');
+
+        // Redirect locked accounts to the MFA recovery flow immediately.
+        if (LoginAttempt::isAccountLocked($email)) {
+            return redirect()->route('customer.locked.reset', ['email' => $email])
+                ->with('error', __('Your account has been locked after too many failed attempts.'));
+        }
+
+        $user = $this->resolveUser($email);
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            $attempt   = LoginAttempt::recordFailedAttempt($email);
+            $remaining = LoginAttempt::getRemainingAttempts($email);
+
+            if ($attempt->is_locked) {
+                return redirect()->route('customer.locked.reset', ['email' => $email])
+                    ->with('error', __('Your account has been locked after too many failed attempts.'));
+            }
+
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors(['email' => __('These credentials do not match our records.')]);
+                ->withErrors(['email' => __('These credentials do not match our records. :n attempt(s) remaining.', ['n' => $remaining])]);
         }
 
         if (! $user->hasRole('Customer')) {
@@ -61,6 +78,9 @@ class LoginController extends Controller
                 ->withInput($request->only('email'))
                 ->withErrors(['email' => __('These credentials do not match our records.')]);
         }
+
+        // Successful login — clear any failed-attempt counter.
+        LoginAttempt::resetAttempts($email);
 
         // OTP is always mandatory for the customer portal (matches old system behaviour).
         $this->otpService->generateAndSend($user, 'customer');

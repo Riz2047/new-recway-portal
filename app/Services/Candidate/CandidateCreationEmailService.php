@@ -63,7 +63,7 @@ class CandidateCreationEmailService
 
         // 1. Customer email (cus_msg)
         if ($sendToCustomer && $customerEmail) {
-            $body = $messages->getBodyForColumn('cus_msg');
+            $body = $messages->getBodyForKey('cus_msg');
             if ($body) {
                 $body = $this->renderer->renderForCandidate($body, $candidate, $status, $date);
                 $this->sendAndSave(
@@ -116,7 +116,7 @@ class CandidateCreationEmailService
         // 3. Staff email (staff_msg) — whenever staff is assigned
         $staff = $candidate->staff;
         if ($staff && $staff->email) {
-            $body = $messages->getBodyForColumn('staff_msg');
+            $body = $messages->getBodyForKey('staff_msg');
             if ($body) {
                 $body = $this->renderer->renderForCandidate($body, $candidate, $status, $date);
                 $this->sendAndSave(
@@ -133,7 +133,7 @@ class CandidateCreationEmailService
         }
 
         // 4. Admin email (admin_msg) — always
-        $adminBody = $messages->getBodyForColumn('admin_msg')
+        $adminBody = $messages->getBodyForKey('admin_msg')
             ?? "Order has been created successfully for {$customerName} (customer) and OrderID is {$candidate->order_id}";
         $adminBody = $this->renderer->renderForCandidate($adminBody, $candidate, $status, $date);
 
@@ -153,7 +153,7 @@ class CandidateCreationEmailService
     }
 
     /**
-     * Find the candidate's initial-status email body via the status_services mapping.
+     * Find the candidate's initial-status email body via the status_services msg_col mapping.
      */
     private function resolveStatusBody(Candidate $candidate, CandidateMessage $messages): ?string
     {
@@ -169,7 +169,7 @@ class CandidateCreationEmailService
             return null;
         }
 
-        return $messages->getBodyForColumn($link->msg_col);
+        return $messages->getBodyForKey($link->msg_col);
     }
 
     private function sendAndSave(

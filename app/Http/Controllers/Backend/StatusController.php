@@ -12,6 +12,7 @@ use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class StatusController extends Controller
 {
@@ -73,14 +74,16 @@ class StatusController extends Controller
         $this->authorize('create', Status::class);
 
         $rules = [
-            'variable' => 'required|string|max:255|unique:statuses,variable',
+            'variable' => [
+                'required', 'string', 'max:255',
+                Rule::unique('statuses', 'variable')->where('status_type', $serviceCategoryModel->id),
+            ],
             'status' => 'required|string|max:255',
             'status_sv' => 'nullable|string|max:255',
             'status_detail' => 'nullable|string',
             'status_icon' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:7',
             'services' => 'nullable|array',
-            'message' => 'nullable|string',
             'msg_col' => 'nullable|string|max:255',
         ];
 
@@ -101,7 +104,7 @@ class StatusController extends Controller
             'status_type' => $serviceCategoryModel->id,
         ]);
 
-        // Sync selected service types into the status_services pivot table.
+        // Sync selected service types with their msg_col into the status_services pivot.
         if (! empty($validated['services']) && Schema::hasTable('service_types') && Schema::hasTable('status_services')) {
             $serviceTypeIds = ServiceType::query()
                 ->whereIn('id', $validated['services'])
@@ -160,7 +163,12 @@ class StatusController extends Controller
         $this->authorize('update', $statusModel);
 
         $validated = $request->validate([
-            'variable' => 'required|string|max:255|unique:statuses,variable,' . $statusModel->id,
+            'variable' => [
+                'required', 'string', 'max:255',
+                Rule::unique('statuses', 'variable')
+                    ->where('status_type', $serviceCategoryModel->id)
+                    ->ignore($statusModel->id),
+            ],
             'status' => 'required|string|max:255',
             'status_sv' => 'nullable|string|max:255',
             'status_detail' => 'nullable|string',

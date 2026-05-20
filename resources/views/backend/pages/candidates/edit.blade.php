@@ -426,55 +426,73 @@
         <x-card>
             <x-slot name="header">{{ __('Billing & Notes') }}</x-slot>
 
-            <div class="grid gap-4 md:grid-cols-2">
-
-                <div>
-                    <label for="referensperson" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Reference (Invoice Recipient)') }}
-                    </label>
-                    <input id="referensperson" name="referensperson" type="text"
-                        value="{{ old('referensperson', $candidate->referensperson) }}"
-                        class="form-control" />
-                    @error('referensperson')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
+            @if (!empty($billingDisplayFields))
+                {{-- Form-builder billing section: show labels as configured per customer/service --}}
+                <div class="space-y-4">
+                    @foreach ($billingDisplayFields as [$blabel, $bvalue])
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $blabel }}</p>
+                            <p class="mt-0.5 text-gray-800 dark:text-gray-200">{{ $bvalue ?: '—' }}</p>
+                        </div>
+                    @endforeach
                 </div>
+                {{-- Keep the editable fields hidden (submitted on save with current values) --}}
+                <input type="hidden" name="referensperson" value="{{ $candidate->referensperson }}">
+                <input type="hidden" name="reference"      value="{{ $candidate->reference }}">
+                <input type="hidden" name="comment"        value="{{ $candidate->comment }}">
+                <input type="hidden" name="note"           value="{{ $candidate->note }}">
+            @else
+                {{-- Default billing section (no form builder configured) --}}
+                <div class="grid gap-4 md:grid-cols-2">
 
-                <div>
-                    <label for="reference" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Reference') }}
-                    </label>
-                    <input id="reference" name="reference" type="text"
-                        value="{{ old('reference', $candidate->reference) }}"
-                        class="form-control" />
-                    @error('reference')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
+                    <div>
+                        <label for="referensperson" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('Reference (Invoice Recipient)') }}
+                        </label>
+                        <input id="referensperson" name="referensperson" type="text"
+                            value="{{ old('referensperson', $candidate->referensperson) }}"
+                            class="form-control" />
+                        @error('referensperson')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="reference" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('Reference') }}
+                        </label>
+                        <input id="reference" name="reference" type="text"
+                            value="{{ old('reference', $candidate->reference) }}"
+                            class="form-control" />
+                        @error('reference')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="comment" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('Invoice Comment') }}
+                        </label>
+                        <textarea id="comment" name="comment" rows="3"
+                            class="form-control">{{ old('comment', $candidate->comment) }}</textarea>
+                        @error('comment')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="note" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('Internal Note') }}
+                        </label>
+                        <textarea id="note" name="note" rows="3"
+                            class="form-control">{{ old('note', $candidate->note) }}</textarea>
+                        @error('note')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                 </div>
-
-                <div class="md:col-span-2">
-                    <label for="comment" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Invoice Comment') }}
-                    </label>
-                    <textarea id="comment" name="comment" rows="3"
-                        class="form-control">{{ old('comment', $candidate->comment) }}</textarea>
-                    @error('comment')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="md:col-span-2">
-                    <label for="note" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Internal Note') }}
-                    </label>
-                    <textarea id="note" name="note" rows="3"
-                        class="form-control">{{ old('note', $candidate->note) }}</textarea>
-                    @error('note')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-            </div>
+            @endif
         </x-card>
 
         {{-- SECTION: DOCUMENTS --}}
@@ -537,6 +555,152 @@
             $anyEnabled = count(array_filter($enabledReportTypes)) > 0;
         @endphp
         @if ($anyEnabled)
+        {{-- ── GENERATE INTERVIEW TEMPLATES ── --}}
+        @php
+            $editServiceCatId  = $candidate->serviceType?->service_category_id;
+            $editStatusVar     = $candidate->statusRelation?->variable ?? '';
+            $editTplEmpty      = empty($candidate->interview_template);
+
+            // Outer gate: service must belong to Interview(1), Follow-up(9), or Exit Interview(10)
+            $editIsInterview   = in_array($editServiceCatId, [1, 9, 10]);
+
+            // SPI: outer gate + booked status (IDs 3 / 35 / 51)
+            $showEditSpi       = $editIsInterview && $editTplEmpty
+                                 && in_array($editStatusVar, ['booked', 'booked_msg_follow']);
+
+            // Ellevio: outer gate + customer flag (no status restriction)
+            $showEditEllevio   = $editIsInterview && $editTplEmpty
+                                 && ($candidate->customer?->ellevio_report ?? false);
+
+            // Timrå: outer gate + customer flag (no status restriction)
+            $showEditTimra     = $editIsInterview && $editTplEmpty
+                                 && ($candidate->customer?->timra_report ?? false);
+        @endphp
+        @if ($showEditSpi || $showEditEllevio || $showEditTimra)
+        <x-card>
+            <x-slot name="header">{{ __('Generate Interview Templates') }}</x-slot>
+            <div x-data="{
+                     templateDataUrl: '{{ route($prefix . '.candidates.template-data', $candidate->id) }}',
+                     templateHistoryUrl: '{{ route($prefix . '.candidates.template-history', $candidate->id) }}',
+                     cusCompany: '{{ e($candidate->customer?->company ?? '') }}',
+                     serviceCatId: {{ (int) $editServiceCatId }},
+                     csrfToken: '{{ csrf_token() }}',
+                     generating: '',
+                     showConfirm: false,
+                     pendingType: '',
+
+                     openConfirm(type) {
+                         this.pendingType = type;
+                         this.showConfirm = true;
+                     },
+
+                     async confirmGenerate() {
+                         this.showConfirm = false;
+                         const type = this.pendingType;
+                         this.pendingType = '';
+                         this.generating = type;
+                         try {
+                             await window.RecwayTemplateGenerator.generate(
+                                 type, this.templateDataUrl, this.templateHistoryUrl,
+                                 this.cusCompany, this.serviceCatId, this.csrfToken
+                             );
+                         } catch(e) {
+                             alert('{{ __('Failed to generate template: ') }}' + e.message);
+                         } finally {
+                             this.generating = '';
+                         }
+                     }
+                 }">
+
+                <div class="flex flex-wrap gap-3">
+                    @if ($showEditSpi)
+                        <button type="button" @click="openConfirm('spi')" :disabled="generating !== ''"
+                            class="inline-flex items-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 dark:border-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300">
+                            <iconify-icon icon="lucide:file-down" width="15" x-show="generating !== 'spi'"></iconify-icon>
+                            <iconify-icon icon="lucide:loader-circle" width="15" class="animate-spin" x-show="generating === 'spi'"></iconify-icon>
+                            {{ __('Generate SPI Template') }}
+                        </button>
+                    @endif
+                    @if ($showEditEllevio)
+                        <button type="button" @click="openConfirm('ellevio')" :disabled="generating !== ''"
+                            class="inline-flex items-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 dark:border-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300">
+                            <iconify-icon icon="lucide:file-down" width="15" x-show="generating !== 'ellevio'"></iconify-icon>
+                            <iconify-icon icon="lucide:loader-circle" width="15" class="animate-spin" x-show="generating === 'ellevio'"></iconify-icon>
+                            {{ __('Generate Ellevio Template') }}
+                        </button>
+                    @endif
+                    @if ($showEditTimra)
+                        <button type="button" @click="openConfirm('timra')" :disabled="generating !== ''"
+                            class="inline-flex items-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100 disabled:opacity-50 dark:border-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300">
+                            <iconify-icon icon="lucide:file-down" width="15" x-show="generating !== 'timra'"></iconify-icon>
+                            <iconify-icon icon="lucide:loader-circle" width="15" class="animate-spin" x-show="generating === 'timra'"></iconify-icon>
+                            {{ __('Generate Timrå Referens') }}
+                        </button>
+                    @endif
+                </div>
+
+                {{-- Confirmation modal --}}
+                <div x-show="showConfirm"
+                     x-cloak
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+                     @keydown.escape.window="showConfirm = false; pendingType = ''">
+
+                    <div x-show="showConfirm"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="w-full max-w-sm rounded-2xl bg-white px-8 py-8 text-center shadow-2xl dark:bg-gray-800">
+
+                        {{-- Question mark icon --}}
+                        <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-blue-200 dark:border-blue-700">
+                            <span class="text-3xl font-light text-blue-300 dark:text-blue-400">?</span>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="mb-4 text-xl font-semibold text-gray-800 dark:text-white">
+                            Bekräftelse
+                        </h3>
+
+                        {{-- Body --}}
+                        <p class="mb-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                            Har du läst och tagit del av instruktionen för denna kund innan du genererar rapporten?
+                        </p>
+                        <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
+                            Instruktionen finns tillgänglig i Pulshub.
+                        </p>
+                        <p class="mb-7 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                            Rapporten kan endast genereras efter att du har bekräftat att instruktionen är genomläst.
+                        </p>
+
+                        {{-- Buttons --}}
+                        <div class="flex items-center justify-center gap-3">
+                            <button type="button"
+                                @click="showConfirm = false; pendingType = ''"
+                                class="min-w-[80px] rounded-lg bg-red-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2">
+                                Nej
+                            </button>
+                            <button type="button"
+                                @click="confirmGenerate()"
+                                class="min-w-[80px] rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                                Ja
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </x-card>
+        @endif
+
         <x-card>
             <x-slot name="header">{{ __('Security / Interview Reports') }}</x-slot>
 
@@ -546,10 +710,25 @@
                 </div>
             @endif
 
+            {{-- Notice when interview upload is disabled for this customer --}}
+            @if ($editIsInterview && empty($enabledReportTypes[\App\Services\Candidate\InterviewReportService::TYPE_SPI]))
+                <div class="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+                    <iconify-icon icon="lucide:alert-triangle" width="16" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"></iconify-icon>
+                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                        {{ __('Interview report upload is not enabled for this customer.') }}
+                        <a href="{{ route($prefix . '.customers.edit', $candidate->cus_id) }}"
+                            class="ml-1 font-semibold underline hover:text-amber-900 dark:hover:text-amber-100">
+                            {{ __('Enable "Interview Upload Report" on the customer settings') }}
+                        </a>
+                        {{ __('to allow uploading SPI reports.') }}
+                    </p>
+                </div>
+            @endif
+
             <div class="space-y-4">
                 @php
                     $reportDefs = [
-                        \App\Services\Candidate\InterviewReportService::TYPE_SPI     => __('SPI Security Report'),
+                        \App\Services\Candidate\InterviewReportService::TYPE_SPI     => __('Upload Interview Report'),
                         \App\Services\Candidate\InterviewReportService::TYPE_ELLEVIO => __('Ellevio Report'),
                         \App\Services\Candidate\InterviewReportService::TYPE_TIMRA   => __('Timrå Reference Report'),
                     ];
