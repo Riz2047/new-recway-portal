@@ -14,7 +14,9 @@ use Illuminate\Support\ServiceProvider;
 
 class CustomerRoutingServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+    }
 
     public function boot(): void
     {
@@ -28,7 +30,7 @@ class CustomerRoutingServiceProvider extends ServiceProvider
             ->get('/', [LoginController::class, 'showLoginForm'])
             ->name('customer.login');
 
-        Route::middleware(['web', 'throttle:20,1'])
+        Route::middleware(['web', 'throttle:20,1,customer-login'])
             ->post('/customer/login', [LoginController::class, 'login'])
             ->name('customer.login.submit');
 
@@ -36,19 +38,19 @@ class CustomerRoutingServiceProvider extends ServiceProvider
         Route::middleware('web')->prefix('customer')->name('customer.')->group(function () {
             Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
             Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
-                ->middleware('throttle:20,1')->name('password.email');
+                ->middleware('throttle:20,1,customer-password-email')->name('password.email');
             Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
             Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
-                ->middleware('throttle:20,1')->name('password.reset.submit');
+                ->middleware('throttle:20,1,customer-password-reset')->name('password.reset.submit');
         });
 
         // OTP verification (web only — NOT guest-guarded because user has pending session but is not yet Auth::check())
         Route::middleware('web')->prefix('customer/otp')->name('customer.otp.')->group(function () {
             Route::get('/', [OtpVerificationController::class, 'showForm'])->name('show');
             Route::post('/', [OtpVerificationController::class, 'verify'])->name('verify')
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,customer-otp-verify');
             Route::post('/resend', [OtpVerificationController::class, 'resend'])->name('resend')
-                ->middleware('throttle:5,1');
+                ->middleware('throttle:5,1,customer-otp-resend');
             Route::get('/cancel', [OtpVerificationController::class, 'cancel'])->name('cancel');
         });
 
@@ -59,12 +61,12 @@ class CustomerRoutingServiceProvider extends ServiceProvider
 
         // Locked-account MFA recovery flow (all public — user cannot authenticate while locked).
         Route::middleware('web')->prefix('customer/locked-account')->name('customer.locked.')->group(function () {
-            Route::get('/',             [LockedAccountController::class, 'showReset'])->name('reset');
-            Route::post('/send-mfa',    [LockedAccountController::class, 'sendMfa'])->name('send-mfa')->middleware('throttle:5,1');
-            Route::get('/verify-mfa',   [LockedAccountController::class, 'showMfaVerify'])->name('verify-mfa');
-            Route::post('/verify-mfa',  [LockedAccountController::class, 'verifyMfa'])->name('verify-mfa.submit')->middleware('throttle:10,1');
+            Route::get('/', [LockedAccountController::class, 'showReset'])->name('reset');
+            Route::post('/send-mfa', [LockedAccountController::class, 'sendMfa'])->name('send-mfa')->middleware('throttle:5,1,customer-locked-send-mfa');
+            Route::get('/verify-mfa', [LockedAccountController::class, 'showMfaVerify'])->name('verify-mfa');
+            Route::post('/verify-mfa', [LockedAccountController::class, 'verifyMfa'])->name('verify-mfa.submit')->middleware('throttle:10,1,customer-locked-verify-mfa');
             Route::get('/new-password', [LockedAccountController::class, 'showForcedReset'])->name('new-password');
-            Route::post('/new-password',[LockedAccountController::class, 'processForcedReset'])->name('new-password.submit')->middleware('throttle:5,1');
+            Route::post('/new-password', [LockedAccountController::class, 'processForcedReset'])->name('new-password.submit')->middleware('throttle:5,1,customer-locked-new-password');
         });
     }
 }

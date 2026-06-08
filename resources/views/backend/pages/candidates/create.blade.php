@@ -404,8 +404,11 @@
 
                     html += `</select>`;
                 } else {
+                    // The security field is always rendered as text — when it represents a
+                    // date of birth, flatpickr (a calendar widget) is attached to it instead
+                    // of relying on the native browser date input.
                     const inputType = name === 'security'
-                        ? (hasPersonalId ? 'text' : 'date')
+                        ? 'text'
                         : normalizeInputType(type);
 
                     html += `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" />`;
@@ -430,6 +433,24 @@
                 }
 
                 return 'text';
+            }
+
+            // Attach/detach the flatpickr calendar on the security field depending on
+            // whether it currently represents a date of birth.
+            function setSecurityDatePicker(input, enable) {
+                if (enable) {
+                    if (!input._flatpickr) {
+                        flatpickr(input, {
+                            dateFormat: 'Y-m-d',
+                            allowInput: true,
+                            disableMobile: true,
+                            static: true,
+                            locale: { firstDayOfWeek: 1 },
+                        });
+                    }
+                } else if (input._flatpickr) {
+                    input._flatpickr.destroy();
+                }
             }
 
             function bindSecurityBehavior() {
@@ -462,9 +483,9 @@
                 }
 
                 if (!hasPersonalId) {
-                    securityInput.type = 'date';
                     securityInput.removeAttribute('inputmode');
-                    securityInput.removeAttribute('placeholder');
+                    securityInput.placeholder = '{{ __('Select date of birth') }}';
+                    setSecurityDatePicker(securityInput, true);
                     if (securityLabel) {
                         securityLabel.innerHTML = 'Date of Birth <span class="text-red-500">*</span>';
                     }
@@ -474,7 +495,7 @@
                     return;
                 }
 
-                securityInput.type = 'text';
+                setSecurityDatePicker(securityInput, false);
                 securityInput.setAttribute('inputmode', 'numeric');
                 securityInput.placeholder = 'YYMMDD-XXXX';
                 if (securityLabel) {

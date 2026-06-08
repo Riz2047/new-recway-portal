@@ -68,15 +68,15 @@
             {{-- Date from --}}
             <div>
                 <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('From') }}</label>
-                <input type="date" id="filterFrom"
-                    class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                <x-inputs.date-picker id="filterFrom" placeholder="{{ __('From date') }}"
+                    class="!rounded-lg !border-gray-200 !bg-gray-50 !px-3 !py-1.5 !text-sm dark:!border-gray-600 dark:!bg-gray-700 dark:!text-gray-200" />
             </div>
 
             {{-- Date to --}}
             <div>
                 <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('To') }}</label>
-                <input type="date" id="filterTo"
-                    class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                <x-inputs.date-picker id="filterTo" placeholder="{{ __('To date') }}"
+                    class="!rounded-lg !border-gray-200 !bg-gray-50 !px-3 !py-1.5 !text-sm dark:!border-gray-600 dark:!bg-gray-700 dark:!text-gray-200" />
             </div>
 
             {{-- Service category --}}
@@ -210,14 +210,19 @@ function setPreset(preset) {
     if (preset === '3m')  { from.setMonth(from.getMonth() - 3); }
     if (preset === '30d') { from.setDate(from.getDate() - 30); }
     if (preset === '7d')  { from.setDate(from.getDate() - 7); }
-    if (preset === 'all') {
-        document.getElementById('filterFrom').value = '';
-        document.getElementById('filterTo').value   = '';
-        return;
-    }
 
-    document.getElementById('filterFrom').value = from.toISOString().slice(0, 10);
-    document.getElementById('filterTo').value   = to.toISOString().slice(0, 10);
+    setDateInput('filterFrom', preset === 'all' ? '' : from.toISOString().slice(0, 10));
+    setDateInput('filterTo',   preset === 'all' ? '' : to.toISOString().slice(0, 10));
+}
+
+// Set a date-picker input's value, keeping the flatpickr calendar in sync.
+function setDateInput(id, value) {
+    const el = document.getElementById(id);
+    if (el?._flatpickr) {
+        el._flatpickr.setDate(value, true);
+    } else if (el) {
+        el.value = value;
+    }
 }
 
 // ── Fetch stats ──────────────────────────────────────────────────────────

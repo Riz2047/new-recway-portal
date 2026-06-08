@@ -128,9 +128,11 @@
                         {{ $candidate->hasPersonalId ? __('Social Security Number') : __('Date of Birth') }}
                         <span class="text-red-500">*</span>
                     </label>
-                    <input class="wizard-input" id="ssn" name="security" required
-                        type="{{ $candidate->hasPersonalId ? 'text' : 'date' }}"
-                        placeholder="{{ $candidate->hasPersonalId ? 'YYMMDD-XXXX' : '' }}"
+                    {{-- Always rendered as text — flatpickr (a calendar widget) is attached
+                         when this represents a date of birth instead of a native date input. --}}
+                    <input class="wizard-input" id="ssn" name="security" required type="text"
+                        autocomplete="off"
+                        placeholder="{{ $candidate->hasPersonalId ? 'YYMMDD-XXXX' : __('Select date of birth') }}"
                         value="{{ old('security', $candidate->security) }}">
                     <input type="hidden" name="hasPersonalId" id="hidden-has-personal-id"
                         value="{{ old('hasPersonalId', $candidate->hasPersonalId ? '1' : '0') }}">
@@ -290,6 +292,24 @@ function switchTab(tabId, btn) {
     if (btn) btn.classList.add('active');
 }
 
+// Attach/detach the flatpickr calendar on the security field depending on whether
+// it currently represents a date of birth.
+function setSecurityDatePicker(input, enable) {
+    if (enable) {
+        if (!input._flatpickr) {
+            flatpickr(input, {
+                dateFormat: 'Y-m-d',
+                allowInput: true,
+                disableMobile: true,
+                static: true,
+                locale: { firstDayOfWeek: 1 },
+            });
+        }
+    } else if (input._flatpickr) {
+        input._flatpickr.destroy();
+    }
+}
+
 // PNR toggle
 function togglePnr() {
     const cb  = document.getElementById('hasPersonalId');
@@ -298,13 +318,24 @@ function togglePnr() {
     const hid = document.getElementById('hidden-has-personal-id');
     hid.value = cb.checked ? '1' : '0';
     if (cb.checked) {
-        ssn.type = 'text'; ssn.placeholder = 'YYMMDD-XXXX'; ssn.value = '';
+        setSecurityDatePicker(ssn, false);
+        ssn.placeholder = 'YYMMDD-XXXX'; ssn.value = '';
         lbl.innerHTML = '{{ __('Social Security Number') }} <span class="text-red-500">*</span>';
     } else {
-        ssn.type = 'date'; ssn.placeholder = ''; ssn.value = '';
+        ssn.value = '';
+        ssn.placeholder = '{{ __('Select date of birth') }}';
+        setSecurityDatePicker(ssn, true);
         lbl.innerHTML = '{{ __('Date of Birth') }} <span class="text-red-500">*</span>';
     }
 }
+
+// Initialize the calendar on page load if the candidate currently has no personal ID.
+document.addEventListener('DOMContentLoaded', function () {
+    const ssn = document.getElementById('ssn');
+    if (ssn && !{{ $candidate->hasPersonalId ? 'true' : 'false' }}) {
+        setSecurityDatePicker(ssn, true);
+    }
+});
 
 // Mark file for removal
 let removedFiles = [];

@@ -15,6 +15,7 @@ use App\Models\ServiceCategory;
 use App\Models\ServiceType;
 use App\Models\Status;
 use App\Models\User;
+use App\Services\FormBuilderFieldService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -165,7 +166,7 @@ class OrderController extends Controller
             : collect();
 
         // Check whether this customer is allowed to upload security reports.
-        $customerId         = $this->getCustomerId($userId);
+        $customerId = $this->getCustomerId($userId);
         $sendSecurityReport = (bool) Customer::where('id', $customerId)->value('send_security_report');
 
         // Show existing report filename if one was already uploaded.
@@ -446,16 +447,33 @@ class OrderController extends Controller
         $services = ServiceType::where('service_category_id', $categoryId)
             ->whereHas('customers', fn ($q) => $q->where('customers.id', $customerId))
             ->orderBy('name')
-            ->get(['id', 'name', 'price', 'place', 'delivery_days', 'description']);
+            ->get(['id', 'name', 'price', 'place', 'country', 'delivery_days', 'description']);
 
         return response()->json($services);
     }
 
-    /** AJAX — return custom form definition for a service (null if none defined). */
-    public function fetchForm(): JsonResponse
+    /** AJAX — return custom form definition for a service (mirrors old new_customer fetch_form). */
+    public function fetchForm(Request $request, FormBuilderFieldService $formBuilder): JsonResponse
     {
-        // No order_forms table in new system — always return null so JS uses defaults.
-        return response()->json(['form' => null]);
+        $customerId = $this->getCustomerId(Auth::id());
+        if (! $customerId) {
+            return response()->json([
+                'form_fields' => [],
+                'has_form_builder' => false,
+            ]);
+        }
+
+        $request->validate([
+            'service_id' => ['required', 'integer'],
+        ]);
+
+        $serviceTypeId = (int) $request->input('service_id');
+        $data = $formBuilder->load($customerId, $serviceTypeId);
+
+        return response()->json([
+            'form_fields' => $data['fields'],
+            'has_form_builder' => $data['has_form_builder'],
+        ]);
     }
 
     /** Save a new order (AJAX — returns JSON). */
@@ -479,6 +497,8 @@ class OrderController extends Controller
             'cv' => 'nullable|array|max:10',
             'cv.*' => 'file|mimes:pdf,doc,docx|max:10240',
             'agreed' => 'accepted',
+            'form_builder' => ['nullable', 'array'],
+            'form_builder.*' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $service = ServiceType::with('serviceCategory')->findOrFail($request->service_type_id);
@@ -537,8 +557,10 @@ class OrderController extends Controller
             })
             ->first();
 
-        // ── Custom question answers ──────────────────────────────────────────
-        $customAnswers = $request->input('custom_answers', []);
+        $rawFormBuilder = $request->input('form_builder', []);
+        $metaData = ! empty($rawFormBuilder)
+            ? json_encode($rawFormBuilder, JSON_UNESCAPED_UNICODE)
+            : null;
 
         // ── Save order ───────────────────────────────────────────────────────
         $candidate = Candidate::create([
@@ -561,7 +583,7 @@ class OrderController extends Controller
             'status' => $initialStatus?->id ?? 0,
             'staff_id' => null,
             'expired' => 0,
-            'meta_data' => $customAnswers ? json_encode($customAnswers) : null,
+            'meta_data' => $metaData,
             'meta_info' => json_encode([
                 'send_email' => $request->input('sendMail', 'no'),
                 'created_by' => $userId,
@@ -599,19 +621,19 @@ class OrderController extends Controller
         ]);
 
         $customerIds = $this->resolveCustomerIds(Auth::id());
-        $candidate   = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
+        $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
 
         // Permission gate — customer must have send_security_report enabled.
         $customerId = $this->getCustomerId(Auth::id());
         if (! Customer::where('id', $customerId)->value('send_security_report')) {
             return response()->json([
                 'success' => false,
-                'error'   => __('You do not have permission to upload security reports.'),
+                'error' => __('You do not have permission to upload security reports.'),
             ], 403);
         }
 
         // Filename matches old system convention: {order_id}_{cus_id}.pdf
-        $filename  = $candidate->order_id . '_' . $candidate->cus_id . '.pdf';
+        $filename = $candidate->order_id . '_' . $candidate->cus_id . '.pdf';
         $uploadDir = base_path('../security-report-uploads');
 
         if (! is_dir($uploadDir)) {
@@ -625,14 +647,14 @@ class OrderController extends Controller
 
         Log::info('Customer uploaded security report.', [
             'candidate_id' => $candidate->id,
-            'order_id'     => $candidate->order_id,
-            'customer_id'  => $customerId,
+            'order_id' => $candidate->order_id,
+            'customer_id' => $customerId,
         ]);
 
         return response()->json([
-            'success'  => true,
+            'success' => true,
             'filename' => $filename,
-            'message'  => __('Security report uploaded successfully.'),
+            'message' => __('Security report uploaded successfully.'),
         ]);
     }
 

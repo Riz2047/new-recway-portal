@@ -14,11 +14,9 @@
         <div class="flex flex-wrap items-center gap-2">
             {{-- Date pickers --}}
             <div class="flex items-center gap-1.5">
-                <input type="date" x-model="filters.start_date" @change="refresh()"
-                    class="form-control h-8 text-xs w-32" />
+                <x-inputs.date-picker x-model="filters.start_date" @change="refresh()" class="h-8 !text-xs w-32" />
                 <span class="text-xs text-gray-400">to</span>
-                <input type="date" x-model="filters.end_date" @change="refresh()"
-                    class="form-control h-8 text-xs w-32" />
+                <x-inputs.date-picker x-model="filters.end_date" @change="refresh()" class="h-8 !text-xs w-32" />
             </div>
 
             {{-- Quick date presets --}}

@@ -866,7 +866,7 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Date') }} <span class="text-red-500">*</span></label>
-                        <input wire:model="statusDate" type="date" class="form-control text-sm" />
+                        <x-inputs.date-picker wire:model="statusDate" class="text-sm" />
                         @error('statusDate') <p class="mt-0.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
@@ -1007,15 +1007,15 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Interview Date') }}</label>
-                    <input wire:model="editBookedDate" type="date" class="form-control text-sm" />
+                    <x-inputs.date-picker wire:model="editBookedDate" class="text-sm" />
                 </div>
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Background Check Date') }}</label>
-                    <input wire:model="editBackgroundCheckDate" type="date" class="form-control text-sm" />
+                    <x-inputs.date-picker wire:model="editBackgroundCheckDate" class="text-sm" />
                 </div>
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{{ __('Delivery Date') }}</label>
-                    <input wire:model="editDeliveryDate" type="date" class="form-control text-sm" />
+                    <x-inputs.date-picker wire:model="editDeliveryDate" class="text-sm" />
                 </div>
                 {{-- Costs --}}
                 <div>

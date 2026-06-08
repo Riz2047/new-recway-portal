@@ -228,9 +228,8 @@
                     <label for="booked" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ __('Interview Date') }}
                     </label>
-                    <input id="booked" name="booked" type="date"
-                        value="{{ old('booked', $candidate->booked?->format('Y-m-d')) }}"
-                        class="form-control" />
+                    <x-inputs.date-picker id="booked" name="booked"
+                        :value="$candidate->booked?->format('Y-m-d')" />
                     @error('booked')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -240,9 +239,8 @@
                     <label for="background_check_date" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ __('Background Check Date') }}
                     </label>
-                    <input id="background_check_date" name="background_check_date" type="date"
-                        value="{{ old('background_check_date', $candidate->background_check_date?->format('Y-m-d')) }}"
-                        class="form-control" />
+                    <x-inputs.date-picker id="background_check_date" name="background_check_date"
+                        :value="$candidate->background_check_date?->format('Y-m-d')" />
                     @error('background_check_date')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -252,9 +250,8 @@
                     <label for="delivery_date" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ __('Delivery Date') }}
                     </label>
-                    <input id="delivery_date" name="delivery_date" type="date"
-                        value="{{ old('delivery_date', $candidate->delivery_date?->format('Y-m-d')) }}"
-                        class="form-control" />
+                    <x-inputs.date-picker id="delivery_date" name="delivery_date"
+                        :value="$candidate->delivery_date?->format('Y-m-d')" />
                     @error('delivery_date')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
@@ -386,9 +383,8 @@
                     <label for="invoice_date" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ __('Invoice Date') }}
                     </label>
-                    <input id="invoice_date" name="invoice_date" type="date"
-                        value="{{ old('invoice_date', $candidate->invoice_date?->format('Y-m-d')) }}"
-                        class="form-control" />
+                    <x-inputs.date-picker id="invoice_date" name="invoice_date"
+                        :value="$candidate->invoice_date?->format('Y-m-d')" />
                     @error('invoice_date')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
