@@ -23,11 +23,64 @@ class CronStatusController extends Controller
         $this->authorize('viewAny', Customer::class);
         $this->setBreadcrumbTitle(__('Cron Jobs'));
 
-        $jobs = $this->collectJobStats();
+        $jobs       = $this->collectJobStats();
+        $failedJobs = Schema::hasTable('failed_jobs')
+            ? DB::table('failed_jobs')->orderByDesc('failed_at')->get()
+            : collect();
 
         return $this->renderViewWithBreadcrumbs('backend.pages.cron.index', [
-            'jobs' => $jobs,
+            'jobs'       => $jobs,
+            'failedJobs' => $failedJobs,
         ]);
+    }
+
+    public function retryJob(Request $request, int|string $id): RedirectResponse
+    {
+        $this->authorize('update', Customer::class);
+
+        try {
+            Artisan::call('queue:retry', ['id' => [$id]]);
+            Artisan::call('queue:work', [
+                '--once'  => true,
+                '--queue' => 'default',
+            ]);
+            return back()->with('success', __('Job #:id has been retried.', ['id' => $id]));
+        } catch (\Throwable $e) {
+            return back()->with('error', __('Retry failed: :msg', ['msg' => $e->getMessage()]));
+        }
+    }
+
+    public function retryAll(Request $request): RedirectResponse
+    {
+        $this->authorize('update', Customer::class);
+
+        $count = Schema::hasTable('failed_jobs')
+            ? DB::table('failed_jobs')->count()
+            : 0;
+
+        if ($count === 0) {
+            return back()->with('success', __('No failed jobs to retry.'));
+        }
+
+        try {
+            Artisan::call('queue:retry', ['id' => ['all']]);
+            Artisan::call('queue:work', [
+                '--once'  => true,
+                '--queue' => 'default',
+            ]);
+            return back()->with('success', __(':count failed job(s) pushed back to the queue.', ['count' => $count]));
+        } catch (\Throwable $e) {
+            return back()->with('error', __('Retry all failed: :msg', ['msg' => $e->getMessage()]));
+        }
+    }
+
+    public function deleteFailedJob(Request $request, int|string $id): RedirectResponse
+    {
+        $this->authorize('update', Customer::class);
+
+        DB::table('failed_jobs')->where('id', $id)->delete();
+
+        return back()->with('success', __('Failed job #:id deleted.', ['id' => $id]));
     }
 
     /**

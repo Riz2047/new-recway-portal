@@ -33,15 +33,7 @@ class CustomerController extends Controller
 
         $this->setBreadcrumbTitle(__('Customers'));
 
-        $customers = Customer::with(['user', 'parent.user'])
-            ->join('users', 'customers.user_id', '=', 'users.id')
-            ->select('customers.*', 'users.name as user_name', 'users.email as user_email')
-            ->orderBy('users.name')
-            ->paginate(50);
-
-        return $this->renderViewWithBreadcrumbs('backend.pages.customers.index', [
-            'customers' => $customers,
-        ]);
+        return $this->renderViewWithBreadcrumbs('backend.pages.customers.index');
     }
 
     /**

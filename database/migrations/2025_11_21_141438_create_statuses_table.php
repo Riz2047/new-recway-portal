@@ -12,7 +12,8 @@ return new class () extends Migration {
     {
         Schema::create('statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('variable')->unique();
+            $table->string('variable');
+            // variable must be unique within a service category, not globally
             $table->string('status');
             $table->string('status_sv')->nullable();
             $table->text('status_detail')->nullable();
@@ -21,6 +22,7 @@ return new class () extends Migration {
             $table->string('email_to')->comment('1=admin, 2=customer, 3=candidate')->nullable();
             $table->foreignId('status_type')->constrained('service_categories')->onDelete('cascade');
             $table->timestamps();
+            $table->unique(['variable', 'status_type'], 'statuses_variable_status_type_unique');
         });
     }
 

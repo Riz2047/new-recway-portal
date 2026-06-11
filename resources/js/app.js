@@ -23,6 +23,9 @@ import * as Popper from '@popperjs/core';
 // Make Popper available globally with the correct structure
 window.Popper = Popper;
 
+// Make flatpickr available globally so Alpine x-init/x-data blocks in Blade can use it
+window.flatpickr = flatpickr;
+
 // Register a slug generator component with Alpine.
 Alpine.data('slugGenerator', (initialTitle = '', initialSlug = '') => {
     return SlugGenerator.alpineComponent(initialTitle, initialSlug);

@@ -136,10 +136,10 @@
                         <div class="space-y-2 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded p-4">
                             @foreach($serviceTypes as $serviceType)
                                 <div class="flex items-center">
-                                    <input 
-                                        type="checkbox" 
-                                        name="services[]" 
-                                        id="service_{{ $serviceType->id }}" 
+                                    <input
+                                        type="checkbox"
+                                        name="services[]"
+                                        id="service_{{ $serviceType->id }}"
                                         value="{{ $serviceType->id }}"
                                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         checked
@@ -154,40 +154,27 @@
                 @endif
 
                 <div class="space-y-1">
-                    <label for="message" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Message') }} <small class="text-gray-500">({{ __('for all services') }})</small>
-                    </label>
-                    <textarea 
-                        name="message" 
-                        id="message" 
-                        rows="4"
-                        class="form-control"
-                        placeholder="{{ __('Enter default message for this status') }}"
-                    >{{ old('message') }}</textarea>
-                    @error('message')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="space-y-1">
                     <label for="msg_col" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ __('Message Column') }}
                     </label>
-                    <input 
-                        type="text" 
-                        name="msg_col" 
-                        id="msg_col" 
+                    <input
+                        type="text"
+                        name="msg_col"
+                        id="msg_col"
                         value="{{ old('msg_col') }}"
                         class="form-control"
-                        placeholder="{{ __('e.g., msg_pending') }}"
+                        placeholder="{{ __('e.g., approved_msg') }}"
                         pattern="[a-zA-Z][a-zA-Z0-9_]*"
-                        title="{{ __('Must start with a letter and contain only letters, numbers, and underscores') }}"
+                        title="{{ __('Must start with a letter, only letters, numbers, and underscores allowed') }}"
                     >
-                    <p class="mt-1 text-xs text-gray-500">{{ __('Column name for storing messages (must start with a letter)') }}</p>
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ __('Key used in the templates JSON. Must start with a letter (e.g. approved_msg, pending_msg).') }}
+                    </p>
                     @error('msg_col')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
+
             </div>
 
             <x-slot name="footer">

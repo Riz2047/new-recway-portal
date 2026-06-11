@@ -1,57 +1,8 @@
 <x-layouts.backend-layout :breadcrumbs="$breadcrumbs">
 
 @php
-    // Human-readable labels for each message column.
-    $colLabels = [
-        'cus_msg'                        => ['label' => 'Customer — New Order',               'group' => 'Customer'],
-        'can_msg'                        => ['label' => 'Candidate — New Order',              'group' => 'Candidate'],
-        'can_msg_2'                      => ['label' => 'Candidate — New Order (Alt)',        'group' => 'Candidate'],
-        'admin_msg'                      => ['label' => 'Admin — New Order',                  'group' => 'Admin'],
-        'staff_msg'                      => ['label' => 'Staff — Assigned Notification',      'group' => 'Staff'],
-        'pending_msg'                    => ['label' => 'Pending Status',                     'group' => 'Status'],
-        'booked_msg'                     => ['label' => 'Booked Status',                      'group' => 'Status'],
-        'approved_msg'                   => ['label' => 'Approved Status',                    'group' => 'Status'],
-        'approved_msg_2'                 => ['label' => 'Approved Status (Alt)',              'group' => 'Status'],
-        'invest_msg'                     => ['label' => 'Under Investigation',                'group' => 'Status'],
-        'spo_msg'                        => ['label' => 'SPO Investigation',                  'group' => 'Status'],
-        'denied_msg'                     => ['label' => 'Denied Status',                      'group' => 'Status'],
-        'denied_msg_2'                   => ['label' => 'Denied Status (Alt)',                'group' => 'Status'],
-        'notshow_msg'                    => ['label' => 'Did Not Show Up',                    'group' => 'Status'],
-        'canceled_msg'                   => ['label' => 'Canceled',                           'group' => 'Status'],
-        'noans_msg'                      => ['label' => 'No Answer',                          'group' => 'Status'],
-        'staff_cancel'                   => ['label' => 'Staff — Canceled',                   'group' => 'Staff'],
-        'can_cancel'                     => ['label' => 'Candidate — Canceled',               'group' => 'Candidate'],
-        'cus_msg_background'             => ['label' => 'Customer — Background Check',        'group' => 'Customer'],
-        'can_msg_background'             => ['label' => 'Candidate — Background Check',       'group' => 'Candidate'],
-        'pending_background'             => ['label' => 'Pending — Background Check',         'group' => 'Status'],
-        'consent_msg'                    => ['label' => 'Consent',                            'group' => 'Status'],
-        'approval_received_msg'          => ['label' => 'Approval Received',                  'group' => 'Status'],
-        'research_started_msg'           => ['label' => 'Research Started',                   'group' => 'Status'],
-        'results_received_msg'           => ['label' => 'Results Received',                   'group' => 'Status'],
-        'REbook_interviews'              => ['label' => 'Re-book Interview',                  'group' => 'Status'],
-        'deviation'                      => ['label' => 'Deviation',                          'group' => 'Status'],
-        'approved_msg_bc'                => ['label' => 'Approved — Background Check',        'group' => 'Status'],
-        'still_not_booked_msg'           => ['label' => 'Still Not Booked',                   'group' => 'Status'],
-        'not_available_msg'              => ['label' => 'Not Available',                      'group' => 'Status'],
-        'person_startedf'                => ['label' => 'Person Started Follow-up',           'group' => 'Status'],
-        'candidate_msg'                  => ['label' => 'Candidate — General',                'group' => 'Candidate'],
-        'Pending'                        => ['label' => 'Pending (Alt)',                      'group' => 'Status'],
-        'Booked'                         => ['label' => 'Booked (Alt)',                       'group' => 'Status'],
-        'Candidatedidntshowup'           => ['label' => 'Candidate Did Not Show Up',          'group' => 'Status'],
-        'Approved_followup'              => ['label' => 'Approved — Follow Up',               'group' => 'Status'],
-        'Candidate_Cancel'               => ['label' => 'Candidate Cancel',                   'group' => 'Candidate'],
-        'follow_up_under_investigation'  => ['label' => 'Follow-up Under Investigation',      'group' => 'Status'],
-        'bk_can_cancel'                  => ['label' => 'BK Candidate Cancel',                'group' => 'Candidate'],
-        'Candidate_interup_followup'     => ['label' => 'Candidate Interrupted Follow-up',    'group' => 'Candidate'],
-        'denid_followup'                 => ['label' => 'Denied Follow-up',                   'group' => 'Status'],
-        'still_not_booked_followup'      => ['label' => 'Still Not Booked Follow-up',         'group' => 'Status'],
-        'Contact_established'            => ['label' => 'Contact Established',                'group' => 'Status'],
-        'no_avaible_followup'            => ['label' => 'No Available Follow-up',             'group' => 'Status'],
-        'Customer_flow'                  => ['label' => 'Customer Flow',                      'group' => 'Customer'],
-        'withoutdeviation'               => ['label' => 'Without Deviation',                  'group' => 'Status'],
-        'Cus_msg_exit'                   => ['label' => 'Customer — Exit',                    'group' => 'Customer'],
-    ];
-
+    // $colLabels and $messageCols are passed dynamically from MessageTemplateController.
+    // Each entry: ['label' => '...', 'group' => '...', 'code' => '...']
     $groups = collect($messageCols)
         ->groupBy(fn ($col) => $colLabels[$col]['group'] ?? 'Other')
         ->sortKeys();
@@ -192,7 +143,7 @@
                                 <div class="mb-2 flex items-center justify-between">
                                     <div>
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $label }}</span>
-                                        <code class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-indigo-600 dark:bg-gray-700 dark:text-indigo-400">{{ $col }}</code>
+                                        <code class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-indigo-600 dark:bg-gray-700 dark:text-indigo-400">{{ $colLabels[$col]['code'] ?? $col }}</code>
                                     </div>
                                     <button type="button"
                                         @click="preview{{ $loop->index }} = !preview{{ $loop->index }}; if(preview{{ $loop->index }}) fetchPreview('{{ $col }}')"

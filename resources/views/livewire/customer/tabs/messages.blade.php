@@ -76,9 +76,10 @@
             <div class="grid grid-cols-2 gap-3 mb-6">
                 @foreach($columns as $col)
                     @php
-                        $val = $messageValues[$col] ?? '';
+                        $val        = $messageValues[$col] ?? '';
                         $hasContent = !empty(trim(strip_tags($val)));
-                        $preview = $hasContent ? Str::limit(strip_tags($val), 90) : 'No content yet';
+                        $preview    = $hasContent ? Str::limit(strip_tags($val), 90) : 'No content yet';
+                        $label      = $columnLabels[$col] ?? $col;
                     @endphp
 
                     <div wire:key="col-{{ $col }}"
@@ -88,9 +89,9 @@
 
                         {{-- Card header --}}
                         <div class="flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border-b border-gray-200">
-                            <span class="flex items-center gap-2 font-mono text-xs font-medium text-gray-700">
+                            <span class="flex items-center gap-2 text-xs font-medium text-gray-700">
                                 <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $hasContent ? 'bg-green-500' : 'bg-gray-300' }}"></span>
-                                {{ $col }}
+                                {{ $label }}
                             </span>
                             <button @click="open = !open" type="button"
                                 class="flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-gray-900 hover:bg-white px-2 py-1 rounded-md transition-colors">

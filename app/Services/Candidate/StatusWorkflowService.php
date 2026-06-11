@@ -187,7 +187,8 @@ class StatusWorkflowService
             return;
         }
 
-        $templateBody = $messageRow->getBodyForColumn($link->msg_col);
+        // Look up the template by the msg_col key in the JSON column.
+        $templateBody = $messageRow->getBodyForKey($link->msg_col);
         if (empty($templateBody)) {
             return;
         }
@@ -227,7 +228,7 @@ class StatusWorkflowService
             }
         }
 
-        // Send to customer.
+        // Send to main customer.
         if ($customerEmail) {
             $this->sendAndSave(
                 body: $body,
@@ -240,6 +241,30 @@ class StatusWorkflowService
                 msgType: $status->status . ' Message',
                 attachmentPath: $attachmentPath
             );
+        }
+
+        // Send to additional customers (CC contacts on the customer account).
+        // Mirrors old system: pages.php — "additional customers email send" blocks.
+        if (Schema::hasTable('additional_customers')) {
+            $additionalContacts = DB::table('additional_customers')
+                ->where('cus_id', $candidate->cus_id)
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get();
+
+            foreach ($additionalContacts as $contact) {
+                $this->sendAndSave(
+                    body: $body,
+                    to: $contact->email,
+                    name: $contact->name ?? $contact->email,
+                    subject: $status->status,
+                    userType: 'Additional Customer',
+                    userName: $contact->name ?? $contact->email,
+                    orderId: $candidate->order_id,
+                    msgType: $status->status . ' Message',
+                    attachmentPath: $attachmentPath
+                );
+            }
         }
 
         // On "canceled", also send to the candidate themselves.

@@ -153,7 +153,52 @@
                 </div>
                 @endif
 
-                @if(empty($cvFiles) && !$candidate->interview_template)
+                {{-- Security report upload (only shown when customer has permission) --}}
+                @if($sendSecurityReport)
+                <div x-data="securityUpload()" class="mt-2">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        {{ __('Security Report (PDF)') }}
+                    </p>
+
+                    {{-- Already uploaded --}}
+                    @if($existingReport)
+                    <div class="mb-3 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 dark:border-green-800 dark:bg-green-900/20">
+                        <iconify-icon icon="lucide:file-check" width="16" class="shrink-0 text-green-600 dark:text-green-400"></iconify-icon>
+                        <span class="flex-1 truncate text-sm text-green-700 dark:text-green-300">{{ $existingReport }}</span>
+                        <span class="text-xs text-green-500 dark:text-green-400">{{ __('Uploaded') }}</span>
+                    </div>
+                    @endif
+
+                    {{-- Upload form --}}
+                    <form @submit.prevent="submit"
+                          id="security-report-form"
+                          enctype="multipart/form-data">
+                        @csrf
+                        <div class="flex items-center gap-3">
+                            <label class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 dark:border-gray-600 dark:text-gray-400 dark:hover:border-brand-400">
+                                <iconify-icon icon="lucide:upload" width="15"></iconify-icon>
+                                <span x-text="filename || '{{ __('Choose PDF file…') }}'"></span>
+                                <input type="file" name="file" accept=".pdf" class="sr-only"
+                                       @change="filename = $event.target.files[0]?.name || ''">
+                            </label>
+                            <button type="submit"
+                                :disabled="!filename || uploading"
+                                class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                <iconify-icon :icon="uploading ? 'lucide:loader-circle' : 'lucide:upload-cloud'"
+                                              :class="{'animate-spin': uploading}" width="15"></iconify-icon>
+                                <span x-text="uploading ? '{{ __('Uploading…') }}' : '{{ __('Upload') }}'"></span>
+                            </button>
+                        </div>
+
+                        {{-- Feedback --}}
+                        <template x-if="message">
+                            <p class="mt-2 text-xs" :class="success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" x-text="message"></p>
+                        </template>
+                    </form>
+                </div>
+                @endif
+
+                @if(empty($cvFiles) && !$candidate->interview_template && !$sendSecurityReport)
                 <p class="py-6 text-center text-sm text-gray-400 dark:text-gray-500">{{ __('No files attached.') }}</p>
                 @endif
             </div>
@@ -350,3 +395,51 @@
 </div>
 
 @endsection
+
+@if($sendSecurityReport)
+@push('scripts')
+<script>
+function securityUpload() {
+    return {
+        filename: '',
+        uploading: false,
+        success: false,
+        message: '',
+
+        async submit() {
+            const form = document.getElementById('security-report-form');
+            const fileInput = form.querySelector('input[type="file"]');
+            if (!fileInput.files.length) return;
+
+            this.uploading = true;
+            this.message   = '';
+
+            const data = new FormData(form);
+
+            try {
+                const response = await fetch('{{ route('customer.orders.upload-security-report', $candidate->id) }}', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: data,
+                });
+                const json = await response.json();
+
+                this.success = response.ok && json.success;
+                this.message = json.message || json.error || '';
+
+                if (this.success) {
+                    this.filename = '';
+                    fileInput.value = '';
+                }
+            } catch (e) {
+                this.success = false;
+                this.message = '{{ __('Upload failed. Please try again.') }}';
+            } finally {
+                this.uploading = false;
+            }
+        },
+    };
+}
+</script>
+@endpush
+@endif

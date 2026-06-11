@@ -283,10 +283,24 @@ const ROUTES = {
     showBase:  '{{ url('customer/orders') }}',
 };
 
-// Store accumulated CV files
 let cvFiles = [];
-// Store current service data
 let currentService = null;
+let hasFormBuilder = false;
+let hasPersonalId = false;
+
+const directColumns = [
+    'security', 'name', 'surname', 'email', 'phone', 'vasc_id',
+    'referensperson', 'reference', 'comment', 'note', 'place', 'country',
+];
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 // ── Category card click ──────────────────────────────────────────────────
 async function fetchServices(card) {
@@ -310,7 +324,8 @@ async function fetchServices(card) {
     select.innerHTML = '<option value="" disabled selected>{{ __("Choose service") }}</option>';
     data.forEach(s => {
         const o = new Option(s.name, s.id);
-        o.dataset.place        = s.place;
+        o.dataset.place        = Number(s.place) === 1 ? '1' : '0';
+        o.dataset.country      = Number(s.country) === 1 ? '1' : '0';
         o.dataset.deliveryDays = s.delivery_days ?? '';
         select.add(o);
     });
@@ -324,12 +339,12 @@ function onServiceChange(sel) {
     currentService = {
         id:           opt.value,
         place:        opt.dataset.place,
+        country:      opt.dataset.country,
         deliveryDays: opt.dataset.deliveryDays,
     };
 
     document.getElementById('hidden-service-id').value = opt.value;
 
-    // Delivery days bar
     const bar = document.getElementById('service-info-bar');
     const txt = document.getElementById('delivery-days-text');
     if (currentService.deliveryDays && currentService.deliveryDays !== 'null') {
@@ -339,161 +354,327 @@ function onServiceChange(sel) {
         bar.style.display = 'none';
     }
 
-    // Place / country fields
-    document.getElementById('place-field').style.display   = currentService.place == '1' ? 'block' : 'none';
-    document.getElementById('country-field').style.display = 'none';
-
-    // Show wizard
     document.getElementById('wizard-wrapper').style.display = 'block';
     document.getElementById('success-screen').style.display = 'none';
     document.getElementById('orderForm').style.display      = '';
     switchTab('wizard-contact', document.querySelector('[data-tab=wizard-contact]'));
 
-    // Fetch custom form (or defaults)
     loadForm(opt.value);
 }
 
-// ── Load form fields via AJAX ────────────────────────────────────────────
+// ── Load form fields via AJAX (form_builders table, same as recway-old) ──
 async function loadForm(serviceId) {
-    const res  = await fetch(ROUTES.fetchForm, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept':'application/json' },
-        body: JSON.stringify({ service_id: serviceId }),
-    });
-    const data = await res.json();
+    clearDynamicFields();
 
-    if (data.form) {
-        renderCustomForm(JSON.parse(data.form));
-    } else {
-        renderDefaultForm();
+    try {
+        const res = await fetch(ROUTES.fetchForm, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept':'application/json' },
+            body: JSON.stringify({ service_id: serviceId }),
+        });
+
+        if (!res.ok) {
+            return;
+        }
+
+        const data = await res.json();
+        hasFormBuilder = Boolean(data.has_form_builder);
+        updateServiceLocationFields();
+        updateAttachmentTab((data.form_fields ?? []).some(f => f.name === 'document_file'));
+        renderDynamicFields(data.form_fields ?? []);
+    } catch (_error) {
+        // Keep wizard usable if dynamic payload fails.
     }
 }
 
-// ── Default form HTML ────────────────────────────────────────────────────
-function renderDefaultForm() {
-    const T = window.__trans;
-    document.getElementById('personal_info_row').innerHTML = `
-        <div><label class="wizard-label">${T.name} <span class="text-red-500">*</span></label>
-             <input class="wizard-input" name="name" type="text" placeholder="${T.enter_name}" required></div>
-        <div><label class="wizard-label">${T.surname} <span class="text-red-500">*</span></label>
-             <input class="wizard-input" name="surname" type="text" placeholder="${T.surname}" required></div>
-        <div><label class="wizard-label">${T.email} <span class="text-red-500">*</span></label>
-             <input class="wizard-input" name="email" type="email" placeholder="example@email.com" required></div>
-        <div><label class="wizard-label">${T.phone} <span class="text-red-500">*</span></label>
-             <input class="wizard-input" name="phone" type="tel" placeholder="${T.phone}" required></div>
-        ${buildPnrBlock()}
-        <div style="grid-column:span 2"><label class="wizard-label">${T.vasc_id}</label>
-             <input class="wizard-input" name="vasc_id" type="text" placeholder="${T.vasc_id}"></div>
-    `;
-    document.getElementById('billing_info_row').innerHTML = `
-        <div><label class="wizard-label">${T.reference_rec}</label>
-             <input class="wizard-input" name="referensperson" type="text" placeholder="${T.reference_rec}"></div>
-        <div><label class="wizard-label">${T.reference}</label>
-             <input class="wizard-input" name="reference" type="text" placeholder="${T.reference}"></div>
-        <div><label class="wizard-label">${T.invoice_comment}</label>
-             <input class="wizard-input" name="comment" type="text" placeholder="${T.invoice_comment}"></div>
-        <div style="grid-column:span 1"><label class="wizard-label">${T.note}</label>
-             <textarea class="wizard-input" name="note" rows="3" placeholder="${T.note}"></textarea></div>
-    `;
-    initPnrToggle();
+function clearDynamicFields() {
+    document.getElementById('personal_info_row').innerHTML = '';
+    document.getElementById('billing_info_row').innerHTML = '';
 }
 
-function buildPnrBlock() {
+function updateServiceLocationFields() {
+    const showPlaceByService = currentService && currentService.place === '1';
+    const showCountry = currentService && currentService.country === '1';
+    const showPlace = Boolean(currentService && (showPlaceByService || !hasFormBuilder));
+
+    document.getElementById('place-field').style.display   = showPlace ? 'block' : 'none';
+    document.getElementById('country-field').style.display = showCountry ? 'block' : 'none';
+}
+
+function updateAttachmentTab(showDocuments) {
+    const attachmentBtn = document.getElementById('attachment-tab-btn');
+    const cvArea = document.getElementById('cv-upload-area');
+    const show = showDocuments || !hasFormBuilder;
+
+    if (attachmentBtn) {
+        attachmentBtn.style.display = show ? '' : 'none';
+    }
+    if (cvArea) {
+        cvArea.style.display = show ? '' : 'none';
+    }
+}
+
+function renderDynamicFields(fields) {
+    clearDynamicFields();
+    let securityRendered = false;
+
+    fields.forEach((field) => {
+        if (field.name === 'document_file') {
+            return;
+        }
+
+        const container = field.section === 'billing'
+            ? document.getElementById('billing_info_row')
+            : document.getElementById('personal_info_row');
+
+        if (!container) {
+            return;
+        }
+
+        if (field.name === 'security' && !securityRendered) {
+            container.insertAdjacentHTML('beforeend', renderSecurityToggleHtml());
+            securityRendered = true;
+        }
+
+        container.insertAdjacentHTML('beforeend', renderFieldHtml(field));
+    });
+
+    bindSecurityBehavior();
+    document.getElementById('hidden-has-personal-id').value = hasPersonalId ? '1' : '0';
+}
+
+function renderSecurityToggleHtml() {
     const T = window.__trans;
     return `
     <div style="grid-column:span 2">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" id="hasPersonalId" style="accent-color:#8b2b2d;width:16px;height:16px" onchange="togglePnr()">
+          <input type="checkbox" id="hasPersonalId" style="accent-color:#8b2b2d;width:16px;height:16px">
           <span class="dark:text-gray-300"><strong>${T.has_pnr_bold}</strong><br>${T.has_pnr_normal}</span>
         </label>
       </div>
-      <label class="wizard-label" id="pnr-label">${T.date_of_birth} <span class="text-red-500">*</span></label>
-      <input class="wizard-input" id="ssn" name="security" type="date" required>
-      <small id="pnrHelp" class="mt-1 block text-xs text-red-500"></small>
     </div>`;
 }
 
-function togglePnr() {
-    const cb  = document.getElementById('hasPersonalId');
-    const ssn = document.getElementById('ssn');
-    const lbl = document.getElementById('pnr-label');
-    const hlp = document.getElementById('pnrHelp');
-    const T   = window.__trans;
-    document.getElementById('hidden-has-personal-id').value = cb.checked ? '1' : '0';
-    if (cb.checked) {
-        ssn.type = 'text'; ssn.placeholder = 'YYMMDD-XXXX'; ssn.value = '';
-        lbl.innerHTML = T.social_security + ' <span class="text-red-500">*</span>';
-    } else {
-        ssn.type = 'date'; ssn.placeholder = ''; ssn.value = '';
-        lbl.innerHTML = T.date_of_birth + ' <span class="text-red-500">*</span>';
+function resolveInputName(field) {
+    const label = String(field.label || '').replace(/\s*\*\s*$/, '').trim();
+    const name = String(field.name || '');
+    const ll = label.toLowerCase();
+
+    if (field.section === 'billing') {
+        if (name === 'referensperson' || name === 'pref' ||
+            ll.includes('invoice recipient') || ll.includes('ansvarig chef') || ll.includes('hiring manager')) {
+            return 'referensperson';
+        }
+        if (name === 'reference' || name === 'ref' || (ll.includes('do') && ll.includes('siffror'))) {
+            return 'reference';
+        }
+        if (name === 'comment' || name === 'note') {
+            return name;
+        }
+        return `form_builder[${label}]`;
     }
-    ssn.classList.remove('is-valid','is-invalid');
-    hlp.textContent = '';
+
+    if (directColumns.includes(name)) {
+        return name;
+    }
+
+    return `form_builder[${label}]`;
 }
 
-function initPnrToggle() {
-    const ssn = document.getElementById('ssn');
-    if (ssn) {
-        ssn.addEventListener('input', function() {
-            const cb = document.getElementById('hasPersonalId');
-            const hlp = document.getElementById('pnrHelp');
-            if (cb && cb.checked) {
-                const r = validatePNR(this.value);
-                this.classList.toggle('is-valid',   r.isValid);
-                this.classList.toggle('is-invalid', !r.isValid);
-                hlp.textContent  = r.message;
-                hlp.className = 'mt-1 block text-xs ' + (r.isValid ? 'text-green-500' : 'text-red-500');
-            }
+function renderFieldHtml(field) {
+    const label = escapeHtml(field.label || field.name);
+    const placeholder = escapeHtml(field.placeholder || '');
+    const required = field.required ? 'required' : '';
+    const reqMark = field.required ? ' <span class="text-red-500">*</span>' : '';
+    const inputName = resolveInputName(field);
+    const span = field.type === 'textarea' ? ' style="grid-column:span 2"' : '';
+    const fieldId = field.name === 'security' ? 'security' : `field_${escapeHtml(field.name)}`;
+    const labelId = field.name === 'security' ? ' id="security-label"' : '';
+
+    let control = '';
+
+    if (field.type === 'textarea') {
+        control = `<textarea class="wizard-input" id="${fieldId}" name="${escapeHtml(inputName)}" rows="3" placeholder="${placeholder}" ${required}></textarea>`;
+    } else if (field.type === 'select') {
+        let options = `<option value="" hidden>${placeholder}</option>`;
+        (field.options || []).forEach((option) => {
+            options += `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`;
         });
+        control = `<select class="wizard-input" id="${fieldId}" name="${escapeHtml(inputName)}" ${required}>${options}</select>`;
+    } else {
+        // The security field is always rendered as text — when it represents a date of
+        // birth, flatpickr (a calendar widget) is attached instead of a native date input.
+        const inputType = field.name === 'security'
+            ? 'text'
+            : normalizeInputType(field.type);
+
+        const inputHtml = `<input class="wizard-input" id="${fieldId}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" placeholder="${placeholder}" autocomplete="off" ${required}>`;
+
+        control = field.name === 'security'
+            ? `<div class="relative">
+                <span id="${fieldId}-icon" class="pointer-events-none absolute inset-y-0 start-0 z-10 hidden items-center ps-3">
+                    <iconify-icon icon="lucide:calendar" class="text-gray-400 dark:text-gray-500"></iconify-icon>
+                </span>
+                ${inputHtml}
+              </div>`
+            : inputHtml;
     }
+
+    let html = `<div${span}><label class="wizard-label"${labelId} for="${fieldId}">${label}${reqMark}</label>${control}`;
+    if (field.name === 'security') {
+        html += `<small id="pnr-help" class="mt-1 block text-xs"></small>`;
+    }
+    html += '</div>';
+
+    return html;
+}
+
+function normalizeInputType(type) {
+    if (['text', 'email', 'date', 'number', 'tel', 'password'].includes(type)) {
+        return type;
+    }
+    return 'text';
+}
+
+// Attach/detach the flatpickr calendar (+ icon) on the security field
+// depending on whether it currently represents a date of birth.
+function setSecurityDatePicker(input, enable) {
+    const icon = document.getElementById(input.id + '-icon');
+
+    if (enable) {
+        if (icon) {
+            icon.classList.remove('hidden');
+            icon.classList.add('flex');
+        }
+        input.style.paddingInlineStart = '2.5rem';
+        if (!input._flatpickr) {
+            flatpickr(input, {
+                dateFormat: 'Y-m-d',
+                allowInput: true,
+                disableMobile: true,
+                static: true,
+                locale: { firstDayOfWeek: 1 },
+            });
+        }
+        return;
+    }
+
+    if (icon) {
+        icon.classList.add('hidden');
+        icon.classList.remove('flex');
+    }
+    input.style.paddingInlineStart = '';
+    if (input._flatpickr) {
+        input._flatpickr.destroy();
+        input._flatpickr = undefined;
+    }
+}
+
+function bindSecurityBehavior() {
+    const checkbox = document.getElementById('hasPersonalId');
+    const securityInput = document.getElementById('security');
+
+    if (!securityInput) {
+        return;
+    }
+
+    if (checkbox) {
+        checkbox.checked = hasPersonalId;
+        checkbox.onchange = () => {
+            hasPersonalId = checkbox.checked;
+            document.getElementById('hidden-has-personal-id').value = hasPersonalId ? '1' : '0';
+            // Clear the field when switching modes — a PNR string isn't a valid
+            // date and a date string isn't a valid PNR.
+            const sec = document.getElementById('security');
+            if (sec) sec.value = '';
+            updateSecurityFieldMode();
+            validateSecurityField();
+        };
+    }
+
+    updateSecurityFieldMode();
+    if (!securityInput.dataset.validationBound) {
+        securityInput.addEventListener('input', validateSecurityField);
+        securityInput.addEventListener('blur', validateSecurityField);
+        securityInput.dataset.validationBound = '1';
+    }
+}
+
+function updateSecurityFieldMode() {
+    const securityInput = document.getElementById('security');
+    const securityLabel = document.getElementById('security-label');
+    const pnrHelp = document.getElementById('pnr-help');
+    const T = window.__trans;
+
+    if (!securityInput) {
+        return;
+    }
+
+    if (!hasPersonalId) {
+        securityInput.removeAttribute('inputmode');
+        securityInput.placeholder = T.select_date_of_birth || '';
+        setSecurityDatePicker(securityInput, true);
+        if (securityLabel) {
+            securityLabel.innerHTML = `${T.date_of_birth} <span class="text-red-500">*</span>`;
+        }
+        if (pnrHelp) {
+            pnrHelp.textContent = '';
+        }
+        return;
+    }
+
+    setSecurityDatePicker(securityInput, false);
+    securityInput.setAttribute('inputmode', 'numeric');
+    securityInput.placeholder = 'YYMMDD-XXXX';
+    if (securityLabel) {
+        securityLabel.innerHTML = `${T.social_security} <span class="text-red-500">*</span>`;
+    }
+}
+
+function validateSecurityField() {
+    const securityInput = document.getElementById('security');
+    const pnrHelp = document.getElementById('pnr-help');
+
+    if (!securityInput) {
+        return true;
+    }
+
+    securityInput.classList.remove('is-valid', 'is-invalid');
+    if (pnrHelp) {
+        pnrHelp.className = 'mt-1 block text-xs';
+        pnrHelp.textContent = '';
+    }
+
+    if (!hasPersonalId) {
+        if (securityInput.value.trim() === '') {
+            securityInput.classList.add('is-invalid');
+            if (pnrHelp) {
+                pnrHelp.textContent = '{{ __('Date of birth is required') }}';
+                pnrHelp.classList.add('text-red-500');
+            }
+            return false;
+        }
+        return true;
+    }
+
+    const validation = validatePNR(securityInput.value);
+    securityInput.classList.toggle('is-valid', validation.isValid);
+    securityInput.classList.toggle('is-invalid', !validation.isValid);
+    if (pnrHelp) {
+        pnrHelp.textContent = validation.message;
+        pnrHelp.classList.add(validation.isValid ? 'text-green-500' : 'text-red-500');
+    }
+    return validation.isValid;
 }
 
 function validatePNR(v) {
     if (!v.trim()) return { isValid:false, message:'{{ __('Personal ID is required') }}' };
     const m = v.match(/^(\d{6})-?(\d{4})$/);
     if (!m) return { isValid:false, message:'{{ __('Format: YYMMDD-XXXX or YYMMDDXXXX') }}' };
-    const mo = parseInt(v.replace('-','').substring(2,4));
+    const mo = parseInt(v.replace('-','').substring(2,4), 10);
     if (mo < 1 || mo > 12) return { isValid:false, message:'{{ __('Invalid month') }}' };
     return { isValid:true, message:'{{ __('Personal ID is valid') }}' };
-}
-
-// ── Render custom form builder JSON ─────────────────────────────────────
-function renderCustomForm(data) {
-    const fb = data.form_builder || data;
-    let per = '', bil = '';
-    if (fb.personal_info) {
-        Object.entries(fb.personal_info).forEach(([key, val]) => {
-            const p = key.split(',');
-            per += buildField(p, val, false);
-        });
-    }
-    if (fb.billing_info) {
-        Object.entries(fb.billing_info).forEach(([key, val]) => {
-            const p = key.split(',');
-            bil += buildField(p, val, false);
-        });
-    }
-    document.getElementById('personal_info_row').innerHTML = per || '';
-    document.getElementById('billing_info_row').innerHTML  = bil || '';
-    initPnrToggle();
-}
-
-function buildField([type, label, name, ph, req,, isNew, defVal], val, billing) {
-    const nameAttr = isNew ? `form_builder[${label}]` : name;
-    const reqAttr  = req ? 'required' : '';
-    if (type === 'select') {
-        const opts = (defVal||'').split('|').filter(Boolean)
-            .map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
-        return `<div><label class="wizard-label">${label}${req?'<span class="text-red-500">*</span>':''}</label>
-                <select class="wizard-input" name="${nameAttr}" ${reqAttr}><option value="" hidden>${ph}</option>${opts}</select></div>`;
-    }
-    if (name === 'note') {
-        return `<div><label class="wizard-label">${label}</label>
-                <textarea class="wizard-input" name="note" rows="3">${val||''}</textarea></div>`;
-    }
-    return `<div><label class="wizard-label">${label}${req?'<span class="text-red-500">*</span>':''}</label>
-            <input class="wizard-input" name="${nameAttr}" type="${type}" placeholder="${ph}" value="${val||''}" ${reqAttr}></div>`;
 }
 
 // ── CV file handling ─────────────────────────────────────────────────────
@@ -531,6 +712,11 @@ async function submitOrder(btn) {
     const agreed = document.getElementById('approvedFollowUp');
     if (!agreed.checked) {
         alert('{{ __('Please agree to the integrity policy.') }}');
+        return;
+    }
+
+    if (!validateSecurityField()) {
+        switchTab('wizard-contact', document.querySelector('[data-tab=wizard-contact]'));
         return;
     }
 
@@ -577,6 +763,7 @@ window.__trans = {
     phone:            '{{ __('Phone') }}',
     social_security:  '{{ __('Social Security Number') }}',
     date_of_birth:    '{{ __('Date of Birth') }}',
+    select_date_of_birth: '{{ __('Select date of birth') }}',
     vasc_id:          '{{ __('VASC ID') }}',
     reference_rec:    '{{ __('Invoice Recipient') }}',
     reference:        '{{ __('Invoice Reference') }}',

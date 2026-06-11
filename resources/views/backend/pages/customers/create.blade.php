@@ -364,7 +364,7 @@
                                             style="min-height: 100px;"
                                         >
                                             @if(isset($services))
-                                                @foreach($services->where('service_category_id', 2) as $service)
+                                                @foreach($services->where('service_category_id', 3) as $service)
                                                     <option value="{{ $service->id }}" {{ old('combine_bk_and_security') && in_array($service->id, old('combine_bk_and_security', [])) ? 'selected' : '' }}>
                                                         {{ $service->name }}
                                                     </option>

@@ -42,19 +42,18 @@ class CandidateHistoryService
     public function logStatusChange(Candidate $candidate, Status $status, string $comment = ''): void
     {
         $actor = Auth::user()?->name ?? 'system';
-        $detail = $status->status_detail ?: $status->status;
-        $desc = "Status changed to «{$status->status}»";
+
+        // Use status_detail when available ("Candidate has been approved"),
+        // otherwise fall back to the status name ("Approved").
+        $desc = ($status->status_detail && $status->status_detail !== $status->status)
+            ? $status->status_detail
+            : $status->status;
 
         $fullComment = $comment
             ? "{$comment}\n— {$actor}"
             : "— {$actor}";
 
         $this->log($candidate->id, $desc, $fullComment);
-
-        // Also log the status_detail line separately (mirrors old system behavior).
-        if ($status->status_detail && $status->status_detail !== $status->status) {
-            $this->log($candidate->id, $detail, '');
-        }
     }
 
     public function logStaffAssigned(Candidate $candidate, string $staffName, string $comment = ''): void

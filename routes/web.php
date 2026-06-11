@@ -101,6 +101,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'o
     Route::get('candidates/{candidate}/bk-report/{lang}/preview', [App\Http\Controllers\Backend\BkReportController::class, 'preview'])->name('candidates.bk-report.preview');
     Route::get('candidates/{candidate}/bk-report/{lang}/pdf', [App\Http\Controllers\Backend\BkReportController::class, 'pdf'])->name('candidates.bk-report.pdf');
     Route::post('candidates/{candidate}/bk-report/upload', [App\Http\Controllers\Backend\BkReportController::class, 'upload'])->name('candidates.bk-report.upload');
+    // Interview template generation (SPI / Ellevio / Timrå)
+    Route::get('candidates/{candidate}/template-data', [CandidateController::class, 'templateData'])->name('candidates.template-data');
+    Route::post('candidates/{candidate}/template-history', [CandidateController::class, 'createTemplateHistory'])->name('candidates.template-history');
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
     Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');
@@ -160,9 +163,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'o
 
     // Cron Status Routes (admin only).
     Route::prefix('cron')->name('cron.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Backend\CronStatusController::class, 'index'])->name('index');
-        Route::post('/run', [App\Http\Controllers\Backend\CronStatusController::class, 'runJob'])->name('run');
-        Route::get('/log/{file}', [App\Http\Controllers\Backend\CronStatusController::class, 'showLog'])->name('log');
+        Route::get('/',                                   [App\Http\Controllers\Backend\CronStatusController::class, 'index'])->name('index');
+        Route::post('/run',                               [App\Http\Controllers\Backend\CronStatusController::class, 'runJob'])->name('run');
+        Route::get('/log/{file}',                         [App\Http\Controllers\Backend\CronStatusController::class, 'showLog'])->name('log');
+        // Failed jobs
+        Route::post('/failed/{id}/retry',                 [App\Http\Controllers\Backend\CronStatusController::class, 'retryJob'])->name('failed.retry');
+        Route::post('/failed/retry-all',                  [App\Http\Controllers\Backend\CronStatusController::class, 'retryAll'])->name('failed.retry-all');
+        Route::delete('/failed/{id}',                     [App\Http\Controllers\Backend\CronStatusController::class, 'deleteFailedJob'])->name('failed.delete');
     });
 
     // Analytics Routes.
@@ -256,6 +263,9 @@ Route::group(['prefix' => 'staff', 'as' => 'staff.', 'middleware' => ['auth', 'o
     Route::get('candidates/{candidate}/bk-report/{lang}/preview', [App\Http\Controllers\Backend\BkReportController::class, 'preview'])->name('candidates.bk-report.preview');
     Route::get('candidates/{candidate}/bk-report/{lang}/pdf', [App\Http\Controllers\Backend\BkReportController::class, 'pdf'])->name('candidates.bk-report.pdf');
     Route::post('candidates/{candidate}/bk-report/upload', [App\Http\Controllers\Backend\BkReportController::class, 'upload'])->name('candidates.bk-report.upload');
+    // Interview template generation (SPI / Ellevio / Timrå)
+    Route::get('candidates/{candidate}/template-data', [CandidateController::class, 'templateData'])->name('candidates.template-data');
+    Route::post('candidates/{candidate}/template-history', [CandidateController::class, 'createTemplateHistory'])->name('candidates.template-history');
     Route::get('customers/get-departments', [App\Http\Controllers\Backend\CustomerController::class, 'getDepartments'])->name('customers.get-departments');
     Route::get('customers/get-parent-data', [App\Http\Controllers\Backend\CustomerController::class, 'getParentCustomerData'])->name('customers.get-parent-data');
     Route::get('customers/{id}/tab-data', [App\Http\Controllers\Backend\CustomerController::class, 'getTabData'])->name('customers.tab-data');

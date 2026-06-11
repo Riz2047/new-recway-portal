@@ -15,7 +15,7 @@ class ReportTemplateService
     public function getBackgroundServices(): Collection
     {
         return ServiceType::query()
-            ->where('service_category_id', 2)
+            ->where('service_category_id', 3)
             ->orderBy('name')
             ->get(['id', 'name']);
     }
@@ -26,7 +26,7 @@ class ReportTemplateService
             ->select('service_types.id', 'service_types.name')
             ->join('service_type_user', 'service_type_user.service_type_id', '=', 'service_types.id')
             ->where('service_type_user.cus_id', $customerId)
-            ->where('service_types.service_category_id', 2)
+            ->where('service_types.service_category_id', 3)
             ->orderBy('service_types.name')
             ->get();
     }

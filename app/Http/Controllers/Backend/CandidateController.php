@@ -96,6 +96,9 @@ class CandidateController extends Controller
             'files.*' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
             'send_mail_customer' => ['nullable', 'in:yes,no'],
             'send_mail_candidate' => ['nullable', 'in:yes,no'],
+            // Custom form-builder fields (form_builder[Label]) → meta_data JSON
+            'form_builder'   => ['nullable', 'array'],
+            'form_builder.*' => ['nullable', 'string', 'max:5000'],
         ]);
 
         if (! Schema::hasTable('candidates')) {
@@ -106,9 +109,25 @@ class CandidateController extends Controller
 
         $statusId = $this->resolveDefaultStatusId((int) $validated['interview_id']);
 
+        // meta_data — custom form-builder field answers (label → value)
+        $rawFormBuilder = $request->input('form_builder', []);
+        $metaData = ! empty($rawFormBuilder)
+            ? json_encode($rawFormBuilder, JSON_UNESCAPED_UNICODE)
+            : null;
+
+        // meta_info — order creation metadata (mirrors old system)
+        $isStaff = $request->routeIs('staff.*');
+        $metaInfo = json_encode([
+            'send_email_cus' => ($validated['send_mail_customer'] ?? 'yes'),
+            'send_email_can' => ($validated['send_mail_candidate'] ?? 'yes'),
+            'created_by'     => auth()->id(),
+            'created_on'     => now()->format('Y-m-d H:i:s'),
+            'user'           => $isStaff ? 'Staff' : 'Admin',
+        ], JSON_UNESCAPED_UNICODE);
+
         $candidate = null;
 
-        DB::transaction(function () use ($validated, $statusId, $request, &$candidate): void {
+        DB::transaction(function () use ($validated, $statusId, $request, $metaData, $metaInfo, &$candidate): void {
             $cvFiles = $this->uploadCvFiles($request);
 
             $candidate = Candidate::query()->create([
@@ -133,6 +152,8 @@ class CandidateController extends Controller
                 'hasPersonalId' => ! empty($validated['hasPersonalId']) ? 1 : 0,
                 'combine_interview_id' => ! empty($validated['combine_interview_id']) ? (int) $validated['combine_interview_id'] : null,
                 'cv' => $cvFiles ?: null,
+                'meta_data' => $metaData,
+                'meta_info'  => $metaInfo,
             ]);
         });
 
@@ -224,8 +245,6 @@ class CandidateController extends Controller
         app(\App\Services\Candidate\CandidateHistoryService::class)
             ->logManual($candidate, $validated['desc'], $validated['comment'] ?? '');
 
-        $prefix = $request->routeIs('staff.*') ? 'staff' : 'admin';
-
         return back()->with('success', __('History entry added.'));
     }
 
@@ -240,6 +259,78 @@ class CandidateController extends Controller
         $entry->delete();
 
         return back()->with('success', __('History entry deleted.'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Interview template generation (Generate SPI / Ellevio / Timrå)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns all candidate data needed by the client-side docxtemplater / pdf-lib
+     * template generators. Mirrors old system: pages.php `get_inte_data` action.
+     */
+    public function templateData(Candidate $candidate): JsonResponse
+    {
+        $this->authorize('viewAny', Candidate::class);
+
+        $candidate->load(['customer.user', 'serviceType.serviceCategory', 'statusRelation', 'staff', 'placeRelation']);
+
+        return response()->json([
+            'order_id'              => $candidate->order_id,
+            'name'                  => $candidate->name,
+            'surname'               => $candidate->surname,
+            'vasc_id'               => $candidate->vasc_id,
+            'security'              => $candidate->security,
+            'referensperson'        => $candidate->referensperson,
+            'cus_name'              => $candidate->customer?->user?->name ?? '',
+            'cus_company'           => $candidate->customer?->company ?? '',
+            'place_name'            => $candidate->placeRelation?->name ?? '',
+            'staff'                 => $candidate->staff?->name ?? '',
+            'staff_email'           => $candidate->staff?->email ?? '',
+            'booked'                => $candidate->booked?->format('Y-m-d') ?? '',
+            'background_check_date' => $candidate->background_check_date
+                                        ? \Carbon\Carbon::parse($candidate->background_check_date)->format('Y-m-d')
+                                        : '',
+            'criminal_record'       => $candidate->criminal_record,
+            'social'                => $candidate->social,
+            'economy'               => $candidate->economy,
+            'meta_data'             => $candidate->meta_data,
+            'status'                => $candidate->status,
+            'status_variable'       => $candidate->statusRelation?->variable ?? '',
+            'service_category_id'   => $candidate->serviceType?->service_category_id,
+            'interview_template'    => $candidate->interview_template,
+            'customer_ellevio_report' => (bool) ($candidate->customer?->ellevio_report ?? false),
+            'customer_timra_report'   => (bool) ($candidate->customer?->timra_report ?? false),
+        ]);
+    }
+
+    /**
+     * Log a history entry when a template is generated.
+     * type: spi | ellevio | timra
+     */
+    public function createTemplateHistory(Request $request, Candidate $candidate): JsonResponse
+    {
+        $this->authorize('update', Candidate::class);
+
+        $type = $request->input('type');
+
+        $labels = [
+            'spi'    => 'SPI template generated',
+            'ellevio' => 'Ellevio template generated',
+            'timra'  => 'Timrå referens template generated',
+        ];
+
+        if (! array_key_exists($type, $labels)) {
+            return response()->json(['success' => false, 'error' => 'Unknown type'], 422);
+        }
+
+        app(\App\Services\Candidate\CandidateHistoryService::class)->log(
+            $candidate->id,
+            $labels[$type],
+            'By ' . (auth()->user()?->name ?? 'system')
+        );
+
+        return response()->json(['success' => true]);
     }
 
     // -------------------------------------------------------------------------
@@ -373,13 +464,85 @@ class CandidateController extends Controller
         $candidate->load(['customer.user', 'serviceType', 'statusRelation', 'staff', 'placeRelation']);
 
         return $this->renderViewWithBreadcrumbs('backend.pages.candidates.edit', [
-            'candidate' => $candidate,
-            'serviceTypes' => $serviceTypes,
-            'places' => $places,
-            'staff' => $staff,
-            'statuses' => $statuses,
-            'existingFiles' => $existingFiles,
+            'candidate'           => $candidate,
+            'serviceTypes'        => $serviceTypes,
+            'places'              => $places,
+            'staff'               => $staff,
+            'statuses'            => $statuses,
+            'existingFiles'       => $existingFiles,
+            'billingDisplayFields' => $this->resolveBillingDisplayFields($candidate),
         ]);
+    }
+
+    /**
+     * Resolve billing display fields from the form builder for a candidate.
+     * Returns [['label', 'value'], ...] when a form builder with billing_info exists.
+     * Returns [] when no form builder → caller shows default labels.
+     *
+     * @return array<int, array{0: string, 1: string|null}>
+     */
+    private function resolveBillingDisplayFields(Candidate $candidate): array
+    {
+        if (! Schema::hasTable('form_builders') || ! $candidate->cus_id || ! $candidate->interview_id) {
+            return [];
+        }
+
+        $row = DB::table('form_builders')
+            ->where('cus_id', $candidate->cus_id)
+            ->where('servicetype_id', $candidate->interview_id)
+            ->first();
+
+        if (! $row || empty($row->form)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) $row->form, true);
+        $builder = $decoded['form_builder'] ?? $decoded;
+
+        if (! is_array($builder) || empty($builder['billing_info'])) {
+            return [];
+        }
+
+        $metaData = [];
+        if (! empty($candidate->meta_data)) {
+            $md = json_decode((string) $candidate->meta_data, true);
+            $metaData = is_array($md) ? $md : [];
+        }
+
+        $fields = [];
+
+        foreach ($builder['billing_info'] as $metaKey => $ignored) {
+            $parts      = explode(',', (string) $metaKey);
+            $label      = trim($parts[1] ?? '');
+            $name       = trim($parts[2] ?? '');
+
+            if ($name === '' && $label === '') {
+                continue;
+            }
+
+            $cleanLabel = rtrim(trim($label), ' *');
+            $ll         = strtolower($label);
+
+            if ($name === 'pref' || $name === 'referensperson'
+                || str_contains($ll, 'invoice recipient')
+                || str_contains($ll, 'ansvarig chef')
+                || str_contains($ll, 'hiring manager')) {
+                $value = $candidate->referensperson;
+            } elseif ($name === 'ref' || $name === 'reference'
+                || (str_contains($ll, 'do') && str_contains($ll, 'siffror'))) {
+                $value = $candidate->reference;
+            } elseif ($name === 'comment') {
+                $value = $candidate->comment;
+            } elseif ($name === 'note') {
+                $value = $candidate->note;
+            } else {
+                $value = $metaData[$cleanLabel] ?? null;
+            }
+
+            $fields[] = [$cleanLabel, $value];
+        }
+
+        return $fields;
     }
 
     public function update(Request $request, Candidate $candidate): RedirectResponse
@@ -760,15 +923,24 @@ class CandidateController extends Controller
         foreach ($section as $metaKey => $value) {
             $parts = explode(',', (string) $metaKey);
 
-            $type = trim($parts[0] ?? 'text');
-            $label = trim($parts[1] ?? '');
-            $name = trim($parts[2] ?? '');
-            $placeholder = trim($parts[3] ?? '');
-            $required = trim($parts[4] ?? '') === 'required';
+            $type         = trim($parts[0] ?? 'text');
+            $label        = trim($parts[1] ?? '');
+            $name         = trim($parts[2] ?? '');
+            $placeholder  = trim($parts[3] ?? '');
+            $required     = trim($parts[4] ?? '') === 'required';
             $optionString = trim($parts[7] ?? '');
 
             if ($name === '') {
                 continue;
+            }
+
+            // Remap old-system aliases → canonical DB column names.
+            if ($name === 'pref') {
+                $name = 'referensperson';
+            } elseif ($name === 'ref') {
+                $name = 'reference';
+            } elseif ($name === 'social_security_number' || strtolower($label) === 'social security number') {
+                $name = 'security';
             }
 
             if ($placeholder === '') {
@@ -785,13 +957,13 @@ class CandidateController extends Controller
             }
 
             $normalized[] = [
-                'section' => $sectionName,
-                'type' => $type !== '' ? $type : 'text',
-                'label' => $label !== '' ? $label : ucfirst(str_replace('_', ' ', $name)),
-                'name' => $name,
+                'section'     => $sectionName,
+                'type'        => $type !== '' ? $type : 'text',
+                'label'       => $label !== '' ? $label : ucfirst(str_replace('_', ' ', $name)),
+                'name'        => $name,
                 'placeholder' => $placeholder,
-                'required' => $required,
-                'options' => $options,
+                'required'    => $required,
+                'options'     => $options,
             ];
         }
 

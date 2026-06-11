@@ -337,7 +337,7 @@
 										? explode(',', $customer->combine_bk_and_security)
 										: [];
 										@endphp
-										@foreach($services->where('service_category_id', 2) as $service)
+										@foreach($services->where('service_category_id', 3) as $service)
 										<option value="{{ $service->id }}" {{ in_array((string) $service->id, array_map('strval', $selectedServices), true) ? 'selected' : '' }}>
 											{{ $service->name }}
 										</option>

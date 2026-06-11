@@ -319,6 +319,12 @@
                 const checkbox = wrapper.querySelector('#hasPersonalId');
                 checkbox.addEventListener('change', (event) => {
                     hasPersonalId = Boolean(event.target.checked);
+                    // Clear the field when switching modes — a PNR string isn't a valid
+                    // date and a date string isn't a valid PNR.
+                    const securityInput = document.getElementById('security');
+                    if (securityInput) {
+                        securityInput.value = '';
+                    }
                     updateSecurityFieldMode();
                     validateSecurityField();
                 });
@@ -335,16 +341,63 @@
                 const label = String(field.label || name);
                 const placeholder = String(field.placeholder || '');
                 const required = Boolean(field.required);
-                const oldValue = oldInput[name] ?? '';
+
+                // Known direct DB columns — these always submit with their column name.
+                const directColumns = [
+                    'security', 'name', 'surname', 'email', 'phone', 'vasc_id',
+                    'referensperson', 'reference', 'comment', 'note', 'place', 'country',
+                ];
+
+                // Strip trailing required-marker (*) from label to get a clean storage key.
+                const cleanLabel = label.replace(/\s*\*\s*$/, '').trim();
+
+                let inputName;
+                if (field.section === 'billing') {
+                    // ── Billing section ───────────────────────────────────────────────
+                    // Known billing fields use their canonical column name (matched by
+                    // name after PHP remap OR by label keyword).
+                    const ll = label.toLowerCase();
+                    if (name === 'referensperson' || name === 'pref' ||
+                        ll.includes('invoice recipient') || ll.includes('ansvarig chef') || ll.includes('hiring manager')) {
+                        inputName = 'referensperson';
+                    } else if (name === 'reference' || name === 'ref' ||
+                               (ll.includes('do') && ll.includes('siffror'))) {
+                        inputName = 'reference';
+                    } else if (name === 'comment' || name === 'note') {
+                        inputName = name;
+                    } else {
+                        // Custom billing field → form_builder[cleanLabel] → meta_data
+                        inputName = `form_builder[${cleanLabel}]`;
+                    }
+                } else {
+                    // ── Personal section ──────────────────────────────────────────────
+                    // Direct DB columns submit with their column name; everything else
+                    // (custom questions like "Apply for the position", "Have you informed…")
+                    // submits as form_builder[cleanLabel] so it lands in meta_data.
+                    if (directColumns.includes(name)) {
+                        inputName = name;
+                    } else {
+                        inputName = `form_builder[${cleanLabel}]`;
+                    }
+                }
+
+                // Restore old value after validation failure
+                const oldValue = (() => {
+                    if (inputName.startsWith('form_builder[')) {
+                        const key = inputName.slice(13, -1); // strip "form_builder[" and "]"
+                        return (oldInput.form_builder ?? {})[key] ?? '';
+                    }
+                    return oldInput[inputName] ?? '';
+                })();
 
                 const fieldId = name === 'security' ? 'security' : `field_${name}`;
                 const labelId = name === 'security' ? 'security-label' : '';
                 let html = `<label ${labelId ? `id="${labelId}"` : ''} for="${escapeHtml(fieldId)}" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">${escapeHtml(label)}</label>`;
 
                 if (type === 'textarea') {
-                    html += `<textarea id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" rows="4" class="form-control" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}">${escapeHtml(oldValue)}</textarea>`;
+                    html += `<textarea id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" rows="4" class="form-control" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}">${escapeHtml(oldValue)}</textarea>`;
                 } else if (type === 'select') {
-                    html += `<select id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" class="form-control" ${required ? 'required' : ''}>`;
+                    html += `<select id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" class="form-control" ${required ? 'required' : ''}>`;
 
                     if (placeholder) {
                         html += `<option value="">${escapeHtml(placeholder)}</option>`;
@@ -357,11 +410,23 @@
 
                     html += `</select>`;
                 } else {
+                    // The security field is always rendered as text — when it represents a
+                    // date of birth, flatpickr (a calendar widget) is attached to it instead
+                    // of relying on the native browser date input.
                     const inputType = name === 'security'
-                        ? (hasPersonalId ? 'text' : 'date')
+                        ? 'text'
                         : normalizeInputType(type);
 
-                    html += `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(name)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" />`;
+                    const inputHtml = `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" autocomplete="off" />`;
+
+                    html += name === 'security'
+                        ? `<div class="relative">
+                            <span id="${escapeHtml(fieldId)}-icon" class="pointer-events-none absolute inset-y-0 start-0 z-10 hidden items-center ps-3">
+                                <iconify-icon icon="lucide:calendar" class="text-gray-400 dark:text-gray-500"></iconify-icon>
+                            </span>
+                            ${inputHtml}
+                          </div>`
+                        : inputHtml;
                 }
 
                 if (name === 'security') {
@@ -383,6 +448,40 @@
                 }
 
                 return 'text';
+            }
+
+            // Attach/detach the flatpickr calendar (+ icon) on the security field
+            // depending on whether it currently represents a date of birth.
+            function setSecurityDatePicker(input, enable) {
+                const icon = document.getElementById(input.id + '-icon');
+
+                if (enable) {
+                    if (icon) {
+                        icon.classList.remove('hidden');
+                        icon.classList.add('flex');
+                    }
+                    input.style.paddingInlineStart = '2.5rem';
+                    if (!input._flatpickr) {
+                        flatpickr(input, {
+                            dateFormat: 'Y-m-d',
+                            allowInput: true,
+                            disableMobile: true,
+                            static: true,
+                            locale: { firstDayOfWeek: 1 },
+                        });
+                    }
+                    return;
+                }
+
+                if (icon) {
+                    icon.classList.add('hidden');
+                    icon.classList.remove('flex');
+                }
+                input.style.paddingInlineStart = '';
+                if (input._flatpickr) {
+                    input._flatpickr.destroy();
+                    input._flatpickr = undefined;
+                }
             }
 
             function bindSecurityBehavior() {
@@ -415,9 +514,9 @@
                 }
 
                 if (!hasPersonalId) {
-                    securityInput.type = 'date';
                     securityInput.removeAttribute('inputmode');
-                    securityInput.removeAttribute('placeholder');
+                    securityInput.placeholder = '{{ __('Select date of birth') }}';
+                    setSecurityDatePicker(securityInput, true);
                     if (securityLabel) {
                         securityLabel.innerHTML = 'Date of Birth <span class="text-red-500">*</span>';
                     }
@@ -427,7 +526,7 @@
                     return;
                 }
 
-                securityInput.type = 'text';
+                setSecurityDatePicker(securityInput, false);
                 securityInput.setAttribute('inputmode', 'numeric');
                 securityInput.placeholder = 'YYMMDD-XXXX';
                 if (securityLabel) {

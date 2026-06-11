@@ -15,11 +15,13 @@ use App\Models\ServiceCategory;
 use App\Models\ServiceType;
 use App\Models\Status;
 use App\Models\User;
+use App\Services\FormBuilderFieldService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -32,19 +34,19 @@ class OrderController extends Controller
 
     public function index(): View
     {
-        $user        = Auth::user();
-        $userId      = $user->id;
+        $user = Auth::user();
+        $userId = $user->id;
         $customerIds = $this->resolveCustomerIds($userId);
-        $isManager   = $this->isCompanyManager($userId);
+        $isManager = $this->isCompanyManager($userId);
 
         $orders = Candidate::query()
             ->whereIn('candidates.cus_id', $customerIds)
             ->where('candidates.expired', 0)
-            ->leftJoin('service_types',      'candidates.interview_id',          '=', 'service_types.id')
-            ->leftJoin('service_categories', 'service_types.service_category_id','=', 'service_categories.id')
-            ->leftJoin('statuses',           'candidates.status',                '=', 'statuses.id')
-            ->leftJoin('users as staff',     'candidates.staff_id',              '=', 'staff.id')
-            ->leftJoin('customers',          'candidates.cus_id',                '=', 'customers.id')
+            ->leftJoin('service_types', 'candidates.interview_id', '=', 'service_types.id')
+            ->leftJoin('service_categories', 'service_types.service_category_id', '=', 'service_categories.id')
+            ->leftJoin('statuses', 'candidates.status', '=', 'statuses.id')
+            ->leftJoin('users as staff', 'candidates.staff_id', '=', 'staff.id')
+            ->leftJoin('customers', 'candidates.cus_id', '=', 'customers.id')
             ->select(
                 'candidates.id',
                 'candidates.order_id',
@@ -91,7 +93,11 @@ class OrderController extends Controller
             ->map(fn ($g) => $g->count());
 
         return view('customer.orders.index', compact(
-            'orders', 'serviceCategories', 'isManager', 'statusesWithCounts', 'catCounts'
+            'orders',
+            'serviceCategories',
+            'isManager',
+            'statusesWithCounts',
+            'catCounts'
         ));
     }
 
@@ -99,17 +105,17 @@ class OrderController extends Controller
 
     public function show(int $id): View|RedirectResponse
     {
-        $userId      = Auth::id();
+        $userId = Auth::id();
         $customerIds = $this->resolveCustomerIds($userId);
 
         $candidate = Candidate::query()
             ->whereIn('candidates.cus_id', $customerIds)
             ->where('candidates.id', $id)
-            ->leftJoin('service_types',      'candidates.interview_id',          '=', 'service_types.id')
-            ->leftJoin('service_categories', 'service_types.service_category_id','=', 'service_categories.id')
-            ->leftJoin('statuses',           'candidates.status',                '=', 'statuses.id')
-            ->leftJoin('users as staff_u',   'candidates.staff_id',              '=', 'staff_u.id')
-            ->leftJoin('places',             'candidates.place',                 '=', 'places.id')
+            ->leftJoin('service_types', 'candidates.interview_id', '=', 'service_types.id')
+            ->leftJoin('service_categories', 'service_types.service_category_id', '=', 'service_categories.id')
+            ->leftJoin('statuses', 'candidates.status', '=', 'statuses.id')
+            ->leftJoin('users as staff_u', 'candidates.staff_id', '=', 'staff_u.id')
+            ->leftJoin('places', 'candidates.place', '=', 'places.id')
             ->select(
                 'candidates.*',
                 'service_types.name       as service_name',
@@ -149,7 +155,7 @@ class OrderController extends Controller
         $daysToArchive = $this->archiveCountdown($candidate);
 
         // Statuses available for "Change Status" — filtered to this order's service category
-        $service            = ServiceType::find($candidate->interview_id);
+        $service = ServiceType::find($candidate->interview_id);
         $changeableStatuses = $service
             ? Status::where('status_type', $service->service_category_id)
                 ->whereIn('variable', [
@@ -159,6 +165,13 @@ class OrderController extends Controller
                 ->get()
             : collect();
 
+        // Check whether this customer is allowed to upload security reports.
+        $customerId = $this->getCustomerId($userId);
+        $sendSecurityReport = (bool) Customer::where('id', $customerId)->value('send_security_report');
+
+        // Show existing report filename if one was already uploaded.
+        $existingReport = $candidate->basic_investigation_result ?: null;
+
         return view('customer.orders.show', compact(
             'candidate',
             'history',
@@ -166,6 +179,8 @@ class OrderController extends Controller
             'cvFiles',
             'daysToArchive',
             'changeableStatuses',
+            'sendSecurityReport',
+            'existingReport',
         ));
     }
 
@@ -173,15 +188,15 @@ class OrderController extends Controller
 
     public function edit(int $id): View|RedirectResponse
     {
-        $userId      = Auth::id();
+        $userId = Auth::id();
         $customerIds = $this->resolveCustomerIds($userId);
 
         $candidate = Candidate::query()
             ->whereIn('candidates.cus_id', $customerIds)
             ->where('candidates.id', $id)
-            ->leftJoin('service_types',      'candidates.interview_id',           '=', 'service_types.id')
+            ->leftJoin('service_types', 'candidates.interview_id', '=', 'service_types.id')
             ->leftJoin('service_categories', 'service_types.service_category_id', '=', 'service_categories.id')
-            ->leftJoin('statuses',           'candidates.status',                 '=', 'statuses.id')
+            ->leftJoin('statuses', 'candidates.status', '=', 'statuses.id')
             ->select(
                 'candidates.*',
                 'service_types.name           as service_name',
@@ -204,8 +219,8 @@ class OrderController extends Controller
                 ->with('error', __('This order cannot be edited.'));
         }
 
-        $places   = Place::orderBy('name')->get();
-        $cvFiles  = $candidate->cv
+        $places = Place::orderBy('name')->get();
+        $cvFiles = $candidate->cv
             ? array_values(array_filter(explode(',', $candidate->cv)))
             : [];
         $metaData = $candidate->meta_data
@@ -213,7 +228,10 @@ class OrderController extends Controller
             : [];
 
         return view('customer.orders.edit', compact(
-            'candidate', 'places', 'cvFiles', 'metaData'
+            'candidate',
+            'places',
+            'cvFiles',
+            'metaData'
         ));
     }
 
@@ -221,19 +239,19 @@ class OrderController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
-        $userId      = Auth::id();
+        $userId = Auth::id();
         $customerIds = $this->resolveCustomerIds($userId);
 
         $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
 
         $request->validate([
-            'name'          => 'required|string|max:255',
-            'surname'       => 'required|string|max:255',
-            'email'         => 'required|email|max:255',
-            'phone'         => 'required|string|max:50',
-            'security'      => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:50',
+            'security' => 'required|string|max:255',
             'hasPersonalId' => 'required|in:0,1',
-            'cv.*'          => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'cv.*' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
         // ── CV file management ───────────────────────────────────────────────
@@ -258,7 +276,7 @@ class OrderController extends Controller
                 mkdir($uploadDir, 0755, true);
             }
             foreach (array_slice($request->file('cv'), 0, $remaining) as $file) {
-                $filename        = uniqid() . '_' . $file->getClientOriginalName();
+                $filename = uniqid() . '_' . $file->getClientOriginalName();
                 $file->move($uploadDir, $filename);
                 $existingFiles[] = $filename;
             }
@@ -266,28 +284,28 @@ class OrderController extends Controller
 
         // ── Save ────────────────────────────────────────────────────────────
         $candidate->fill([
-            'name'           => $request->name,
-            'surname'        => $request->surname,
-            'email'          => $request->email,
-            'phone'          => $request->phone,
-            'security'       => $request->security,
-            'hasPersonalId'  => $request->hasPersonalId,
-            'place'          => $request->input('place') ?: null,
-            'country'        => $request->input('country') ?: null,
+            'name' => $request->name,
+            'surname' => $request->surname,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'security' => $request->security,
+            'hasPersonalId' => $request->hasPersonalId,
+            'place' => $request->input('place') ?: null,
+            'country' => $request->input('country') ?: null,
             'referensperson' => $request->input('referensperson') ?: null,
-            'reference'      => $request->input('reference') ?: null,
-            'comment'        => $request->input('comment') ?: null,
-            'note'           => $request->input('note') ?: null,
-            'cv'             => $existingFiles ? implode(',', $existingFiles) : null,
-            'meta_data'      => $request->has('custom_answers')
+            'reference' => $request->input('reference') ?: null,
+            'comment' => $request->input('comment') ?: null,
+            'note' => $request->input('note') ?: null,
+            'cv' => $existingFiles ? implode(',', $existingFiles) : null,
+            'meta_data' => $request->has('custom_answers')
                                     ? json_encode($request->input('custom_answers'))
                                     : $candidate->meta_data,
         ]);
         $candidate->save();
 
         CandidateHistory::create([
-            'order_id'  => $candidate->id,
-            'desc'      => 'Order updated by customer',
+            'order_id' => $candidate->id,
+            'desc' => 'Order updated by customer',
             'date_time' => now(),
         ]);
 
@@ -304,7 +322,7 @@ class OrderController extends Controller
         $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
 
         // Find the correct cancel status for this service's category
-        $service      = ServiceType::find($candidate->interview_id);
+        $service = ServiceType::find($candidate->interview_id);
         $cancelStatus = null;
         if ($service) {
             $cancelStatus = Status::where('status_type', $service->service_category_id)
@@ -320,17 +338,17 @@ class OrderController extends Controller
             $candidate->save();
         }
 
-        $user    = Auth::user();
+        $user = Auth::user();
         $comment = $request->input('comment', '');
         if ($comment) {
             $comment .= "\n— " . $user->name;
         }
 
         CandidateHistory::create([
-            'order_id'  => $candidate->id,
-            'desc'      => 'Order cancelled by customer',
+            'order_id' => $candidate->id,
+            'desc' => 'Order cancelled by customer',
             'date_time' => now(),
-            'comment'   => $comment,
+            'comment' => $comment,
         ]);
 
         return redirect()->route('customer.orders.index')
@@ -346,7 +364,7 @@ class OrderController extends Controller
         $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
 
         $request->validate([
-            'status'  => 'required|exists:statuses,id',
+            'status' => 'required|exists:statuses,id',
             'comment' => 'nullable|string|max:1000',
         ]);
 
@@ -368,7 +386,7 @@ class OrderController extends Controller
         $candidate->status = $request->status;
         $candidate->save();
 
-        $user    = Auth::user();
+        $user = Auth::user();
         $comment = $request->input('comment', '');
         if ($comment) {
             $comment .= "\n— " . $user->name;
@@ -376,10 +394,10 @@ class OrderController extends Controller
 
         $newStatus = Status::find($request->status);
         CandidateHistory::create([
-            'order_id'  => $candidate->id,
-            'desc'      => 'Status changed to: ' . ($newStatus?->status ?? ''),
+            'order_id' => $candidate->id,
+            'desc' => 'Status changed to: ' . ($newStatus?->status ?? ''),
             'date_time' => now(),
-            'comment'   => $comment,
+            'comment' => $comment,
         ]);
 
         return redirect()->route('customer.orders.show', $candidate->id)
@@ -429,22 +447,39 @@ class OrderController extends Controller
         $services = ServiceType::where('service_category_id', $categoryId)
             ->whereHas('customers', fn ($q) => $q->where('customers.id', $customerId))
             ->orderBy('name')
-            ->get(['id', 'name', 'price', 'place', 'delivery_days', 'description']);
+            ->get(['id', 'name', 'price', 'place', 'country', 'delivery_days', 'description']);
 
         return response()->json($services);
     }
 
-    /** AJAX — return custom form definition for a service (null if none defined). */
-    public function fetchForm(): JsonResponse
+    /** AJAX — return custom form definition for a service (mirrors old new_customer fetch_form). */
+    public function fetchForm(Request $request, FormBuilderFieldService $formBuilder): JsonResponse
     {
-        // No order_forms table in new system — always return null so JS uses defaults.
-        return response()->json(['form' => null]);
+        $customerId = $this->getCustomerId(Auth::id());
+        if (! $customerId) {
+            return response()->json([
+                'form_fields' => [],
+                'has_form_builder' => false,
+            ]);
+        }
+
+        $request->validate([
+            'service_id' => ['required', 'integer'],
+        ]);
+
+        $serviceTypeId = (int) $request->input('service_id');
+        $data = $formBuilder->load($customerId, $serviceTypeId);
+
+        return response()->json([
+            'form_fields' => $data['fields'],
+            'has_form_builder' => $data['has_form_builder'],
+        ]);
     }
 
     /** Save a new order (AJAX — returns JSON). */
     public function store(Request $request): JsonResponse
     {
-        $userId     = Auth::id();
+        $userId = Auth::id();
         $customerId = $this->getCustomerId($userId);
 
         if (! $customerId) {
@@ -452,16 +487,18 @@ class OrderController extends Controller
         }
 
         $request->validate([
-            'service_type_id'  => 'required|exists:service_types,id',
-            'name'             => 'required|string|max:255',
-            'surname'          => 'required|string|max:255',
-            'email'            => 'required|email|max:255',
-            'phone'            => 'required|string|max:50',
-            'hasPersonalId'    => 'required|in:0,1',
-            'security'         => 'required|string|max:255',
-            'cv'               => 'nullable|array|max:10',
-            'cv.*'             => 'file|mimes:pdf,doc,docx|max:10240',
-            'agreed'           => 'accepted',
+            'service_type_id' => 'required|exists:service_types,id',
+            'name' => 'required|string|max:255',
+            'surname' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:50',
+            'hasPersonalId' => 'required|in:0,1',
+            'security' => 'required|string|max:255',
+            'cv' => 'nullable|array|max:10',
+            'cv.*' => 'file|mimes:pdf,doc,docx|max:10240',
+            'agreed' => 'accepted',
+            'form_builder' => ['nullable', 'array'],
+            'form_builder.*' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $service = ServiceType::with('serviceCategory')->findOrFail($request->service_type_id);
@@ -471,7 +508,9 @@ class OrderController extends Controller
 
         $duplicate = Candidate::whereIn('cus_id', $companyCustomerIds)
             ->where('expired', 0)
-            ->whereHas('serviceType', fn ($q) =>
+            ->whereHas(
+                'serviceType',
+                fn ($q) =>
                 $q->where('service_category_id', $service->service_category_id)
             )
             ->where(function ($q) use ($request) {
@@ -488,7 +527,7 @@ class OrderController extends Controller
         if ($duplicate) {
             return response()->json([
                 'success' => false,
-                'error'   => __('A duplicate candidate already exists for this service.'),
+                'error' => __('A duplicate candidate already exists for this service.'),
             ], 422);
         }
 
@@ -518,50 +557,104 @@ class OrderController extends Controller
             })
             ->first();
 
-        // ── Custom question answers ──────────────────────────────────────────
-        $customAnswers = $request->input('custom_answers', []);
+        $rawFormBuilder = $request->input('form_builder', []);
+        $metaData = ! empty($rawFormBuilder)
+            ? json_encode($rawFormBuilder, JSON_UNESCAPED_UNICODE)
+            : null;
 
         // ── Save order ───────────────────────────────────────────────────────
         $candidate = Candidate::create([
-            'order_id'      => $this->generateOrderId(),
-            'name'          => $request->name,
-            'surname'       => $request->surname,
-            'email'         => $request->email,
-            'phone'         => $request->phone,
-            'security'      => $request->security,
+            'order_id' => $this->generateOrderId(),
+            'name' => $request->name,
+            'surname' => $request->surname,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'security' => $request->security,
             'hasPersonalId' => $request->hasPersonalId,
-            'place'         => $request->place ?: null,
-            'country'       => $request->country ?: null,
-            'cv'            => $cvFilenames ? implode(',', $cvFilenames) : null,
-            'referensperson'=> $request->referensperson ?: null,
-            'reference'     => $request->reference ?: null,
-            'comment'       => $request->comment ?: null,
-            'note'          => $request->note ?: null,
-            'cus_id'        => $customerId,
-            'interview_id'  => $service->id,
-            'status'        => $initialStatus?->id ?? 0,
-            'staff_id'      => 0,
-            'expired'       => 0,
-            'meta_data'     => $customAnswers ? json_encode($customAnswers) : null,
-            'meta_info'     => json_encode([
+            'place' => $request->place ?: null,
+            'country' => $request->country ?: null,
+            'cv' => $cvFilenames ? implode(',', $cvFilenames) : null,
+            'referensperson' => $request->referensperson ?: null,
+            'reference' => $request->reference ?: null,
+            'comment' => $request->comment ?: null,
+            'note' => $request->note ?: null,
+            'cus_id' => $customerId,
+            'interview_id' => $service->id,
+            'status' => $initialStatus?->id ?? 0,
+            'staff_id' => null,
+            'expired' => 0,
+            'meta_data' => $metaData,
+            'meta_info' => json_encode([
                 'send_email' => $request->input('sendMail', 'no'),
                 'created_by' => $userId,
                 'created_on' => now()->toDateTimeString(),
-                'user'       => 'Customer',
+                'user' => 'Customer',
             ]),
         ]);
 
         // ── History record ───────────────────────────────────────────────────
         CandidateHistory::create([
-            'order_id'  => $candidate->id,
-            'desc'      => 'Order created by customer',
+            'order_id' => $candidate->id,
+            'desc' => 'Order created by customer',
             'date_time' => now(),
         ]);
 
         return response()->json([
             'success' => true,
             'orderId' => $candidate->order_id,
-            'keyId'   => $candidate->id,
+            'keyId' => $candidate->id,
+        ]);
+    }
+
+    // ── Security report upload ───────────────────────────────────────────────
+
+    /**
+     * Upload a PDF security report for an order.
+     * Mirrors old system: new_customer/CandidateController::uploadPDF()
+     * Stores to the shared security-report-uploads directory and updates
+     * candidates.basic_investigation_result with the filename.
+     */
+    public function uploadSecurityReport(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf', 'max:20480'],
+        ]);
+
+        $customerIds = $this->resolveCustomerIds(Auth::id());
+        $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
+
+        // Permission gate — customer must have send_security_report enabled.
+        $customerId = $this->getCustomerId(Auth::id());
+        if (! Customer::where('id', $customerId)->value('send_security_report')) {
+            return response()->json([
+                'success' => false,
+                'error' => __('You do not have permission to upload security reports.'),
+            ], 403);
+        }
+
+        // Filename matches old system convention: {order_id}_{cus_id}.pdf
+        $filename = $candidate->order_id . '_' . $candidate->cus_id . '.pdf';
+        $uploadDir = base_path('../security-report-uploads');
+
+        if (! is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $request->file('file')->move($uploadDir, $filename);
+
+        $candidate->basic_investigation_result = $filename;
+        $candidate->save();
+
+        Log::info('Customer uploaded security report.', [
+            'candidate_id' => $candidate->id,
+            'order_id' => $candidate->order_id,
+            'customer_id' => $customerId,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'filename' => $filename,
+            'message' => __('Security report uploaded successfully.'),
         ]);
     }
 

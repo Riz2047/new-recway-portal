@@ -2,12 +2,13 @@
 
 namespace App\Livewire\Customer\Tabs;
 
-use App\Models\Customer;
+use App\Models\CandidateMessage;
 use App\Models\ServiceType;
+use App\Services\CustomerPropagationService;
 use Illuminate\Support\Collection;
-use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\Component;
 
 class Messages extends Component
 {
@@ -20,18 +21,30 @@ class Messages extends Component
     public ?int $copyCustomer = null;
     public ?int $copyService = null;
 
-    /** @var array<int, string> */
+    /**
+     * Template keys for the currently selected service.
+     * Each entry is a status_id string (e.g. "15") or a special key ("cus_msg", …).
+     *
+     * @var string[]
+     */
     public array $columns = [];
 
-    /** @var array<string, string> */
+    /**
+     * Human-readable label for each key in $columns.
+     *
+     * @var array<string, string>
+     */
+    public array $columnLabels = [];
+
+    /** @var array<string, string> template body per key */
     public array $messageValues = [];
-    public array $copyMessageValues = [];
+
     public bool $isCopyMode = false;
 
     public function mount(int $customerId): void
     {
         $this->customerId = $customerId;
-        $this->services = $this->getCustomerServices($this->customerId);
+        $this->services = $this->getCustomerServices($customerId);
         $this->selectedService = $this->services->first()?->id;
         $this->loadData();
     }
@@ -40,11 +53,7 @@ class Messages extends Component
     {
         $this->isCopyMode = false;
         $this->copyService = null;
-
-        $this->loadData(
-            $this->customerId,
-            $this->selectedService
-        );
+        $this->loadData($this->customerId, $this->selectedService);
     }
 
     public function updatedCopyCustomer(): void
@@ -56,11 +65,7 @@ class Messages extends Component
     {
         if ($this->copyCustomer && $this->copyService) {
             $this->isCopyMode = true;
-
-            $this->loadData(
-                $this->copyCustomer,
-                $this->copyService
-            );
+            $this->loadData($this->copyCustomer, $this->copyService);
         }
     }
 
@@ -71,42 +76,31 @@ class Messages extends Component
 
         if (! $serviceId) {
             $this->columns = [];
+            $this->columnLabels = [];
             $this->messageValues = [];
             return;
         }
 
-        // Get columns
-        $columns = DB::table('status_services')
-                ->where('service_id', $serviceId)
-                ->pluck('msg_col')
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
+        // Build ordered list of status keys linked to this service type.
+        [$keys, $labels] = $this->keysForService($serviceId);
 
-        $this->columns = array_values(array_filter(
-            $columns,
-            fn ($col) => Schema::hasColumn('messages', $col)
-        ));
+        $this->columns = $keys;
+        $this->columnLabels = $labels;
 
-        if (empty($this->columns)) {
+        if (empty($keys)) {
             $this->messageValues = [];
             return;
         }
 
-        $serviceColumn = Schema::hasColumn('messages', 'servicetype_id')
-                ? 'servicetype_id'
-                : 'interview_id';
+        $row = CandidateMessage::where('cus_id', $customerId)
+            ->where('interview_id', $serviceId)
+            ->first();
 
-        $row = DB::table('messages')
-                ->where('cus_id', $customerId)
-                ->where($serviceColumn, $serviceId)
-                ->first($this->columns);
+        $templates = $row?->templates ?? [];
 
         $this->messageValues = [];
-
-        foreach ($this->columns as $column) {
-            $this->messageValues[$column] = (string) ($row->{$column} ?? '');
+        foreach ($keys as $key) {
+            $this->messageValues[$key] = (string) ($templates[$key] ?? '');
         }
     }
 
@@ -116,33 +110,33 @@ class Messages extends Component
             return;
         }
 
-        $serviceColumn = Schema::hasColumn('messages', 'servicetype_id')
-                ? 'servicetype_id'
-                : 'interview_id';
+        $row = CandidateMessage::firstOrNew([
+            'cus_id' => $this->customerId,
+            'interview_id' => $this->selectedService,
+        ]);
 
-        $payload = [
-                'cus_id' => $this->customerId, // ALWAYS original customer
-                $serviceColumn => $this->selectedService,
-        ];
-
-        foreach ($this->columns as $column) {
-            $payload[$column] = $this->messageValues[$column] ?? '';
+        // Merge incoming values into the existing JSON (preserve keys from other services).
+        $templates = $row->templates ?? [];
+        foreach ($this->columns as $key) {
+            $val = $this->messageValues[$key] ?? '';
+            $templates[$key] = ($val !== '') ? $val : null;
         }
+        $row->templates = $templates;
+        $row->save();
 
-        DB::table('messages')->updateOrInsert(
-            [
-                        'cus_id' => $this->customerId,
-                        $serviceColumn => $this->selectedService,
-                ],
-            $payload
+        // Propagate to child customers that share the same service type.
+        app(CustomerPropagationService::class)->propagateMessages(
+            $this->customerId,
+            $this->selectedService,
+            $templates
         );
 
         $this->isCopyMode = false;
 
         $this->dispatch('notify', [
-                'variant' => 'success',
-                'title' => __('Success'),
-                'message' => __('Messages saved successfully.'),
+            'variant' => 'success',
+            'title' => __('Success'),
+            'message' => __('Messages saved successfully.'),
         ]);
     }
 
@@ -157,19 +151,9 @@ class Messages extends Component
             return;
         }
 
-        $serviceColumn = Schema::hasColumn('messages', 'servicetype_id') ? 'servicetype_id' : 'interview_id';
+        [$sourceKeys] = $this->keysForService($this->copyService);
 
-        $sourceColumnsRaw = DB::table('status_services')
-            ->where('service_id', $this->copyService)
-            ->pluck('msg_col')
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
-
-        $sourceColumns = array_values(array_filter($sourceColumnsRaw, fn ($col) => Schema::hasColumn('messages', $col)));
-
-        if (empty($sourceColumns) || empty($this->columns)) {
+        if (empty($sourceKeys) || empty($this->columns)) {
             $this->dispatch('notify', [
                 'variant' => 'error',
                 'title' => __('Error'),
@@ -178,10 +162,9 @@ class Messages extends Component
             return;
         }
 
-        $source = DB::table('messages')
-            ->where('cus_id', $this->copyCustomer)
-            ->where($serviceColumn, $this->copyService)
-            ->first($sourceColumns);
+        $source = CandidateMessage::where('cus_id', $this->copyCustomer)
+            ->where('interview_id', $this->copyService)
+            ->first();
 
         if (! $source) {
             $this->dispatch('notify', [
@@ -192,18 +175,56 @@ class Messages extends Component
             return;
         }
 
-        foreach ($this->columns as $column) {
-            if (in_array($column, $sourceColumns, true)) {
-                $this->messageValues[$column] = (string) ($source->{$column} ?? '');
+        $sourceTemplates = $source->templates ?? [];
+
+        foreach ($this->columns as $key) {
+            if (in_array($key, $sourceKeys, true)) {
+                $this->messageValues[$key] = (string) ($sourceTemplates[$key] ?? '');
             }
         }
 
         $this->saveMessages();
+
         $this->dispatch('notify', [
             'variant' => 'success',
             'title' => __('Success'),
             'message' => __('Messages copied and saved successfully.'),
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns [keys[], labels[]] for all statuses linked to a service type.
+     * Keys are msg_col values (e.g. 'approved_msg'). Labels are status names.
+     *
+     * @return array{0: string[], 1: array<string, string>}
+     */
+    private function keysForService(int $serviceId): array
+    {
+        if (! Schema::hasTable('status_services') || ! Schema::hasTable('statuses')) {
+            return [[], []];
+        }
+
+        $rows = DB::table('status_services')
+            ->join('statuses', 'statuses.id', '=', 'status_services.status_id')
+            ->where('status_services.service_id', $serviceId)
+            ->whereNotNull('status_services.msg_col')
+            ->where('status_services.msg_col', '!=', '')
+            ->orderBy('statuses.status')
+            ->select('status_services.msg_col', 'statuses.status as name')
+            ->get();
+
+        $keys = [];
+        $labels = [];
+
+        foreach ($rows as $row) {
+            $key = $row->msg_col;
+            $keys[] = $key;
+            $labels[$key] = $row->name;
+        }
+
+        return [$keys, $labels];
     }
 
     private function getCustomerServices(int $customerId): Collection
@@ -218,7 +239,7 @@ class Messages extends Component
 
     private function getCustomersForCopy(): Collection
     {
-        return Customer::query()
+        return \App\Models\Customer::query()
             ->join('users', 'users.id', '=', 'customers.user_id')
             ->select('customers.id', 'users.name')
             ->orderBy('users.name')
@@ -234,52 +255,15 @@ class Messages extends Component
         return $this->getCustomerServices($this->copyCustomer);
     }
 
-    private function loadCopyData(): void
-    {
-        $this->copyMessageValues = [];
-
-        if (! $this->copyCustomer || ! $this->copyService) {
-            return;
-        }
-
-        $serviceColumn = Schema::hasColumn('messages', 'servicetype_id') ? 'servicetype_id' : 'interview_id';
-
-        // Get columns for COPY service
-        $columnsRaw = DB::table('status_services')
-                ->where('service_id', $this->copyService)
-                ->pluck('msg_col')
-                ->filter()
-                ->unique()
-                ->toArray();
-
-        $columns = array_values(array_filter($columnsRaw, fn ($col) => Schema::hasColumn('messages', $col)));
-
-        if (empty($columns)) {
-            return;
-        }
-
-        $row = DB::table('messages')
-                ->where('cus_id', $this->copyCustomer)
-                ->where($serviceColumn, $this->copyService)
-                ->first($columns);
-
-        if (! $row) {
-            return;
-        }
-
-        foreach ($columns as $col) {
-            $this->copyMessageValues[$col] = (string) ($row->{$col} ?? '');
-        }
-    }
-
     public function render()
     {
         return view('livewire.customer.tabs.messages', [
-                'customers' => $this->getCustomersForCopy(),
-                'services' => $this->services,
-                'copyServices' => $this->copyServices,
-                'columns' => $this->columns,
-                'messageValues' => $this->messageValues,
+            'customers' => $this->getCustomersForCopy(),
+            'services' => $this->services,
+            'copyServices' => $this->copyServices,
+            'columns' => $this->columns,
+            'columnLabels' => $this->columnLabels,
+            'messageValues' => $this->messageValues,
         ]);
     }
 }

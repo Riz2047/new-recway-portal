@@ -115,9 +115,23 @@
 
                                     <!-- Date Type -->
                                     <template x-if="field.type === 'date'">
-                                        <input type="date"
+                                        <input type="text"
+                                               autocomplete="off"
                                                x-model="field.value"
                                                :name="`meta_values[${index}]`"
+                                               placeholder="{{ __('Select date') }}"
+                                               x-init="$nextTick(() => flatpickr($el, {
+                                                   dateFormat: 'Y-m-d',
+                                                   allowInput: true,
+                                                   disableMobile: true,
+                                                   static: true,
+                                                   defaultDate: $el.value || null,
+                                                   locale: { firstDayOfWeek: 1 },
+                                                   onChange: (selectedDates, dateStr, instance) => {
+                                                       instance.element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                       instance.element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                   },
+                                               }))"
                                                class="form-control">
                                     </template>
 

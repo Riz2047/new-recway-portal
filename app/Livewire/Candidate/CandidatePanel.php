@@ -19,6 +19,7 @@ use App\Services\Candidate\InterviewReportService;
 use App\Services\Candidate\StatusWorkflowService;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
@@ -945,6 +946,94 @@ class CandidatePanel extends Component
             'combineWouldTrigger' => $combineWouldTrigger,
             'combineTargetService' => $combineTargetService,
             'combineTargetMissing' => $combineTargetMissing,
+            // Billing display — form-builder labels when a form exists, else empty (→ defaults shown)
+            'billingDisplayFields' => $candidate ? $this->resolveBillingDisplayFields($candidate) : [],
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Billing display helper
+    // -------------------------------------------------------------------------
+
+    /**
+     * Load the billing_info section from the form builder for this candidate's
+     * customer+service and return an array of [label, value] pairs for display.
+     * Returns [] when no form builder exists → view falls back to default labels.
+     *
+     * Value resolution:
+     *   pref / referensperson / Invoice Recipient / Ansvarig chef → candidates.referensperson
+     *   ref  / reference      / DO (5 siffror)                   → candidates.reference
+     *   comment                                                    → candidates.comment
+     *   note                                                       → candidates.note
+     *   custom (e.g. Affärsområde)                                 → candidates.meta_data JSON by label
+     *
+     * @return array<int, array{0: string, 1: string|null}>
+     */
+    private function resolveBillingDisplayFields(Candidate $candidate): array
+    {
+        if (! Schema::hasTable('form_builders') || ! $candidate->cus_id || ! $candidate->interview_id) {
+            return [];
+        }
+
+        $row = DB::table('form_builders')
+            ->where('cus_id', $candidate->cus_id)
+            ->where('servicetype_id', $candidate->interview_id)
+            ->first();
+
+        if (! $row || empty($row->form)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) $row->form, true);
+        $builder = $decoded['form_builder'] ?? $decoded;
+
+        if (! is_array($builder) || empty($builder['billing_info'])) {
+            return [];
+        }
+
+        // Parse meta_data JSON for custom-field values.
+        $metaData = [];
+        if (! empty($candidate->meta_data)) {
+            $md = json_decode((string) $candidate->meta_data, true);
+            $metaData = is_array($md) ? $md : [];
+        }
+
+        $fields = [];
+
+        foreach ($builder['billing_info'] as $metaKey => $ignored) {
+            $parts      = explode(',', (string) $metaKey);
+            $label      = trim($parts[1] ?? '');
+            $name       = trim($parts[2] ?? '');
+
+            if ($name === '' && $label === '') {
+                continue;
+            }
+
+            // Clean display label — strip trailing required marker.
+            $cleanLabel = rtrim(trim($label), ' *');
+            $ll         = strtolower($label);
+
+            // Map to the correct DB column or meta_data key.
+            if ($name === 'pref' || $name === 'referensperson'
+                || str_contains($ll, 'invoice recipient')
+                || str_contains($ll, 'ansvarig chef')
+                || str_contains($ll, 'hiring manager')) {
+                $value = $candidate->referensperson;
+            } elseif ($name === 'ref' || $name === 'reference'
+                || (str_contains($ll, 'do') && str_contains($ll, 'siffror'))) {
+                $value = $candidate->reference;
+            } elseif ($name === 'comment') {
+                $value = $candidate->comment;
+            } elseif ($name === 'note') {
+                $value = $candidate->note;
+            } else {
+                // Custom field — look up by clean label in meta_data JSON.
+                $value = $metaData[$cleanLabel] ?? null;
+            }
+
+            $fields[] = [$cleanLabel, $value];
+        }
+
+        return $fields;
     }
 }

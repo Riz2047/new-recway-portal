@@ -188,51 +188,53 @@ class CandidateDatatable extends Datatable
 
     public function renderNameColumn(Candidate $candidate): string
     {
-        $name = e(trim($candidate->name . ' ' . $candidate->surname));
-        $id = $candidate->id;
-
-        // Dispatches both:
-        // 1. Livewire event → CandidatePanel#[On('openCandidatePanel')] loads the data
-        // 2. Browser event  → Alpine x-data in index.blade.php opens the slide-over
+        $name    = e(trim($candidate->name . ' ' . $candidate->surname));
+        $id      = $candidate->id;
         $onclick = "Livewire.dispatch('openCandidatePanel',{id:{$id}});"
-            . "window.dispatchEvent(new CustomEvent('open-candidate-panel'))";
+                 . "window.dispatchEvent(new CustomEvent('open-candidate-panel'))";
 
         return '<button type="button"'
             . ' data-candidate-id="' . $id . '"'
             . ' onclick="' . $onclick . '"'
-            . ' class="text-left text-sm font-medium text-gray-800 hover:text-indigo-600'
+            . ' class="text-left text-xs font-medium text-gray-800 hover:text-indigo-600'
             . ' hover:underline dark:text-gray-100 dark:hover:text-indigo-400">'
             . $name . '</button>';
     }
 
     public function renderCustomerColumn(Candidate $candidate): string
     {
-        $name = $candidate->customer?->user?->name ?? '-';
-
-        return '<span class="text-sm">' . e($name) . '</span>';
+        return '<span class="text-xs text-gray-600 dark:text-gray-400">'
+            . e($candidate->customer?->user?->name ?? '—')
+            . '</span>';
     }
 
     public function renderServiceColumn(Candidate $candidate): string
     {
-        return '<span class="text-sm">' . e($candidate->serviceType?->name ?? '-') . '</span>';
+        return '<span class="text-xs text-gray-600 dark:text-gray-400">'
+            . e($candidate->serviceType?->name ?? '—')
+            . '</span>';
     }
 
     public function renderStaffColumn(Candidate $candidate): string
     {
-        return '<span class="text-sm">' . e($candidate->staff?->name ?? '-') . '</span>';
+        return '<span class="text-xs text-gray-600 dark:text-gray-400">'
+            . e($candidate->staff?->name ?? '—')
+            . '</span>';
     }
 
     public function renderStatusColumn(Candidate $candidate): string
     {
-        $label = $candidate->statusRelation?->status ?? '-';
+        $label = $candidate->statusRelation?->status ?? '—';
         $color = $candidate->statusRelation?->color;
 
         if ($color) {
-            return '<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                style="background-color:' . e($color) . '">' . e($label) . '</span>';
+            return '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"'
+                . ' style="background-color:' . e($color) . '">'
+                . e($label)
+                . '</span>';
         }
 
-        return '<span class="text-sm">' . e($label) . '</span>';
+        return '<span class="text-xs text-gray-600 dark:text-gray-400">' . e($label) . '</span>';
     }
 
     public function renderBookedColumn(Candidate $candidate): string
@@ -241,7 +243,9 @@ class CandidateDatatable extends Datatable
             return '<span class="text-xs text-gray-400">—</span>';
         }
 
-        return '<span class="text-sm">' . e($candidate->booked->format('d M Y')) . '</span>';
+        return '<span class="text-xs text-gray-600 dark:text-gray-400">'
+            . e($candidate->booked->format('d M Y'))
+            . '</span>';
     }
 
     // -------------------------------------------------------------------------

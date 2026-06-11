@@ -35,6 +35,124 @@
 </div>
 
 {{-- ============================================================
+     FAILED JOBS
+     ============================================================ --}}
+@php $failedCount = $failedJobs->count(); @endphp
+
+<div class="mb-8">
+    <div class="mb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <h2 class="text-base font-semibold text-gray-800 dark:text-white">{{ __('Failed Queue Jobs') }}</h2>
+            @if ($failedCount > 0)
+                <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                    {{ $failedCount }}
+                </span>
+            @else
+                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                    {{ __('All clear') }}
+                </span>
+            @endif
+        </div>
+
+        @if ($failedCount > 0)
+            @can('update', App\Models\Customer::class)
+                <form method="POST" action="{{ route('admin.cron.failed.retry-all') }}"
+                      onsubmit="return confirm('{{ __('Retry all :n failed jobs?', ['n' => $failedCount]) }}')">
+                    @csrf
+                    <button type="submit"
+                        class="inline-flex items-center gap-1.5 rounded border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300">
+                        <iconify-icon icon="lucide:rotate-ccw" width="13"></iconify-icon>
+                        {{ __('Retry All') }}
+                    </button>
+                </form>
+            @endcan
+        @endif
+    </div>
+
+    @if ($failedCount === 0)
+        <div class="rounded-xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+            {{ __('No failed jobs — the queue is healthy.') }}
+        </div>
+    @else
+        <div class="overflow-hidden rounded-xl border border-red-200 bg-white dark:border-red-800 dark:bg-gray-800">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-red-100 bg-red-50 text-left text-xs dark:border-red-800 dark:bg-red-900/20">
+                        <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-300">{{ __('ID') }}</th>
+                        <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-300">{{ __('Failed At') }}</th>
+                        <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-300">{{ __('Error') }}</th>
+                        <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-300">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    @foreach ($failedJobs as $fj)
+                        @php
+                            // Extract just the first line of the exception for a short summary.
+                            $errorLines  = explode("\n", $fj->exception ?? '');
+                            $errorSummary = trim($errorLines[0] ?? '');
+                            $errorSummary = strlen($errorSummary) > 120
+                                ? substr($errorSummary, 0, 120) . '…'
+                                : $errorSummary;
+
+                            // Try to pull the email address from the payload.
+                            $payloadData = json_decode($fj->payload ?? '{}', true);
+                            $cmdData     = json_decode($payloadData['data']['command'] ?? '{}', true);
+                        @endphp
+                        <tr x-data="{ open: false }" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                            <td class="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">#{{ $fj->id }}</td>
+                            <td class="px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                {{ \Carbon\Carbon::parse($fj->failed_at)->timezone('Europe/Stockholm')->format('d M Y H:i:s') }}
+                                <br>
+                                <span class="text-gray-400">({{ \Carbon\Carbon::parse($fj->failed_at)->diffForHumans() }})</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <p class="text-xs text-red-600 dark:text-red-400">{{ $errorSummary }}</p>
+                                <button type="button" @click="open = !open"
+                                    class="mt-1 text-xs text-indigo-500 hover:underline dark:text-indigo-400">
+                                    <span x-text="open ? '{{ __('Hide full trace') }}' : '{{ __('Show full trace') }}'"></span>
+                                </button>
+                                <pre x-show="open" x-cloak
+                                    class="mt-2 max-h-48 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300">{{ $fj->exception }}</pre>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-col gap-1.5">
+                                    @can('update', App\Models\Customer::class)
+                                        {{-- Retry --}}
+                                        <form method="POST"
+                                              action="{{ route('admin.cron.failed.retry', $fj->id) }}"
+                                              onsubmit="return confirm('{{ __('Retry job #:id?', ['id' => $fj->id]) }}')">
+                                            @csrf
+                                            <button type="submit"
+                                                class="inline-flex w-full items-center justify-center gap-1 rounded border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300">
+                                                <iconify-icon icon="lucide:rotate-ccw" width="12"></iconify-icon>
+                                                {{ __('Retry') }}
+                                            </button>
+                                        </form>
+
+                                        {{-- Delete --}}
+                                        <form method="POST"
+                                              action="{{ route('admin.cron.failed.delete', $fj->id) }}"
+                                              onsubmit="return confirm('{{ __('Delete failed job #:id?', ['id' => $fj->id]) }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                class="inline-flex w-full items-center justify-center gap-1 rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                                                <iconify-icon icon="lucide:trash-2" width="12"></iconify-icon>
+                                                {{ __('Dismiss') }}
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
+{{-- ============================================================
      JOB CARDS
      ============================================================ --}}
 <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
