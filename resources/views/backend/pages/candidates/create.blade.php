@@ -319,6 +319,12 @@
                 const checkbox = wrapper.querySelector('#hasPersonalId');
                 checkbox.addEventListener('change', (event) => {
                     hasPersonalId = Boolean(event.target.checked);
+                    // Clear the field when switching modes — a PNR string isn't a valid
+                    // date and a date string isn't a valid PNR.
+                    const securityInput = document.getElementById('security');
+                    if (securityInput) {
+                        securityInput.value = '';
+                    }
                     updateSecurityFieldMode();
                     validateSecurityField();
                 });
@@ -411,7 +417,16 @@
                         ? 'text'
                         : normalizeInputType(type);
 
-                    html += `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" />`;
+                    const inputHtml = `<input id="${escapeHtml(fieldId)}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" class="form-control" value="${escapeHtml(oldValue)}" ${required ? 'required' : ''} placeholder="${escapeHtml(placeholder)}" autocomplete="off" />`;
+
+                    html += name === 'security'
+                        ? `<div class="relative">
+                            <span id="${escapeHtml(fieldId)}-icon" class="pointer-events-none absolute inset-y-0 start-0 z-10 hidden items-center ps-3">
+                                <iconify-icon icon="lucide:calendar" class="text-gray-400 dark:text-gray-500"></iconify-icon>
+                            </span>
+                            ${inputHtml}
+                          </div>`
+                        : inputHtml;
                 }
 
                 if (name === 'security') {
@@ -435,10 +450,17 @@
                 return 'text';
             }
 
-            // Attach/detach the flatpickr calendar on the security field depending on
-            // whether it currently represents a date of birth.
+            // Attach/detach the flatpickr calendar (+ icon) on the security field
+            // depending on whether it currently represents a date of birth.
             function setSecurityDatePicker(input, enable) {
+                const icon = document.getElementById(input.id + '-icon');
+
                 if (enable) {
+                    if (icon) {
+                        icon.classList.remove('hidden');
+                        icon.classList.add('flex');
+                    }
+                    input.style.paddingInlineStart = '2.5rem';
                     if (!input._flatpickr) {
                         flatpickr(input, {
                             dateFormat: 'Y-m-d',
@@ -448,8 +470,17 @@
                             locale: { firstDayOfWeek: 1 },
                         });
                     }
-                } else if (input._flatpickr) {
+                    return;
+                }
+
+                if (icon) {
+                    icon.classList.add('hidden');
+                    icon.classList.remove('flex');
+                }
+                input.style.paddingInlineStart = '';
+                if (input._flatpickr) {
                     input._flatpickr.destroy();
+                    input._flatpickr = undefined;
                 }
             }
 

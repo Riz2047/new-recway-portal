@@ -130,10 +130,15 @@
                     </label>
                     {{-- Always rendered as text — flatpickr (a calendar widget) is attached
                          when this represents a date of birth instead of a native date input. --}}
-                    <input class="wizard-input" id="ssn" name="security" required type="text"
-                        autocomplete="off"
-                        placeholder="{{ $candidate->hasPersonalId ? 'YYMMDD-XXXX' : __('Select date of birth') }}"
-                        value="{{ old('security', $candidate->security) }}">
+                    <div class="relative">
+                        <span id="ssn-icon" class="pointer-events-none absolute inset-y-0 start-0 z-10 hidden items-center ps-3">
+                            <iconify-icon icon="lucide:calendar" class="text-gray-400 dark:text-gray-500"></iconify-icon>
+                        </span>
+                        <input class="wizard-input" id="ssn" name="security" required type="text"
+                            autocomplete="off"
+                            placeholder="{{ $candidate->hasPersonalId ? 'YYMMDD-XXXX' : __('Select date of birth') }}"
+                            value="{{ old('security', $candidate->security) }}">
+                    </div>
                     <input type="hidden" name="hasPersonalId" id="hidden-has-personal-id"
                         value="{{ old('hasPersonalId', $candidate->hasPersonalId ? '1' : '0') }}">
                     <small id="pnrHelp" class="mt-1 block text-xs text-gray-400"></small>
@@ -292,10 +297,17 @@ function switchTab(tabId, btn) {
     if (btn) btn.classList.add('active');
 }
 
-// Attach/detach the flatpickr calendar on the security field depending on whether
-// it currently represents a date of birth.
+// Attach/detach the flatpickr calendar (+ icon) on the security field
+// depending on whether it currently represents a date of birth.
 function setSecurityDatePicker(input, enable) {
+    const icon = document.getElementById(input.id + '-icon');
+
     if (enable) {
+        if (icon) {
+            icon.classList.remove('hidden');
+            icon.classList.add('flex');
+        }
+        input.style.paddingInlineStart = '2.5rem';
         if (!input._flatpickr) {
             flatpickr(input, {
                 dateFormat: 'Y-m-d',
@@ -305,8 +317,17 @@ function setSecurityDatePicker(input, enable) {
                 locale: { firstDayOfWeek: 1 },
             });
         }
-    } else if (input._flatpickr) {
+        return;
+    }
+
+    if (icon) {
+        icon.classList.add('hidden');
+        icon.classList.remove('flex');
+    }
+    input.style.paddingInlineStart = '';
+    if (input._flatpickr) {
         input._flatpickr.destroy();
+        input._flatpickr = undefined;
     }
 }
 
@@ -317,12 +338,14 @@ function togglePnr() {
     const lbl = document.getElementById('pnr-label');
     const hid = document.getElementById('hidden-has-personal-id');
     hid.value = cb.checked ? '1' : '0';
+    // Clear the field when switching modes — a PNR string isn't a valid
+    // date and a date string isn't a valid PNR.
+    ssn.value = '';
     if (cb.checked) {
         setSecurityDatePicker(ssn, false);
-        ssn.placeholder = 'YYMMDD-XXXX'; ssn.value = '';
+        ssn.placeholder = 'YYMMDD-XXXX';
         lbl.innerHTML = '{{ __('Social Security Number') }} <span class="text-red-500">*</span>';
     } else {
-        ssn.value = '';
         ssn.placeholder = '{{ __('Select date of birth') }}';
         setSecurityDatePicker(ssn, true);
         lbl.innerHTML = '{{ __('Date of Birth') }} <span class="text-red-500">*</span>';
@@ -333,7 +356,12 @@ function togglePnr() {
 document.addEventListener('DOMContentLoaded', function () {
     const ssn = document.getElementById('ssn');
     if (ssn && !{{ $candidate->hasPersonalId ? 'true' : 'false' }}) {
+        const existingValue = ssn.value;
         setSecurityDatePicker(ssn, true);
+        // Re-apply the existing date so the calendar reflects the saved value.
+        if (existingValue && ssn._flatpickr) {
+            ssn._flatpickr.setDate(existingValue, false);
+        }
     }
 });
 

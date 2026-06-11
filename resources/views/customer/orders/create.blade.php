@@ -508,7 +508,17 @@ function renderFieldHtml(field) {
         const inputType = field.name === 'security'
             ? 'text'
             : normalizeInputType(field.type);
-        control = `<input class="wizard-input" id="${fieldId}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" placeholder="${placeholder}" ${required}>`;
+
+        const inputHtml = `<input class="wizard-input" id="${fieldId}" name="${escapeHtml(inputName)}" type="${escapeHtml(inputType)}" placeholder="${placeholder}" autocomplete="off" ${required}>`;
+
+        control = field.name === 'security'
+            ? `<div class="relative">
+                <span id="${fieldId}-icon" class="pointer-events-none absolute inset-y-0 start-0 z-10 hidden items-center ps-3">
+                    <iconify-icon icon="lucide:calendar" class="text-gray-400 dark:text-gray-500"></iconify-icon>
+                </span>
+                ${inputHtml}
+              </div>`
+            : inputHtml;
     }
 
     let html = `<div${span}><label class="wizard-label"${labelId} for="${fieldId}">${label}${reqMark}</label>${control}`;
@@ -527,10 +537,17 @@ function normalizeInputType(type) {
     return 'text';
 }
 
-// Attach/detach the flatpickr calendar on the security field depending on whether
-// it currently represents a date of birth.
+// Attach/detach the flatpickr calendar (+ icon) on the security field
+// depending on whether it currently represents a date of birth.
 function setSecurityDatePicker(input, enable) {
+    const icon = document.getElementById(input.id + '-icon');
+
     if (enable) {
+        if (icon) {
+            icon.classList.remove('hidden');
+            icon.classList.add('flex');
+        }
+        input.style.paddingInlineStart = '2.5rem';
         if (!input._flatpickr) {
             flatpickr(input, {
                 dateFormat: 'Y-m-d',
@@ -540,8 +557,17 @@ function setSecurityDatePicker(input, enable) {
                 locale: { firstDayOfWeek: 1 },
             });
         }
-    } else if (input._flatpickr) {
+        return;
+    }
+
+    if (icon) {
+        icon.classList.add('hidden');
+        icon.classList.remove('flex');
+    }
+    input.style.paddingInlineStart = '';
+    if (input._flatpickr) {
         input._flatpickr.destroy();
+        input._flatpickr = undefined;
     }
 }
 
@@ -558,6 +584,10 @@ function bindSecurityBehavior() {
         checkbox.onchange = () => {
             hasPersonalId = checkbox.checked;
             document.getElementById('hidden-has-personal-id').value = hasPersonalId ? '1' : '0';
+            // Clear the field when switching modes — a PNR string isn't a valid
+            // date and a date string isn't a valid PNR.
+            const sec = document.getElementById('security');
+            if (sec) sec.value = '';
             updateSecurityFieldMode();
             validateSecurityField();
         };
