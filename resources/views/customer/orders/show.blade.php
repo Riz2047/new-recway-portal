@@ -49,21 +49,23 @@
                     $rows = [
                         [__('Order ID'),       $candidate->order_id],
                         [__('Status'),         null, 'status'],
-                        [__('Name'),           $candidate->name . ' ' . $candidate->surname],
+                        [__('Name'),           trim($candidate->name . ' ' . $candidate->surname)],
                         [__('Email'),          $candidate->email],
-                        [__('Phone'),          $candidate->phone ?: '—'],
-                        [__('Service Type'),   $candidate->service_name ?? '—'],
-                        [__('Service Category'), $candidate->service_category_name ?? '—'],
-                        [__('Interview Date'), $candidate->booked ? \Carbon\Carbon::parse($candidate->booked)->format('d M Y') : '—'],
-                        [__('Delivery Date'),  $candidate->delivery_date ? \Carbon\Carbon::parse($candidate->delivery_date)->format('d M Y') : '—'],
-                        [__('Location'),       $candidate->place_name ?? '—'],
-                        [__('Country'),        $candidate->country ?: '—'],
-                        [__('Staff Assigned'), $candidate->staff_name ?? '—'],
+                        [__('Phone'),          $candidate->phone],
+                        [__('Service Type'),   $candidate->service_name],
+                        [__('Service Category'), $candidate->service_category_name],
+                        [__('Interview Date'), $candidate->booked ? \Carbon\Carbon::parse($candidate->booked)->format('d M Y') : null],
+                        [__('Delivery Date'),  $candidate->delivery_date ? \Carbon\Carbon::parse($candidate->delivery_date)->format('d M Y') : null],
+                        [__('Location'),       $candidate->place_name],
+                        [__('Country'),        $candidate->country],
+                        [__('Staff Assigned'), $candidate->staff_name],
                     ];
                     if ($candidate->hasPersonalId && $candidate->security)
                         $rows[] = [__('Personal ID'), $candidate->security];
                     if ($candidate->vasc_id)
                         $rows[] = [__('VASC ID'), $candidate->vasc_id];
+
+                    $rows = array_filter($rows, fn($row) => ($row[2] ?? '') === 'status' || !empty($row[1]));
                 @endphp
 
                 @foreach($rows as $row)
@@ -85,12 +87,13 @@
                 {{-- Dynamic meta_data fields --}}
                 @if(!empty($metaData))
                     @foreach($metaData as $key => $value)
+                        @continue(empty($value))
                     <div class="flex px-5 py-3">
                         <dt class="w-44 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">
                             {{ is_string($key) ? ucwords(str_replace('_', ' ', $key)) : $key }}
                         </dt>
                         <dd class="text-sm text-gray-800 dark:text-white">
-                            {{ is_array($value) ? implode(', ', $value) : ($value ?: '—') }}
+                            {{ is_array($value) ? implode(', ', $value) : $value }}
                         </dd>
                     </div>
                     @endforeach
@@ -104,20 +107,25 @@
             <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('Billing Details') }}</h3>
             </div>
+            @php
+                $billingRows = array_filter([
+                    [$billingLabels['referensperson'] ?? __('Invoice Recipient'), $candidate->referensperson],
+                    [$billingLabels['reference'] ?? __('Invoice Reference'), $candidate->reference],
+                    [$billingLabels['comment'] ?? __('Comment'), $candidate->comment],
+                ], fn($row) => !empty($row[1]));
+            @endphp
+            @if(!empty($billingRows))
             <dl class="divide-y divide-gray-100 dark:divide-gray-700">
+                @foreach($billingRows as $row)
                 <div class="flex px-5 py-3">
-                    <dt class="w-44 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Invoice Recipient') }}</dt>
-                    <dd class="text-sm text-gray-800 dark:text-white">{{ $candidate->referensperson ?: '—' }}</dd>
+                    <dt class="w-44 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $row[0] }}</dt>
+                    <dd class="text-sm text-gray-800 dark:text-white">{{ $row[1] }}</dd>
                 </div>
-                <div class="flex px-5 py-3">
-                    <dt class="w-44 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Invoice Reference') }}</dt>
-                    <dd class="text-sm text-gray-800 dark:text-white">{{ $candidate->reference ?: '—' }}</dd>
-                </div>
-                <div class="flex px-5 py-3">
-                    <dt class="w-44 shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Comment') }}</dt>
-                    <dd class="text-sm text-gray-800 dark:text-white">{{ $candidate->comment ?: '—' }}</dd>
-                </div>
+                @endforeach
             </dl>
+            @else
+            <p class="py-6 text-center text-sm text-gray-400 dark:text-gray-500">{{ __('No billing details added.') }}</p>
+            @endif
         </div>
 
         {{-- ── Tab: Files / Attachments ── --}}

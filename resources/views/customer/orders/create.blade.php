@@ -145,7 +145,7 @@
                 </div>
                 <div id="place-field" style="display:none" class="mt-3">
                     <label class="wizard-label">{{ __('Place') }} <span class="text-red-500">*</span></label>
-                    <select name="place" class="wizard-input" id="placeSelect">
+                    <select name="place" class="wizard-input" id="placeSelect" disabled>
                         @foreach($places as $p)
                             <option value="{{ $p->id }}">{{ $p->name }}</option>
                         @endforeach
@@ -153,7 +153,7 @@
                 </div>
                 <div id="country-field" style="display:none" class="mt-3">
                     <label class="wizard-label">{{ __('Country') }} <span class="text-red-500">*</span></label>
-                    <select name="country" class="wizard-input" id="countrySelect">
+                    <select name="country" class="wizard-input" id="countrySelect" disabled>
                         @foreach(['Sweden','Norway','Denmark','Finland','Germany','France','United Kingdom','United States','Afghanistan','Albania','Algeria','Andorra','Angola','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Belgium','Bolivia','Bosnia and Herzegovina','Brazil','Bulgaria','Cambodia','Canada','Chile','China','Colombia','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Ecuador','Egypt','Estonia','Ethiopia','Faroe Islands','Finland','France','Georgia','Ghana','Greece','Guatemala','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kosovo','Latvia','Lebanon','Lithuania','Luxembourg','Malaysia','Malta','Mexico','Moldova','Monaco','Montenegro','Morocco','Netherlands','New Zealand','Nigeria','North Macedonia','Norway','Pakistan','Panama','Peru','Philippines','Poland','Portugal','Romania','Russia','Saudi Arabia','Serbia','Singapore','Slovakia','Slovenia','South Africa','South Korea','Spain','Sri Lanka','Sweden','Switzerland','Tanzania','Thailand','Tunisia','Turkey','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Venezuela','Vietnam','Yemen','Zimbabwe'] as $c)
                             <option value="{{ $c }}" {{ $c === 'Sweden' ? 'selected' : '' }}>{{ $c }}</option>
                         @endforeach
@@ -395,10 +395,12 @@ function clearDynamicFields() {
 function updateServiceLocationFields() {
     const showPlaceByService = currentService && currentService.place === '1';
     const showCountry = currentService && currentService.country === '1';
-    const showPlace = Boolean(currentService && (showPlaceByService || !hasFormBuilder));
+    const showPlace = Boolean(currentService && showPlaceByService);
 
     document.getElementById('place-field').style.display   = showPlace ? 'block' : 'none';
     document.getElementById('country-field').style.display = showCountry ? 'block' : 'none';
+    document.getElementById('placeSelect').disabled   = !showPlace;
+    document.getElementById('countrySelect').disabled = !showCountry;
 }
 
 function updateAttachmentTab(showDocuments) {

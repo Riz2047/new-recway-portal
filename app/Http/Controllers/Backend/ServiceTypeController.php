@@ -38,8 +38,11 @@ class ServiceTypeController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
+            'place' => 'sometimes|boolean',
+            'country' => 'sometimes|boolean',
+            'delivery_days' => 'nullable|integer|min:0',
             'customers' => 'nullable|array',
-            'customers.*' => 'exists:users,id',
+            'customers.*' => 'exists:customers,id',
         ]);
 
         try {
@@ -50,10 +53,13 @@ class ServiceTypeController extends Controller
                 'name' => $validated['name'],
                 'price' => $validated['price'],
                 'description' => $validated['description'],
+                'place' => $validated['place'] ?? false,
+                'country' => $validated['country'] ?? false,
+                'delivery_days' => $validated['delivery_days'] ?? null,
             ]);
 
             if (! empty($validated['customers'])) {
-                $serviceType->customers()->sync($validated['customers']);
+                $serviceType->customers()->sync($this->withChildCustomers($validated['customers']));
             }
 
             DB::commit();
@@ -74,8 +80,10 @@ class ServiceTypeController extends Controller
 
     public function getCustomers(): JsonResponse
     {
-        // Assuming Spatie Permission is used and role names are stored in roles table
+        // Only list parent customers (no parent_id); their child customers
+        // are assigned automatically when the parent is selected.
         $customers = Customer::join('users', 'customers.user_id', '=', 'users.id')
+        ->whereNull('customers.parent_id')
         ->select('customers.id as id', 'users.name', 'users.email')
         ->get()
         ->map(function ($item) {
@@ -100,8 +108,11 @@ class ServiceTypeController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
+            'place' => 'sometimes|boolean',
+            'country' => 'sometimes|boolean',
+            'delivery_days' => 'nullable|integer|min:0',
             'customers' => 'nullable|array',
-            'customers.*' => 'exists:users,id',
+            'customers.*' => 'exists:customers,id',
         ]);
 
         try {
@@ -112,10 +123,13 @@ class ServiceTypeController extends Controller
                 'name' => $validated['name'],
                 'price' => $validated['price'],
                 'description' => $validated['description'],
+                'place' => $validated['place'] ?? false,
+                'country' => $validated['country'] ?? false,
+                'delivery_days' => $validated['delivery_days'] ?? null,
             ]);
 
             if (isset($validated['customers'])) {
-                $serviceType->customers()->sync($validated['customers']);
+                $serviceType->customers()->sync($this->withChildCustomers($validated['customers']));
             } else {
                 $serviceType->customers()->detach();
             }
@@ -134,6 +148,19 @@ class ServiceTypeController extends Controller
                 'message' => __('Failed to update service type.') . ' ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Add the child customers of any selected parent customers to the list.
+     *
+     * @param  array<int, int|string>  $customerIds
+     * @return array<int, int|string>
+     */
+    private function withChildCustomers(array $customerIds): array
+    {
+        $childIds = Customer::whereIn('parent_id', $customerIds)->pluck('id')->all();
+
+        return array_values(array_unique([...$customerIds, ...$childIds]));
     }
 
     /**

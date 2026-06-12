@@ -82,6 +82,20 @@
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Description') }}</label>
                                     <textarea x-model="formData.description" class="form-control w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" rows="2"></textarea>
                                 </div>
+                                <div class="md:col-span-2 flex items-center gap-6">
+                                    <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <input type="checkbox" x-model="formData.place" class="form-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                        {{ __('Place') }}
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <input type="checkbox" x-model="formData.country" class="form-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                                        {{ __('Country') }}
+                                    </label>
+                                </div>
+                                <div class="space-y-1" x-show="categoryId == 3">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Delivery Days') }}</label>
+                                    <input type="number" min="0" step="1" x-model="formData.delivery_days" class="form-control w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                                </div>
                                 <div class="space-y-1 md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Customers') }}</label>
                                     <select id="customerSelect" class="js-multiselect w-full" multiple="multiple"></select>
@@ -126,6 +140,9 @@
                     name: '',
                     price: '',
                     description: '',
+                    place: false,
+                    country: false,
+                    delivery_days: '',
                     customers: []
                 },
 
@@ -165,6 +182,9 @@
                         name: '',
                         price: '',
                         description: '',
+                        place: false,
+                        country: false,
+                        delivery_days: '',
                         customers: []
                     };
                     if ($('#customerSelect').length) {
@@ -179,6 +199,9 @@
                         name: type.name,
                         price: type.price,
                         description: type.description,
+                        place: !! type.place,
+                        country: !! type.country,
+                        delivery_days: type.delivery_days ?? '',
                         customers: type.customers ? type.customers.map(c => c.id) : []
                     };
                     if ($('#customerSelect').length) {

@@ -70,6 +70,52 @@ class FormBuilderFieldService
     }
 
     /**
+     * Maps billing-section form fields to the candidate billing columns
+     * (referensperson/reference/comment), returning custom labels keyed
+     * by column name. Mirrors resolveInputName() in
+     * resources/views/customer/orders/create.blade.php.
+     *
+     * @param array<int, array{section:string,type:string,label:string,name:string,placeholder:string,required:bool,options:array<int,string>}> $fields
+     * @return array<string, string>
+     */
+    public function resolveBillingLabels(array $fields): array
+    {
+        $labels = [];
+
+        foreach ($fields as $field) {
+            if (($field['section'] ?? '') !== 'billing') {
+                continue;
+            }
+
+            $label = trim((string) preg_replace('/\s*\*\s*$/', '', $field['label'] ?? ''));
+            $name = (string) ($field['name'] ?? '');
+            $lowerLabel = mb_strtolower($label);
+
+            if ($name === 'referensperson' || $name === 'pref'
+                || str_contains($lowerLabel, 'invoice recipient')
+                || str_contains($lowerLabel, 'ansvarig chef')
+                || str_contains($lowerLabel, 'hiring manager')) {
+                $labels['referensperson'] = $label;
+
+                continue;
+            }
+
+            if ($name === 'reference' || $name === 'ref'
+                || (str_contains($lowerLabel, 'do') && str_contains($lowerLabel, 'siffror'))) {
+                $labels['reference'] = $label;
+
+                continue;
+            }
+
+            if ($name === 'comment') {
+                $labels['comment'] = $label;
+            }
+        }
+
+        return $labels;
+    }
+
+    /**
      * @param array<mixed, mixed> $section
      *
      * @return array<int, array{section:string,type:string,label:string,name:string,placeholder:string,required:bool,options:array<int,string>}>
