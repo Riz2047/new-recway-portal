@@ -16,10 +16,18 @@ class ServiceType extends Model
         'name',
         'price',
         'description',
-                'place',
-                'country',
-                'delivery_days',
+        'place',
+        'country',
+        'delivery_days',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'place' => 'boolean',
+            'country' => 'boolean',
+        ];
+    }
 
     /**
      * Get the service category that owns the service type.

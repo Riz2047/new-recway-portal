@@ -15,11 +15,13 @@ use App\Models\ServiceCategory;
 use App\Models\ServiceType;
 use App\Models\Status;
 use App\Models\User;
+use App\Services\Candidate\StatusWorkflowService;
 use App\Services\FormBuilderFieldService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -29,6 +31,15 @@ class OrderController extends Controller
 {
     /** Status IDs that start the 14-day archive countdown */
     private const ARCHIVE_STATUS_IDS = [4, 7, 9, 21, 22, 37, 40, 42, 52, 55, 56];
+
+    /** Order statuses that are awaiting a customer (company manager) decision. */
+    private const AWAITING_DECISION_STATUSES = [6, 47, 39];
+
+    /** "Change Status" dropdown options: Approved / Denied. */
+    private const DECISION_STATUSES = [4, 7];
+
+    /** "Change Status" dropdown options when the order is in follow-up review (status 39). */
+    private const DECISION_STATUSES_FOLLOWUP = [37, 42];
 
     // ── Orders list ─────────────────────────────────────────────────────────
 
@@ -103,7 +114,7 @@ class OrderController extends Controller
 
     // ── View single order ────────────────────────────────────────────────────
 
-    public function show(int $id): View|RedirectResponse
+    public function show(int $id, FormBuilderFieldService $formBuilder): View|RedirectResponse
     {
         $userId = Auth::id();
         $customerIds = $this->resolveCustomerIds($userId);
@@ -154,23 +165,24 @@ class OrderController extends Controller
         // Archive countdown
         $daysToArchive = $this->archiveCountdown($candidate);
 
-        // Statuses available for "Change Status" — filtered to this order's service category
-        $service = ServiceType::find($candidate->interview_id);
-        $changeableStatuses = $service
-            ? Status::where('status_type', $service->service_category_id)
-                ->whereIn('variable', [
-                    'approved', 'denied', 'approved_bc',
-                    'Approved_followup', 'notshow_msg_follow', 'rebooking',
-                ])
-                ->get()
-            : collect();
-
         // Check whether this customer is allowed to upload security reports.
         $customerId = $this->getCustomerId($userId);
         $sendSecurityReport = (bool) Customer::where('id', $customerId)->value('send_security_report');
 
+        // "Change Status" is only offered to company managers, and only while
+        // the order is awaiting a customer decision (statuses 6, 47, 39).
+        $changeableStatuses = $this->isCompanyManager((int) $customerId)
+            ? $this->changeableStatusesFor($candidate)
+            : collect();
+
         // Show existing report filename if one was already uploaded.
         $existingReport = $candidate->basic_investigation_result ?: null;
+
+        // Billing field labels — use the service's custom form labels when available.
+        $formData = $formBuilder->load((int) $candidate->cus_id, $candidate->interview_id);
+        $billingLabels = $formData['has_form_builder']
+            ? $formBuilder->resolveBillingLabels($formData['fields'])
+            : [];
 
         return view('customer.orders.show', compact(
             'candidate',
@@ -181,6 +193,7 @@ class OrderController extends Controller
             'changeableStatuses',
             'sendSecurityReport',
             'existingReport',
+            'billingLabels',
         ));
     }
 
@@ -359,7 +372,8 @@ class OrderController extends Controller
 
     public function changeStatus(Request $request, int $id): RedirectResponse
     {
-        $customerIds = $this->resolveCustomerIds(Auth::id());
+        $userId = Auth::id();
+        $customerIds = $this->resolveCustomerIds($userId);
 
         $candidate = Candidate::whereIn('cus_id', $customerIds)->findOrFail($id);
 
@@ -368,40 +382,56 @@ class OrderController extends Controller
             'comment' => 'nullable|string|max:1000',
         ]);
 
-        // Only allow statuses that belong to this order's service category
-        $service = ServiceType::find($candidate->interview_id);
-        if ($service) {
-            $allowed = Status::where('status_type', $service->service_category_id)
-                ->whereIn('variable', [
-                    'approved', 'denied', 'approved_bc',
-                    'Approved_followup', 'notshow_msg_follow', 'rebooking',
-                ])
-                ->pluck('id');
+        // Only company managers may change the status, and only to one of the
+        // options offered for this order's current status.
+        $customerId = $this->getCustomerId($userId);
+        $allowed = $this->isCompanyManager((int) $customerId)
+            ? $this->changeableStatusesFor($candidate)->pluck('id')
+            : collect();
 
-            if (! $allowed->contains($request->status)) {
-                return back()->with('error', __('Invalid status selection.'));
-            }
+        if (! $allowed->contains((int) $request->status)) {
+            return back()->with('error', __('Invalid status selection.'));
         }
-
-        $candidate->status = $request->status;
-        $candidate->save();
 
         $user = Auth::user();
         $comment = $request->input('comment', '');
-        if ($comment) {
-            $comment .= "\n— " . $user->name;
-        }
 
-        $newStatus = Status::find($request->status);
-        CandidateHistory::create([
-            'order_id' => $candidate->id,
-            'desc' => 'Status changed to: ' . ($newStatus?->status ?? ''),
-            'date_time' => now(),
-            'comment' => $comment,
-        ]);
+        try {
+            app(StatusWorkflowService::class)->handle(
+                candidate: $candidate,
+                newStatusId: (int) $request->status,
+                options: [
+                    'date' => now()->toDateString(),
+                    'comment' => $comment
+                        ? $comment . '<br>-' . $user?->name
+                        : '-' . $user?->name,
+                ]
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('customer.orders.show', $candidate->id)
             ->with('success', __('Status updated successfully.'));
+    }
+
+    /**
+     * Statuses a company-manager customer may change an order to from its
+     * current status. Mirrors the old new_customer view-order "Change Status"
+     * dropdown: only orders awaiting a decision (statuses 6, 47, 39) offer
+     * Approved/Denied — or their follow-up equivalents while in status 39.
+     */
+    private function changeableStatusesFor(Candidate $candidate): Collection
+    {
+        if (! in_array($candidate->status, self::AWAITING_DECISION_STATUSES, true)) {
+            return collect();
+        }
+
+        $ids = $candidate->status === 39
+            ? self::DECISION_STATUSES_FOLLOWUP
+            : self::DECISION_STATUSES;
+
+        return Status::whereIn('id', $ids)->orderBy('id')->get();
     }
 
     // ── Create order ─────────────────────────────────────────────────────────

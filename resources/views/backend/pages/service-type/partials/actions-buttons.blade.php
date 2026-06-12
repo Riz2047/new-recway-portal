@@ -4,7 +4,10 @@
         'name' => $serviceType->name,
         'price' => $serviceType->price,
         'description' => $serviceType->description,
-        'customers' => $serviceType->customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toArray(),
+        'place' => $serviceType->place,
+        'country' => $serviceType->country,
+        'delivery_days' => $serviceType->delivery_days,
+        'customers' => $serviceType->customers->whereNull('parent_id')->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()->toArray(),
     ], JSON_HEX_APOS | JSON_HEX_QUOT);
 @endphp
 

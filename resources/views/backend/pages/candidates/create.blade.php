@@ -107,9 +107,17 @@
                 </div>
 
                 <div id="documents-wrapper" class="hidden md:col-span-2">
-                    <label for="candidate_documents" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Documents') }}</label>
-                    <input id="candidate_documents" type="file" name="files[]" class="form-control" accept="application/pdf" multiple />
-                    <p class="mt-1 text-sm text-gray-500">{{ __('Here you can upload several documents (Interview Templates, Documents or CV)') }}</p>
+                    <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Documents') }}</label>
+                    <div id="documents-drop-zone" class="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50 dark:border-gray-600 dark:hover:bg-indigo-900/20">
+                        <iconify-icon icon="lucide:upload-cloud" class="mx-auto mb-2 text-3xl text-gray-400"></iconify-icon>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">{{ __('Drag and drop files here, or click to select files') }}</p>
+                        <p class="mt-1 text-xs text-gray-500">{{ __('Interview Templates, Documents or CV (PDF, DOC, DOCX)') }}</p>
+                        <input id="candidate_documents" type="file" name="files[]" class="hidden" accept="application/pdf,.doc,.docx" multiple />
+                    </div>
+                    <div id="documents-file-list" class="mt-3 space-y-2"></div>
+                    @error('files')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
@@ -140,12 +148,16 @@
             const placeInput = document.getElementById('place');
             const countryInput = document.getElementById('country');
             const documentsWrapper = document.getElementById('documents-wrapper');
+            const documentsInput = document.getElementById('candidate_documents');
+            const documentsDropZone = document.getElementById('documents-drop-zone');
+            const documentsFileList = document.getElementById('documents-file-list');
             const formElement = document.getElementById('candidate-create-form');
             const oldInput = JSON.parse(formElement.dataset.oldInput || '{}');
             const fieldErrors = JSON.parse(formElement.dataset.fieldErrors || '{}');
 
             let hasPersonalId = Boolean(Number(oldInput.hasPersonalId ?? 0));
             let hasFormBuilder = false;
+            let hasDocumentField = false;
 
             const firstCustomerOption = Array.from(customerSelect.options).find((option) => option.value !== '');
             if (!customerSelect.value && firstCustomerOption) {
@@ -162,6 +174,60 @@
             });
 
             loadServices(customerSelect.value, oldInput.interview_id ?? null);
+
+            documentsDropZone.addEventListener('click', () => documentsInput.click());
+
+            documentsInput.addEventListener('change', renderDocumentFiles);
+
+            documentsDropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                documentsDropZone.classList.add('border-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+            });
+
+            documentsDropZone.addEventListener('dragleave', (event) => {
+                event.preventDefault();
+                documentsDropZone.classList.remove('border-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+            });
+
+            documentsDropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                documentsDropZone.classList.remove('border-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+                documentsInput.files = event.dataTransfer.files;
+                renderDocumentFiles();
+            });
+
+            documentsFileList.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-remove-document]');
+                if (!button) {
+                    return;
+                }
+
+                const index = Number(button.dataset.removeDocument);
+                const dataTransfer = new DataTransfer();
+                Array.from(documentsInput.files).forEach((file, fileIndex) => {
+                    if (fileIndex !== index) {
+                        dataTransfer.items.add(file);
+                    }
+                });
+                documentsInput.files = dataTransfer.files;
+                renderDocumentFiles();
+            });
+
+            function renderDocumentFiles() {
+                const files = Array.from(documentsInput.files);
+                documentsFileList.innerHTML = files.map((file, index) => `
+                    <div class="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm dark:bg-gray-800">
+                        <span class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                            <iconify-icon icon="lucide:file"></iconify-icon>
+                            ${escapeHtml(file.name)}
+                            <span class="text-xs text-gray-500">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                        </span>
+                        <button type="button" data-remove-document="${index}" class="text-red-500 hover:text-red-700">
+                            <iconify-icon icon="lucide:x" class="w-4 h-4"></iconify-icon>
+                        </button>
+                    </div>
+                `).join('');
+            }
 
             formElement.addEventListener('submit', (event) => {
                 if (!validateSecurityField()) {
@@ -225,6 +291,7 @@
                     }
 
                     hasFormBuilder = Boolean(payload.has_form_builder);
+                    hasDocumentField = (payload.form_fields ?? []).some((field) => field.name === 'document_file');
                     updateServiceLocationFields();
                     renderDynamicFields(payload.form_fields ?? []);
                 } catch (_error) {
@@ -235,6 +302,7 @@
             function resetServiceOptions() {
                 serviceSelect.innerHTML = `<option value="">{{ __('Select service type') }}</option>`;
                 hasFormBuilder = false;
+                hasDocumentField = false;
                 updateServiceLocationFields();
             }
 
@@ -255,8 +323,8 @@
                 const hasSelectedService = Boolean(selectedOption && selectedOption.value !== '');
                 const showPlaceByService = selectedOption && selectedOption.dataset.place === '1';
                 const showCountry = selectedOption && selectedOption.dataset.country === '1';
-                const showPlace = Boolean(hasSelectedService && (showPlaceByService || !hasFormBuilder));
-                const showDocuments = Boolean(hasSelectedService && !hasFormBuilder);
+                const showPlace = Boolean(hasSelectedService && showPlaceByService);
+                const showDocuments = Boolean(hasSelectedService && (!hasFormBuilder || hasDocumentField));
 
                 placeWrapper.classList.toggle('hidden', !showPlace);
                 countryWrapper.classList.toggle('hidden', !showCountry);
@@ -290,6 +358,10 @@
                 let securityControlRendered = false;
 
                 fields.forEach((field) => {
+                    if (field.name === 'document_file') {
+                        return;
+                    }
+
                     const sectionContainer = field.section === 'billing' ? billingFieldsContainer : personalFieldsContainer;
                     if (!sectionContainer) {
                         return;
